@@ -10,4 +10,9 @@ setup(
     author_email='pulp-dev@redhat.com',
     url='http://www.pulpproject.org/',
     packages=['pulp_file'],
+    entry_points={
+        'pulp.plugin': [
+            'pulp_file = pulp_file:default_app_config',
+        ]
+    }
 )
