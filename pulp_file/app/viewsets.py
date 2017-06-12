@@ -1,5 +1,5 @@
 from django_filters.rest_framework import filterset
-from pulp.plugin import viewsets as platform
+from pulpcore.plugin import viewsets as platform
 
 from . import models, serializers
 

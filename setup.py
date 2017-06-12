@@ -16,7 +16,7 @@ setup(
     install_requires=requirements,
     packages=['pulp_file'],
     entry_points={
-        'pulp.plugin': [
+        'pulpcore.plugin': [
             'pulp_file = pulp_file:default_app_config',
         ]
     }

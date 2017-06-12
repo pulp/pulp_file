@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from pulp.plugin import serializers as platform
+from pulpcore.plugin import serializers as platform
 
 from . import models
 
