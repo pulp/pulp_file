@@ -1,6 +1,6 @@
 from django.db import models
 
-from pulp.plugin import models as platform
+from pulpcore.plugin import models as platform
 
 
 class FileContent(platform.Content):

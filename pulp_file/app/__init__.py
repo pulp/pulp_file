@@ -1,4 +1,4 @@
-from pulp.plugin import PulpPluginAppConfig
+from pulpcore.plugin import PulpPluginAppConfig
 
 
 class PulpFilePluginAppConfig(PulpPluginAppConfig):
