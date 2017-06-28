@@ -7,7 +7,7 @@ from . import models, serializers
 class FileContentFilter(filterset.FilterSet):
     class Meta:
         model = models.FileContent
-        fields = ['name']
+        fields = ['path', 'digest']
 
 
 class FileContentViewSet(platform.ContentViewSet):

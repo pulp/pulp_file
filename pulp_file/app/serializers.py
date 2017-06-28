@@ -5,10 +5,11 @@ from . import models
 
 
 class FileContentSerializer(platform.ContentSerializer):
-    name = serializers.CharField()
+    path = serializers.CharField()
+    digest = serializers.CharField()
 
     class Meta:
-        fields = platform.ContentSerializer.Meta.fields + ('name',)
+        fields = platform.ContentSerializer.Meta.fields + ('path', 'digest')
         model = models.FileContent
 
 
