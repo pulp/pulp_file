@@ -8,12 +8,13 @@ requirements = [
 
 setup(
     name='pulp-file',
-    version='0.0.1a1.dev0',
+    version='0.0.1a1.dev1',
     description='File plugin for the Pulp Project',
     author='Pulp Project Developers',
     author_email='pulp-dev@redhat.com',
     url='http://www.pulpproject.org/',
     install_requires=requirements,
+    include_package_data=True,
     packages=['pulp_file'],
     entry_points={
         'pulpcore.plugin': [
