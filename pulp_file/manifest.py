@@ -9,14 +9,14 @@ Line = namedtuple('Line', ('number', 'content'))
 class Entry:
     """
     Manifest entry.
-    Format: <path>, <size>, <digest>
+    Format: <path>, <digest>, <size>.
 
     Lines beginning with `#` are ignored.
 
     Attributes:
         path (str): A relative path.
-        size (int): The file size in bytes.
         digest (str): The file sha256 hex digest.
+        size (int): The file size in bytes.
     """
 
     @staticmethod
@@ -37,22 +37,22 @@ class Entry:
         if len(part) != 3:
             raise ValueError(
                 _('Error: manifest line:{n}: '
-                  'must be: <path>, <size>, <digest>').format(
+                  'must be: <path>, <digest>, <size>').format(
                     n=line.number))
         return Entry(path=part[0],
-                     size=int(part[1]),
-                     digest=part[2])
+                     digest=part[1],
+                     size=int(part[2]))
 
     def __init__(self, path, size, digest):
         """
         Args:
             path (str): A relative path.
-            size (int): The file size in bytes.
             digest (str): The file sha256 hex digest.
+            size (int): The file size in bytes.
         """
         self.path = path
-        self.size = size
         self.digest = digest
+        self.size = size
 
 
 class Manifest:
