@@ -23,6 +23,12 @@ class FileImporterViewSet(platform.ImporterViewSet):
     serializer_class = serializers.FileImporterSerializer
 
 
+class BasicFileImporterViewSet(platform.ImporterViewSet):
+    endpoint_name = 'basicfile'
+    queryset = models.BasicFileImporter.objects.all()
+    serializer_class = serializers.BasicFileImporterSerializer
+
+
 class FilePublisherViewSet(platform.PublisherViewSet):
     endpoint_name = 'file'
     queryset = models.FilePublisher.objects.all()

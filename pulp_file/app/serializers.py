@@ -19,6 +19,12 @@ class FileImporterSerializer(platform.ImporterSerializer):
         model = models.FileImporter
 
 
+class BasicFileImporterSerializer(platform.ImporterSerializer):
+    class Meta:
+        fields = platform.ImporterSerializer.Meta.fields
+        model = models.BasicFileImporter
+
+
 class FilePublisherSerializer(platform.PublisherSerializer):
     class Meta:
         fields = platform.PublisherSerializer.Meta.fields
