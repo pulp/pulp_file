@@ -9,8 +9,14 @@ from django.db import models
 
 from pulpcore.plugin.models import Artifact, Content, Importer, Publisher
 from pulpcore.plugin.changeset import (
-    BatchIterator, ChangeSet, SizedIterable, RemoteContent, RemoteArtifact,
-    ChangeReport, ChangeFailed)
+    BatchIterator,
+    ChangeSet,
+    ChangeFailed,
+    ChangeReport,
+    PendingArtifact,
+    PendingContent,
+    SizedIterable,
+)
 
 from pulp_file.manifest import Manifest
 
@@ -176,13 +182,14 @@ class FileImporter(Importer):
                 continue
             path = os.path.join(root_dir, entry.path)
             url = urlunparse(parsed_url._replace(path=path))
-            content = FileContent(path=entry.path, digest=entry.digest)
-            remote_content = RemoteContent(content)
-            artifact = Artifact(relative_path=entry.path, sha256=entry.digest)
-            download = self.get_download(url, entry.path, artifact)
-            remote_artifact = RemoteArtifact(artifact, download)
-            remote_content.artifacts.add(remote_artifact)
-            yield remote_content
+            file = FileContent(path=entry.path, digest=entry.digest)
+            content = PendingContent(
+                file,
+                artifacts={
+                    PendingArtifact(
+                        Artifact(size=entry.size, sha256=entry.digest), url, entry.path)
+                })
+            yield content
 
     def _fetch_removals(self, delta):
         """
