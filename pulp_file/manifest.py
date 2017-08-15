@@ -79,9 +79,7 @@ class Manifest:
             Entry: for each line.
         """
         with open(self.path) as fp:
-            n = 0
-            for line in fp.readlines():
-                n += 1
+            for n, line in enumerate(fp.readlines(), 1):
                 line = line.strip()
                 if not line:
                     continue

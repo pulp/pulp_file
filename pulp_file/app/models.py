@@ -1,7 +1,6 @@
 import os
 
 from collections import namedtuple
-from gettext import gettext as _
 from logging import getLogger
 from urllib.parse import urlparse, urlunparse
 
@@ -11,8 +10,6 @@ from pulpcore.plugin.models import Artifact, Content, Importer, Publisher
 from pulpcore.plugin.changeset import (
     BatchIterator,
     ChangeSet,
-    ChangeFailed,
-    ChangeReport,
     PendingArtifact,
     PendingContent,
     SizedIterable,
@@ -24,8 +21,6 @@ from pulp_file.manifest import Manifest
 log = getLogger(__name__)
 
 
-# Changes needed.
-Delta = namedtuple('Delta', ('additions', 'removals'))
 # Natural key.
 Key = namedtuple('Key', ('path', 'digest'))
 
@@ -73,173 +68,151 @@ class FileImporter(Importer):
 
     def sync(self):
         """
+        Synchronizes the repository by calling the FileSync class.
+        """
+        Synchronizer(self).run()
+
+
+class Synchronizer:
+    """
+    Repository synchronizer for FileContent
+
+    This object walks through the full standard workflow of running a sync. See the "run" method
+    for details on that workflow.
+    """
+
+    def __init__(self, importer):
+        """
+        Args:
+            importer (Importer): the importer to use for the sync operation
+        """
+        self._importer = importer
+        self._manifest = None
+        self._inventory_keys = set()
+        self._keys_to_add = set()
+        self._keys_to_remove = set()
+
+    def run(self):
+        """
         Synchronize the repository with the remote repository.
+
+        This walks through the standard workflow that most sync operations want to follow. This
+        pattern is a recommended starting point for other plugins.
+
+        - Determine what is available remotely.
+        - Determine what is already in the local repository.
+        - Compare those two, and based on any importer settings or content-type-specific logic,
+          figure out what you want to add and remove from the local repository.
+        - Use a ChangeSet to make those changes happen.
         """
-        failed = 0
-        added = 0
-        removed = 0
+        # Determine what is available remotely
+        self._fetch_manifest()
+        # Determine what is already in the repo
+        self._fetch_inventory()
 
-        # TODO: Change logging WARN to INFO.
-        # logging at WARN until logging is properly configured.
+        # Based on the above two, figure out what we want to add and remove
+        self._find_delta()
+        additions = SizedIterable(
+            self._build_additions(),
+            len(self._keys_to_add))
+        removals = SizedIterable(
+            self._build_removals(),
+            len(self._keys_to_remove))
 
-        log.warn(
-            _('FileImporter: synchronizing repository %(r)s'),
-            {
-                'r': self.repository.name
-            })
-
-        changeset = self._build_changeset()
-        for report in changeset.apply():
-            try:
-                report.result()
-            except ChangeFailed:
-                failed += 1
-            else:
-                if report.action == ChangeReport.ADDED:
-                    added += 1
-                else:
-                    removed += 1
-
-        log.warn(
-            _('FileImporter: total: added:%(a)d, removed:%(r)d, failed %(f)d'),
-            {
-                'a': added,
-                'r': removed,
-                'f': failed
-            })
-        # On failed > 0, raise a PulpCodedException?
-        # Done
-
-    def _fetch_inventory(self):
-        """
-        Fetch existing content in the repository.
-
-        Returns:
-            set: of Key.
-        """
-        inventory = set()
-        q_set = FileContent.objects.filter(repositories=self.repository)
-        q_set = q_set.only(*[f.name for f in FileContent.natural_key_fields])
-        for content in (c.cast() for c in q_set):
-            key = Key(path=content.path, digest=content.digest)
-            inventory.add(key)
-        return inventory
+        # Hand that to a ChangeSet, and we're done!
+        changeset = ChangeSet(self._importer, additions=additions, removals=removals)
+        changeset.apply_and_drain()
 
     def _fetch_manifest(self):
         """
         Fetch (download) the manifest.
-
-        Returns:
-            Manifest: The manifest.
         """
-        parsed_url = urlparse(self.feed_url)
-        download = self.get_download(self.feed_url, os.path.basename(parsed_url.path))
+        parsed_url = urlparse(self._importer.feed_url)
+        download = self._importer.get_download(
+            self._importer.feed_url, os.path.basename(parsed_url.path))
         download()
-        return Manifest(download.writer.path)
+        self._manifest = Manifest(download.writer.path)
 
-    @staticmethod
-    def _find_delta(manifest, inventory, mirror=True):
+    def _fetch_inventory(self):
+        """
+        Fetch existing content in the repository.
+        """
+        q_set = FileContent.objects.filter(repositories=self._importer.repository)
+        q_set = q_set.only(*[f.name for f in FileContent.natural_key_fields])
+        for content in (c.cast() for c in q_set):
+            key = Key(path=content.path, digest=content.digest)
+            self._inventory_keys.add(key)
+
+    def _find_delta(self, mirror=True):
         """
         Using the manifest and set of existing (natural) keys,
         determine the set of content to be added and deleted from the
         repository.  Expressed in natural key.
+
         Args:
-            manifest (Manifest): The fetched manifest.
-            inventory (set): Set of existing content (natural) keys.
             mirror (bool): Faked mirror option.
                 TODO: should be replaced with something standard.
 
-        Returns:
-            Delta: The needed changes.
         """
-        remote = set()
-        for entry in manifest.read():
-            key = Key(path=entry.path, digest=entry.digest)
-            remote.add(key)
-        additions = remote - inventory
-        if mirror:
-            removals = inventory - remote
-        else:
-            removals = set()
-        return Delta(additions=additions, removals=removals)
+        # These keys are available remotely. Storing just the natural key makes it memory-efficient
+        # and thus reasonable to hold in RAM even with a large number of content units.
+        remote_keys = set([Key(path=e.path, digest=e.digest) for e in self._manifest.read()])
 
-    def _build_additions(self, manifest, delta):
+        self._keys_to_add = remote_keys - self._inventory_keys
+        if mirror:
+            self._keys_to_remove = self._inventory_keys - remote_keys
+
+    def _build_additions(self):
         """
         Generate the content to be added.
 
-        Args:
-            manifest (Manifest): The fetched manifest.
-            delta (Delta): The needed changes.
+        This makes a second pass through the manifest. While it does not matter a lot for this
+        plugin specifically, many plugins cannot hold the entire index of remote content in memory
+        at once. They must reduce that to only the natural keys, decide which to retrieve
+        (self.keys_to_add in our case), and then re-iterate the index to access each full entry one
+        at a time.
 
         Returns:
             generator: A generator of content to be added.
         """
-        parsed_url = urlparse(self.feed_url)
+        parsed_url = urlparse(self._importer.feed_url)
         root_dir = os.path.dirname(parsed_url.path)
-        for entry in manifest.read():
+
+        for entry in self._manifest.read():
+            # Determine if this is an entry we decided to add.
             key = Key(path=entry.path, digest=entry.digest)
-            if key not in delta.additions:
+            if key not in self._keys_to_add:
                 continue
+
+            # Instantiate the content and artifact based on the manifest entry.
             path = os.path.join(root_dir, entry.path)
             url = urlunparse(parsed_url._replace(path=path))
             file = FileContent(path=entry.path, digest=entry.digest)
+            artifact = Artifact(size=entry.size, sha256=entry.digest)
+
+            # Now that we know what we want to add, hand it to "core" with the API objects.
             content = PendingContent(
                 file,
                 artifacts={
-                    PendingArtifact(
-                        Artifact(size=entry.size, sha256=entry.digest), url, entry.path)
+                    PendingArtifact(artifact, url, entry.path)
                 })
             yield content
 
-    def _fetch_removals(self, delta):
+    def _build_removals(self):
         """
         Generate the content to be removed.
 
-        Args:
-            delta (Delta): The needed changes.
-
         Returns:
-            generator: A generator of content to be removed.
-
+            generator: A generator of FileContent instances to remove from the repository
         """
-        for natural_keys in BatchIterator(delta.removals):
+        for natural_keys in BatchIterator(self._keys_to_remove):
             q = models.Q()
             for key in natural_keys:
                 q |= models.Q(filecontent__path=key.path, filecontent__digest=key.digest)
-            q_set = self.repository.content.filter(q)
+            q_set = self._importer.repository.content.filter(q)
             q_set = q_set.only('artifacts')
             for content in q_set:
                 yield content
-
-    def _is_deferred(self):
-        """
-        Get whether downloading is deferred.
-
-        Returns:
-            bool: True when deferred.
-        """
-        return self.download_policy != 'immediate'
-
-    def _build_changeset(self):
-        """
-        Build a change set.
-
-        Returns:
-            ChangeSet: The built `ChangeSet`.
-
-        """
-        inventory = self._fetch_inventory()
-        manifest = self._fetch_manifest()
-        delta = self._find_delta(manifest, inventory)
-        additions = SizedIterable(
-            self._build_additions(manifest, delta),
-            len(delta.additions))
-        removals = SizedIterable(
-            self._fetch_removals(delta),
-            len(delta.removals))
-        changeset = ChangeSet(self, additions=additions, removals=removals)
-        changeset.deferred = self._is_deferred()
-        return changeset
 
 
 class FilePublisher(Publisher):
