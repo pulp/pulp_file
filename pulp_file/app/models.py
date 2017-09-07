@@ -5,8 +5,17 @@ from logging import getLogger
 from urllib.parse import urlparse, urlunparse
 
 from django.db import models
+from django.core.files import File
 
-from pulpcore.plugin.models import Artifact, Content, Importer, Publisher
+from pulpcore.plugin.models import (
+    Artifact,
+    Content,
+    Importer,
+    Publisher,
+    PublishedArtifact,
+    PublishedMetadata,
+    RemoteArtifact
+)
 from pulpcore.plugin.changeset import (
     BatchIterator,
     ChangeSet,
@@ -15,7 +24,7 @@ from pulpcore.plugin.changeset import (
     SizedIterable,
 )
 
-from pulp_file.manifest import Manifest
+from pulp_file.manifest import Manifest, Entry
 
 
 log = getLogger(__name__)
@@ -210,7 +219,7 @@ class Synchronizer:
             for key in natural_keys:
                 q |= models.Q(filecontent__path=key.path, filecontent__digest=key.digest)
             q_set = self._importer.repository.content.filter(q)
-            q_set = q_set.only('artifacts')
+            q_set = q_set.only('id')
             for content in q_set:
                 yield content
 
@@ -223,8 +232,51 @@ class FilePublisher(Publisher):
 
     def publish(self):
         """
-        Perform a publish.
-
-        Publish behavior for the file plugin has not yet been implemented.
+        Publish the repository.
         """
-        raise NotImplementedError
+        manifest = Manifest('PULP_MANIFEST')
+        manifest.write(self._publish())
+        metadata = PublishedMetadata(
+            relative_path=os.path.basename(manifest.path),
+            publication=self.publication,
+            file=File(open(manifest.path, 'rb')))
+        metadata.save()
+
+    def _publish(self):
+        """
+        Create published artifacts and yield the manifest entry for each.
+
+        Yields:
+            Entry: The manifest entry.
+        """
+        for content in FileContent.objects.filter(repositories=self.repository):
+            for content_artifact in content.contentartifact_set.all():
+                artifact = self._find_artifact(content_artifact)
+                published_artifact = PublishedArtifact(
+                    relative_path=content_artifact.relative_path,
+                    publication=self.publication,
+                    content_artifact=content_artifact)
+                published_artifact.save()
+                entry = Entry(
+                    path=content_artifact.relative_path,
+                    digest=artifact.sha256,
+                    size=artifact.size)
+                yield entry
+
+    def _find_artifact(self, content_artifact):
+        """
+        Find the artifact referenced by a ContentArtifact.
+
+        Args:
+            content_artifact (pulpcore.plugin.models.ContentArtifact): A content artifact.
+
+        Returns:
+            Artifact: When the artifact exists.
+            RemoteArtifact: When the artifact does not exist.
+        """
+        artifact = content_artifact.artifact
+        if not artifact:
+            artifact = RemoteArtifact.objects.get(
+                content_artifact=content_artifact,
+                importer__repository=self.repository)
+        return artifact

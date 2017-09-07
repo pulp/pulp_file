@@ -43,6 +43,19 @@ class Entry:
                      digest=part[1],
                      size=int(part[2]))
 
+    def __str__(self):
+        """
+        Returns:
+            str: format: "<path>, <digest>, <size>"
+        """
+        fields = [
+            self.path,
+            self.digest,
+        ]
+        if isinstance(self.size, int):
+            fields.append(str(self.size))
+        return ', '.join(fields)
+
     def __init__(self, path, size, digest):
         """
         Args:
@@ -86,3 +99,16 @@ class Manifest:
                 if line.startswith('#'):
                     continue
                 yield Entry.parse(Line(number=n, content=line))
+
+    def write(self, entries):
+        """
+        Write the manifest.
+
+        Args:
+            entries (iterable): The entries to be written.
+        """
+        with open(self.path, 'w+') as fp:
+            for entry in entries:
+                line = str(entry)
+                fp.write(line)
+                fp.write('\n')
