@@ -24,8 +24,6 @@ from pulpcore.plugin.changeset import (
     SizedIterable,
 )
 
-from pulpcore.plugin.download.futures import Factory
-
 from pulp_file.manifest import Manifest, Entry
 
 
@@ -83,27 +81,6 @@ class FileImporter(Importer):
         """
         Synchronizer(self).run()
 
-    def get_downloader(self, url, destination, artifact=None):
-        """
-        Get an appropriate download object based on the URL that is fully configured using
-        the importer attributes.  When an artifact is specified, the download is tailored
-        for the artifact.
-
-        Args:
-
-            url (str): The download URL.
-            destination (str): The absolute path to where the downloaded file is to be stored.
-            artifact (pulpcore.app.models.Artifact): An optional artifact.
-
-        Returns:
-            pulpcore.plugin.download.futures.Download: The appropriate download object.
-
-        Notes:
-            This method supports plugins downloading metadata and the
-            `streamer` downloading artifacts.
-        """
-        return Factory(self).build(url, destination, artifact)
-
 
 class Synchronizer:
     """
@@ -160,7 +137,7 @@ class Synchronizer:
         Fetch (download) the manifest.
         """
         parsed_url = urlparse(self._importer.feed_url)
-        download = self._importer.get_downloader(
+        download = self._importer.get_futures_downloader(
             self._importer.feed_url, os.path.basename(parsed_url.path))
         download()
         self._manifest = Manifest(download.writer.path)
