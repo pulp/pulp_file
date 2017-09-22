@@ -25,7 +25,7 @@ Install ``pulpcore``
 --------------------
 
 Follow the `installation
-instructions <docs.pulpproject.org/en/3.0/nightly/installation/instructions.html>`__
+instructions <https://docs.pulpproject.org/en/3.0/nightly/installation/instructions.html>`__
 provided with pulpcore.
 
 Install ``pulp_file`` plugin
