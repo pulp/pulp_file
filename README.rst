@@ -65,7 +65,7 @@ Create a repository ``foo``
 Add an importer to repository ``foo``
 -------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/repositories/foo/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople .org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/api/v3/repositories/foo/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
