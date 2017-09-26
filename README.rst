@@ -28,11 +28,8 @@ Follow the `installation
 instructions <https://docs.pulpproject.org/en/3.0/nightly/installation/instructions.html>`__
 provided with pulpcore.
 
-Install ``pulp_file`` plugin
--------------------------------
-
-From source
-~~~~~~~~~~~
+Install ``pulp-file`` from source
+---------------------------------
 
 1)  sudo -u pulp -i
 2)  source ~/pulpvenv/bin/activate
@@ -45,8 +42,8 @@ From source
 9)  sudo systemctl restart pulp\_worker@1
 10) sudo systemctl restart pulp\_worker@2
 
-From PyPI
-~~~~~~~~~~~~~~~~~
+Install ``pulp-file`` From PyPI
+-------------------------------
 
 1) sudo -u pulp -i
 2) source ~/pulpvenv/bin/activate
