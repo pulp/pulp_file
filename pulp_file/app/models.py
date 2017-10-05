@@ -51,22 +51,11 @@ class FileContent(Content):
     path = models.TextField(blank=False, null=False)
     digest = models.TextField(blank=False, null=False)
 
-    natural_key_fields = (path, digest)
-
     class Meta:
         unique_together = (
             'path',
             'digest'
         )
-
-    def natural_key(self):
-        """
-        Get the model's natural key.
-
-        Returns:
-            Key: The natural key.
-        """
-        return Key(path=self.path, digest=self.digest)
 
 
 class FileImporter(Importer):
@@ -147,7 +136,7 @@ class Synchronizer:
         Fetch existing content in the repository.
         """
         q_set = FileContent.objects.filter(repositories=self._importer.repository)
-        q_set = q_set.only(*[f.name for f in FileContent.natural_key_fields])
+        q_set = q_set.only(*FileContent.natural_key_fields())
         for content in (c.cast() for c in q_set):
             key = Key(path=content.path, digest=content.digest)
             self._inventory_keys.add(key)
