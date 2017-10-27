@@ -91,7 +91,7 @@ Add a Distribution to Publisher ``bar``
 Sync repository ``foo`` using importer ``bar``
 ----------------------------------------------
 
-``http POST http://localhost:8000/api/v3/repositories/foo/importers/file-asyncio/bar/sync/``
+``http POST http://localhost:8000/api/v3/repositories/foo/importers/file/bar/sync/``
 
 Upload ``foo.tar.gz`` to Pulp
 -----------------------------
