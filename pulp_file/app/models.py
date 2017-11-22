@@ -64,11 +64,17 @@ class FileImporter(Importer):
     """
     TYPE = 'file'
 
-    def sync(self):
+    def sync(self, new_version, old_version):
         """
         Synchronizes the repository by calling the FileSync class.
+
+        Args:
+            new_version (pulpcore.plugin.models.RepositoryVersion): the new version to which content
+                should be added and removed.
+            old_version (pulpcore.plugin.models.RepositoryVersion): the latest pre-existing version
+                or None if one does not exist.
         """
-        Synchronizer(self).run()
+        Synchronizer(self, new_version, old_version).run()
 
 
 class Synchronizer:
@@ -79,12 +85,18 @@ class Synchronizer:
     for details on that workflow.
     """
 
-    def __init__(self, importer):
+    def __init__(self, importer, new_version, old_version):
         """
         Args:
             importer (Importer): the importer to use for the sync operation
+            new_version (pulpcore.plugin.models.RepositoryVersion): the new version to which content
+                should be added and removed.
+            old_version (pulpcore.plugin.models.RepositoryVersion): the latest pre-existing version
+                or None if one does not exist.
         """
         self._importer = importer
+        self._new_version = new_version
+        self._old_version = old_version
         self._manifest = None
         self._inventory_keys = set()
         self._keys_to_add = set()
@@ -118,7 +130,8 @@ class Synchronizer:
             len(self._keys_to_remove))
 
         # Hand that to a ChangeSet, and we're done!
-        changeset = ChangeSet(self._importer, additions=additions, removals=removals)
+        changeset = ChangeSet(self._importer, self._new_version, additions=additions,
+                              removals=removals)
         changeset.apply_and_drain()
 
     def _fetch_manifest(self):
@@ -135,11 +148,12 @@ class Synchronizer:
         """
         Fetch existing content in the repository.
         """
-        q_set = FileContent.objects.filter(repositories=self._importer.repository)
-        q_set = q_set.only(*FileContent.natural_key_fields())
-        for content in (c.cast() for c in q_set):
-            key = Key(path=content.path, digest=content.digest)
-            self._inventory_keys.add(key)
+        # it's not a problem if there is no pre-existing version.
+        if self._old_version is not None:
+            q_set = self._old_version.content()
+            for content in (c.cast() for c in q_set):
+                key = Key(path=content.path, digest=content.digest)
+                self._inventory_keys.add(key)
 
     def _find_delta(self, mirror=True):
         """
@@ -207,7 +221,7 @@ class Synchronizer:
             q = models.Q()
             for key in natural_keys:
                 q |= models.Q(filecontent__path=key.path, filecontent__digest=key.digest)
-            q_set = self._importer.repository.content.filter(q)
+            q_set = self._old_version.content().filter(q)
             q_set = q_set.only('id')
             for content in q_set:
                 yield content
@@ -238,7 +252,7 @@ class FilePublisher(Publisher):
         Yields:
             Entry: The manifest entry.
         """
-        for content in FileContent.objects.filter(repositories=self.repository):
+        for content in self.publication.version.content():
             for content_artifact in content.contentartifact_set.all():
                 artifact = self._find_artifact(content_artifact)
                 published_artifact = PublishedArtifact(
