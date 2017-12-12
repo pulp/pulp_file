@@ -39,8 +39,9 @@ Install ``pulp-file`` from source
 6)  pulp-manager makemigrations pulp\_file
 7)  pulp-manager migrate pulp\_file
 8)  django-admin runserver
-9)  sudo systemctl restart pulp\_worker@1
-10) sudo systemctl restart pulp\_worker@2
+9)  sudo systemctl restart pulp\_resource\_manager
+10) sudo systemctl restart pulp\_worker@1
+11) sudo systemctl restart pulp\_worker@2
 
 Install ``pulp-file`` From PyPI
 -------------------------------
@@ -51,8 +52,9 @@ Install ``pulp-file`` From PyPI
 4) pulp-manager makemigrations pulp\_file
 5) pulp-manager migrate pulp\_file
 6) django-admin runserver
-7) sudo systemctl restart pulp\_worker@1
-8) sudo systemctl restart pulp\_worker@2
+7) sudo systemctl restart pulp\_resource\_manager
+8) sudo systemctl restart pulp\_worker@1
+9) sudo systemctl restart pulp\_worker@2
 
 Create a repository ``foo``
 ---------------------------
