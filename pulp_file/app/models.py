@@ -252,7 +252,7 @@ class FilePublisher(Publisher):
         Yields:
             Entry: The manifest entry.
         """
-        for content in self.publication.version.content():
+        for content in self.publication.repo_version.content():
             for content_artifact in content.contentartifact_set.all():
                 artifact = self._find_artifact(content_artifact)
                 published_artifact = PublishedArtifact(
