@@ -21,6 +21,13 @@ If you configured the ``admin`` user with a different password, adjust the confi
 accordingly. If you prefer to specify the username and password with each request, please see
 ``httpie`` documentation on how to do that.
 
+This documentation makes use of the `jq library <https://stedolan.github.io/jq/>`_
+to parse the json received from requests, in order to get the unique urls generated
+when objects are created. To follow this documentation as-is please install the jq
+library with:
+
+``$ sudo dnf install jq``
+
 Install ``pulpcore``
 --------------------
 
@@ -61,39 +68,33 @@ Create a repository ``foo``
 
 ``$ http POST http://localhost:8000/api/v3/repositories/ name=foo``
 
+.. code:: json
+
+    {
+        "_href": "http://localhost:8000/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
+        ...
+    }
+
+``$ export REPO_HREF=$(http :8000/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+
 Add an importer to repository ``foo``
 -------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/repositories/foo/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST' repository=$REPO_HREF``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/repositories/foo/importers/file/bar/",
+        "_href": "http://localhost:8000/api/v3/importers/file/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
         ...
     }
 
-Add a ``file`` Publisher to repository ``foo``
---------------------------------------------------
-
-``$ http POST http://localhost:8000/api/v3/repositories/foo/publishers/file/ name=bar``
-
-.. code:: json
-
-    {
-        "_href": "http://localhost:8000/api/v3/repositories/foo/publishers/file/bar/",
-        ...
-    }
-
-Add a Distribution to Publisher ``bar``
----------------------------------------
-
-``$ http POST http://localhost:8000/api/v3/repositories/foo/publishers/file/bar/distributions/ name='baz' base_path='foo' auto_updated=true http=true https=true``
+``$ export IMPORTER_HREF=$(http :8000/api/v3/importers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using importer ``bar``
 ----------------------------------------------
 
-``http POST http://localhost:8000/api/v3/repositories/foo/importers/file/bar/sync/``
+``$ http POST $IMPORTER_HREF'sync/'``
 
 Upload ``foo.tar.gz`` to Pulp
 -----------------------------
@@ -137,17 +138,33 @@ Create a file with the json bellow and save it as content.json.
         "type": "file"
     }
 
+``$ export CONTENT_HREF=$(http :8000/api/v3/content/file/ | jq -r '.results[] | select(.path == "foo.tar.gz") | ._href')``
+
+
 Add content to repository ``foo``
 ---------------------------------
 
-``$ http POST http://localhost:8000/api/v3/repositorycontents/ repository='http://localhost:8000/api/v3/repositories/foo/' content='http://localhost:8000/api/v3/content/file/a9578a5f-c59f-4920-9497-8d1699c112ff/'``
+Currently there is no endpoint to manually associate content to a repository. This functionality
+will be added before pulp3 beta is released.
 
-Create a Publication using Publisher ``bar``
---------------------------------------------
+Add a ``file`` Publisher to repository ``foo``
+--------------------------------------------------
 
-Dispatch the Publish task
+``$ http POST http://localhost:8000/api/v3/publishers/file/ name=bar repository=$REPO_HREF``
 
-``$ http POST http://localhost:8000/api/v3/repositories/foo/publishers/file/bar/publish/``
+.. code:: json
+
+    {
+        "_href": "http://localhost:8000/api/v3/publishers/file/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
+        ...
+    }
+
+``$ export PUBLISHER_HREF=$(http :8000/api/v3/publishers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+
+
+Create a Publication for Publisher ``bar``
+------------------------------------------
+``$ http POST http://localhost:8000/api/v3/publications/ publisher=$PUBLISHER_HREF``
 
 .. code:: json
 
@@ -157,6 +174,23 @@ Dispatch the Publish task
             "task_id": "fd4cbecd-6c6a-4197-9cbe-4e45b0516309"
         }
     ]
+
+``$ export PUBLICATION_HREF=$(http :8000/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
+
+Add a Distribution to Publisher ``bar``
+---------------------------------------
+
+``$ http POST http://localhost:8000/api/v3/distributions/ name='baz' base_path='foo' auto_updated=true http=true https=true publisher=$PUBLISHER_HREF publication=$PUBLICATION_HREF``
+
+
+.. code:: json
+
+    {
+        "_href": "http://localhost:8000/api/v3/distributions/9b29f1b2-6726-40a2-988a-273d3f009a41/",
+       ...
+    }
+
+
 
 Check status of a task
 ----------------------
