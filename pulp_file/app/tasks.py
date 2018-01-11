@@ -69,6 +69,7 @@ def sync(importer_pk):
             Synchronizer(importer, new_version, base_version).run()
         except Exception:
             new_version.delete()
+            created.delete()
             raise
 
 
