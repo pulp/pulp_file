@@ -72,6 +72,10 @@ def sync(importer_pk):
             created.delete()
             raise
 
+        # bump the repository's last_version
+        new_version.repository.last_version = new_version.number
+        new_version.repository.save()
+
 
 class Synchronizer:
     """
