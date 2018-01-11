@@ -6,6 +6,8 @@ import logging
 import os
 
 from celery import shared_task
+from django.db import transaction
+from django.db.models import Q
 from pulpcore.plugin import models
 from pulpcore.plugin.tasks import working_dir_context, UserFacingTask
 
@@ -46,8 +48,11 @@ def sync(importer_pk):
     if not importer.feed_url:
         raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
-    new_version = models.RepositoryVersion(repository=importer.repository)
-    new_version.save()
+    with transaction.atomic():
+        new_version = models.RepositoryVersion(repository=importer.repository)
+        new_version.save()
+        created = models.CreatedResource(content_object=new_version)
+        created.save()
 
     base_version = None
     with suppress(models.RepositoryVersion.DoesNotExist):
@@ -65,10 +70,6 @@ def sync(importer_pk):
         except Exception:
             new_version.delete()
             raise
-
-    if new_version.added().count() == 0 and new_version.removed().count() == 0:
-        log.debug('no changes; deleting repository version')
-        new_version.delete()
 
 
 class Synchronizer:
@@ -212,9 +213,9 @@ class Synchronizer:
             generator: A generator of FileContent instances to remove from the repository
         """
         for natural_keys in BatchIterator(self._keys_to_remove):
-            q = models.Q()
+            q = Q()
             for key in natural_keys:
-                q |= models.Q(filecontent__path=key.path, filecontent__digest=key.digest)
+                q |= Q(filecontent__path=key.path, filecontent__digest=key.digest)
             q_set = self._old_version.content().filter(q)
             q_set = q_set.only('id')
             for content in q_set:
