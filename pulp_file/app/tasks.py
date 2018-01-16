@@ -32,10 +32,7 @@ Key = namedtuple('Key', ('path', 'digest'))
 @shared_task(base=UserFacingTask)
 def sync(importer_pk):
     """
-    Call sync on the importer defined by a plugin.
-
-    Check that the importer has a feed_url, which is necessary to sync. A working directory
-    is prepared, the plugin's sync is called, and then working directory is removed.
+    Validate the importer and create/update a RepositoryVersion.
 
     Args:
         importer_pk (str): The importer PK.
@@ -48,15 +45,20 @@ def sync(importer_pk):
     if not importer.feed_url:
         raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
+    base_version = None
+    with suppress(models.RepositoryVersion.DoesNotExist):
+        base_version = importer.repository.versions.exclude(complete=False).latest()
+
     with transaction.atomic():
         new_version = models.RepositoryVersion(repository=importer.repository)
         new_version.save()
-        created = models.CreatedResource(content_object=new_version)
-        created.save()
-
-    base_version = None
-    with suppress(models.RepositoryVersion.DoesNotExist):
-        base_version = importer.repository.versions.latest()
+        # bump the repository's last_version
+        if importer.repository.last_version < new_version.number:
+            importer.repository.last_version = new_version.number
+            importer.repository.save()
+        created_resource = models.CreatedResource(content_object=new_version)
+        created_resource.save()
+    synchronizer = Synchronizer(importer, new_version, base_version)
 
     with working_dir_context():
         log.info(
@@ -66,15 +68,15 @@ def sync(importer_pk):
                 'importer': importer.name
             })
         try:
-            Synchronizer(importer, new_version, base_version).run()
-        except Exception:
-            new_version.delete()
-            created.delete()
+            synchronizer.run()
+            with transaction.atomic():
+                new_version.complete = True
+                new_version.save()
+        except Exception as e:
+            with transaction.atomic():
+                new_version.delete()
+                created_resource.delete()
             raise
-
-        # bump the repository's last_version
-        new_version.repository.last_version = new_version.number
-        new_version.repository.save()
 
 
 class Synchronizer:
