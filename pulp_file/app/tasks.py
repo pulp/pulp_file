@@ -32,7 +32,7 @@ Key = namedtuple('Key', ('path', 'digest'))
 @shared_task(base=UserFacingTask)
 def sync(importer_pk):
     """
-    Validate the importer and create/update a RepositoryVersion.
+    Validate the importer, create and finalize RepositoryVersion.
 
     Args:
         importer_pk (str): The importer PK.
@@ -51,15 +51,14 @@ def sync(importer_pk):
 
     with transaction.atomic():
         new_version = models.RepositoryVersion(repository=importer.repository)
+        new_version.number = importer.repository.last_version + 1
+        importer.repository.last_version = new_version.number
         new_version.save()
-        # bump the repository's last_version
-        if importer.repository.last_version < new_version.number:
-            importer.repository.last_version = new_version.number
-            importer.repository.save()
+        importer.repository.save()
         created_resource = models.CreatedResource(content_object=new_version)
         created_resource.save()
-    synchronizer = Synchronizer(importer, new_version, base_version)
 
+    synchronizer = Synchronizer(importer, new_version, base_version)
     with working_dir_context():
         log.info(
             _('Starting sync: repository=%(repository)s importer=%(importer)s'),
