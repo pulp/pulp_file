@@ -139,11 +139,9 @@ class Synchronizer:
         """
         Fetch (download) the manifest.
         """
-        parsed_url = urlparse(self._importer.feed_url)
-        download = self._importer.get_futures_downloader(
-            self._importer.feed_url, os.path.basename(parsed_url.path))
-        download()
-        self._manifest = Manifest(download.writer.path)
+        downloader = self._importer.get_downloader(self._importer.feed_url)
+        downloader.fetch()
+        self._manifest = Manifest(downloader.path)
 
     def _fetch_inventory(self):
         """
