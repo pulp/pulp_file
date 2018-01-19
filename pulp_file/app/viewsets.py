@@ -1,8 +1,9 @@
 from gettext import gettext as _
 
 from django_filters.rest_framework import filterset
-from pulpcore.plugin import viewsets
-from rest_framework import decorators
+from pulpcore.plugin import viewsets, models as pulpcore_models
+from rest_framework import decorators, serializers as drf_serializers
+from rest_framework.exceptions import ValidationError
 
 from . import models, serializers, tasks
 
@@ -43,3 +44,43 @@ class FilePublisherViewSet(viewsets.PublisherViewSet):
     endpoint_name = 'file'
     queryset = models.FilePublisher.objects.all()
     serializer_class = serializers.FilePublisherSerializer
+
+    @decorators.detail_route(methods=('post',))
+    def publish(self, request, pk):
+        request.data
+        publisher_pk = str(self.get_object().pk)
+        repository_pk = None
+        repository_version_pk = None
+        if 'repository' in request.data:
+            repository_url = request.data['repository']
+            repository_field = drf_serializers.HyperlinkedRelatedField(
+                view_name='repositories-detail',
+                queryset=pulpcore_models.Repository.objects.all(),
+                source='*', initial=repository_url)
+            try:
+                repository_field.run_validation(data=repository_url)
+                repository_pk = str(repository_field.queryset[0].pk)
+            except ValidationError as e:
+                # Append the URL of missing Repository to the error message
+                e.detail[0] = "%s %s" % (e.detail[0], repository_url)
+                raise e
+        if 'repository_version' in request.data:
+            repository_version_url = request.data['repository_version']
+            repository_version_field = drf_serializers.HyperlinkedRelatedField(
+                view_name='repository-version-detail',
+                queryset=pulpcore_models.Repository.objects.all(),
+                source='*', initial=repository_version_url)
+            try:
+                repository_version_field.run_validation(data=repository_version_url)
+                repository_version_pk = str(repository_field.queryset[0].pk)
+            except ValidationError as e:
+                # Append the URL of missing Repository to the error message
+                e.detail[0] = "%s %s" % (e.detail[0], repository_version_url)
+                raise e
+        async_result = tasks.publish.apply_async_with_reservation(
+            viewsets.tags.RESOURCE_REPOSITORY_TYPE, repository_pk,
+            kwargs={'publisher_pk': publisher_pk,
+                    'repository_pk': repository_pk,
+                    'repository_version_pk': repository_version_pk}
+        )
+        return viewsets.OperationPostponedResponse([async_result], request)

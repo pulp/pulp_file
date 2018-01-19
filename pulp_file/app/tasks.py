@@ -1,11 +1,13 @@
 from collections import namedtuple
 from contextlib import suppress
+from datetime import datetime
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 import logging
 import os
 
 from celery import shared_task
+from django.core.files import File
 from django.db import transaction
 from django.db.models import Q
 from pulpcore.plugin import models
@@ -16,17 +18,117 @@ from pulpcore.plugin.changeset import (
     ChangeSet,
     PendingArtifact,
     PendingContent,
+    PublishedMetadata,
+    PublishedArtifact,
+    RemoteArtifact,
     SizedIterable,
 )
 
 from pulp_file.app import models as file_models
-from pulp_file.manifest import Manifest
+from pulp_file.manifest import Manifest, Entry
 
 log = logging.getLogger(__name__)
 
 
 # Natural key.
 Key = namedtuple('Key', ('path', 'digest'))
+
+
+def _publish(publisher):
+    """
+    Create published artifacts and yield the manifest entry for each.
+
+    Yields:
+        Entry: The manifest entry.
+    """
+    for content in publisher.publication.repository_version.content():
+        for content_artifact in content.contentartifact_set.all():
+            artifact = _find_artifact(content_artifact)
+            published_artifact = PublishedArtifact(
+                relative_path=content_artifact.relative_path,
+                publication=publisher.publication,
+                content_artifact=content_artifact)
+            published_artifact.save()
+            entry = Entry(
+                path=content_artifact.relative_path,
+                digest=artifact.sha256,
+                size=artifact.size)
+            yield entry
+
+
+def _find_artifact(repository, content_artifact):
+    """
+    Find the artifact referenced by a ContentArtifact.
+
+    Args:
+        content_artifact (pulpcore.plugin.models.ContentArtifact): A content artifact.
+
+    Returns:
+        Artifact: When the artifact exists.
+        RemoteArtifact: When the artifact does not exist.
+    """
+    artifact = content_artifact.artifact
+    if not artifact:
+        artifact = RemoteArtifact.objects.get(
+            content_artifact=content_artifact,
+            importer__repository=repository)
+    return artifact
+
+
+@shared_task(base=UserFacingTask)
+def publish(publisher_pk, repository_pk, repository_version_pk):
+    """
+    Call publish on the publisher defined by a plugin.
+
+    A working directory is prepared, the plugin's publish is called, and then
+    working directory is removed.
+
+    Args:
+        publisher_pk (str): The publisher PK.
+        repository_pk (str): The repository PK.
+        repository_version_pk (str): The repository version PK.
+    """
+    publisher = file_models.FilePublisher.objects.get(pk=publisher_pk)
+    if repository_version_pk:
+        repository_version = models.RepositoryVersion.objects.get(pk=repository_version_pk)
+    else:
+        repository_version = models.Repository.objects.get(pk=repository_pk).versions.exclude(
+            complete=False).latest()
+
+    log.info(
+        _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
+        {
+            'repository': repository_version.repository.name,
+            'publisher': publisher.name,
+            'version': repository_version.number,
+        })
+
+    with transaction.atomic():
+        publication = models.Publication(publisher=publisher,
+                                         repository_version=repository_version)
+        publisher.publication = publication
+        publication.save()
+        created = models.CreatedResource(content_object=publication)
+        created.save()
+        with working_dir_context() as working_dir:
+            publisher.working_dir = working_dir
+            manifest = Manifest('PULP_MANIFEST')
+            manifest.write(_publish(publisher))
+            metadata = PublishedMetadata(
+                relative_path=os.path.basename(manifest.path),
+                publication=publisher.publication,
+                file=File(publisher(manifest.path, 'rb')))
+            metadata.save()
+            publisher.last_published = datetime.utcnow()
+            publisher.save()
+            distributions = models.Distribution.objects.filter(publisher=publisher)
+            distributions.update(publication=publication)
+
+    log.info(
+        _('Publication: %(publication)s created'),
+        {
+            'publication': publication.pk
+        })
 
 
 @shared_task(base=UserFacingTask)
