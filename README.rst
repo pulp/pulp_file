@@ -162,9 +162,9 @@ Add a ``file`` Publisher to repository ``foo``
 ``$ export PUBLISHER_HREF=$(http :8000/api/v3/publishers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 
-Create a Publication for Publisher ``bar``
-------------------------------------------
-``$ http POST http://localhost:8000/api/v3/publications/ publisher=$PUBLISHER_HREF``
+Use the ``bar`` Publisher to create a Publication
+-------------------------------------------------
+``$ http POST $PUBLISHER_HREF'publish/'``
 
 .. code:: json
 
