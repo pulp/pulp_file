@@ -1,8 +1,9 @@
 from gettext import gettext as _
 
 from django_filters.rest_framework import filterset
-from pulpcore.plugin import viewsets
-from rest_framework import decorators
+from pulpcore.plugin import viewsets, models as pulpcore_models
+from rest_framework import decorators, serializers as drf_serializers
+from rest_framework.exceptions import ValidationError
 
 from . import models, serializers, tasks
 
@@ -43,3 +44,14 @@ class FilePublisherViewSet(viewsets.PublisherViewSet):
     endpoint_name = 'file'
     queryset = models.FilePublisher.objects.all()
     serializer_class = serializers.FilePublisherSerializer
+
+    @decorators.detail_route(methods=('post',))
+    def publish(self, request, pk):
+        publisher = self.get_object()
+        repository_pk = str(publisher.repository.pk)
+        async_result = tasks.publish.apply_async_with_reservation(
+            viewsets.tags.RESOURCE_REPOSITORY_TYPE, repository_pk,
+            kwargs={'publisher_pk': str(publisher.pk),
+                    'repository_pk': repository_pk}
+        )
+        return viewsets.OperationPostponedResponse([async_result], request)

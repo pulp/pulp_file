@@ -1,16 +1,16 @@
 from collections import namedtuple
 from contextlib import suppress
+from datetime import datetime
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 import logging
 import os
 
 from celery import shared_task
+from django.core.files import File
 from django.db import transaction
 from django.db.models import Q
 from pulpcore.plugin import models
-from pulpcore.plugin.tasks import working_dir_context, UserFacingTask
-
 from pulpcore.plugin.changeset import (
     BatchIterator,
     ChangeSet,
@@ -18,15 +18,111 @@ from pulpcore.plugin.changeset import (
     PendingContent,
     SizedIterable,
 )
+from pulpcore.plugin.tasks import working_dir_context, UserFacingTask
 
 from pulp_file.app import models as file_models
-from pulp_file.manifest import Manifest
+from pulp_file.manifest import Entry, Manifest
+
 
 log = logging.getLogger(__name__)
 
 
 # Natural key.
 Key = namedtuple('Key', ('path', 'digest'))
+
+
+def _publish(publication):
+    """
+    Create published artifacts and yield a Manifest Entry for each.
+
+    Args:
+        publication (pulpcore.plugin.models.Publication): The Publication being created.
+
+    Yields:
+        Entry: The manifest entry.
+    """
+    # Each ContentUnit in the RepositoryVersion
+    for content in publication.repository_version.content():
+        # Each Artifact that is a part of the ContentUnit
+        for content_artifact in content.contentartifact_set.all():
+            artifact = _find_artifact(content_artifact, publication.repository_version.repository)
+            published_artifact = models.PublishedArtifact(
+                relative_path=content_artifact.relative_path,
+                publication=publication,
+                content_artifact=content_artifact)
+            published_artifact.save()
+            entry = Entry(
+                path=content_artifact.relative_path,
+                digest=artifact.sha256,
+                size=artifact.size)
+            yield entry
+
+
+def _find_artifact(content_artifact, repository):
+    """
+    Return the Artifact (or RemoteArtifact) referenced by a ContentArtifact.
+
+    Args:
+        content_artifact (pulpcore.plugin.models.ContentArtifact): A content artifact.
+        repository (pulpcore.plugin.models.Repository): Used to retrieve Artifacts that have not
+            been downloaded yet.
+
+    Returns:
+        Artifact: When the artifact exists.
+        RemoteArtifact: When the artifact does not exist.
+    """
+    artifact = content_artifact.artifact
+    if not artifact:
+        artifact = models.RemoteArtifact.objects.get(
+            content_artifact=content_artifact,
+            importer__repository=repository)
+    return artifact
+
+
+@shared_task(base=UserFacingTask)
+def publish(publisher_pk, repository_pk):
+    """
+    Use provided publisher to create a Publication based on a RepositoryVersion.
+
+    Args:
+        publisher_pk (str): Use the publish settings provided by this publisher.
+        repository_pk (str): Create a Publication from the latest version of this Repository.
+    """
+    publisher = file_models.FilePublisher.objects.get(pk=publisher_pk)
+    repository = models.Repository.objects.get(pk=repository_pk)
+    repository_version = repository.versions.exclude(complete=False).latest()
+
+    log.info(
+        _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
+        {
+            'repository': repository.name,
+            'publisher': publisher.name,
+            'version': repository_version.number,
+        })
+
+    with transaction.atomic():
+        publication = models.Publication(publisher=publisher, repository_version=repository_version)
+        publication.save()
+        created_resource = models.CreatedResource(content_object=publication)
+        created_resource.save()
+        with working_dir_context():
+            try:
+                manifest = Manifest('PULP_MANIFEST')
+                manifest.write(_publish(publication))
+                metadata = models.PublishedMetadata(
+                    relative_path=os.path.basename(manifest.path),
+                    publication=publication,
+                    file=File(open(manifest.path, 'rb')))
+                metadata.save()
+            except Exception as e:
+                publication.delete()
+                created_resource.delete()
+
+    log.info(
+        _('Publication: %(publication)s created'),
+        {
+            'publication': publication.pk
+        })
 
 
 @shared_task(base=UserFacingTask)
