@@ -1,19 +1,8 @@
-import os
-
 from logging import getLogger
 
 from django.db import models
-from django.core.files import File
-from pulpcore.plugin.models import (
-    Content,
-    Importer,
-    Publisher,
-    PublishedArtifact,
-    PublishedMetadata,
-    RemoteArtifact
-)
 
-from pulp_file.manifest import Manifest, Entry
+from pulpcore.plugin.models import Content, Importer, Publisher
 
 
 log = getLogger(__name__)
