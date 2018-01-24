@@ -1,6 +1,5 @@
 from collections import namedtuple
 from contextlib import suppress
-from datetime import datetime
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 import logging
@@ -18,7 +17,7 @@ from pulpcore.plugin.changeset import (
     PendingContent,
     SizedIterable,
 )
-from pulpcore.plugin.tasks import working_dir_context, UserFacingTask
+from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
 
 from pulp_file.app import models as file_models
 from pulp_file.manifest import Entry, Manifest
@@ -105,7 +104,7 @@ def publish(publisher_pk, repository_pk):
         publication.save()
         created_resource = models.CreatedResource(content_object=publication)
         created_resource.save()
-        with working_dir_context():
+        with WorkingDirectory.create():
             try:
                 manifest = Manifest('PULP_MANIFEST')
                 manifest.write(_publish(publication))
@@ -155,7 +154,7 @@ def sync(importer_pk):
         created_resource.save()
 
     synchronizer = Synchronizer(importer, new_version, base_version)
-    with working_dir_context():
+    with WorkingDirectory.create():
         log.info(
             _('Starting sync: repository=%(repository)s importer=%(importer)s'),
             {
