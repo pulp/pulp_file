@@ -104,7 +104,7 @@ def publish(publisher_pk, repository_pk):
         publication.save()
         created_resource = models.CreatedResource(content_object=publication)
         created_resource.save()
-        with WorkingDirectory.create():
+        with WorkingDirectory():
             try:
                 manifest = Manifest('PULP_MANIFEST')
                 manifest.write(_publish(publication))
@@ -154,7 +154,7 @@ def sync(importer_pk):
         created_resource.save()
 
     synchronizer = Synchronizer(importer, new_version, base_version)
-    with WorkingDirectory.create():
+    with WorkingDirectory():
         log.info(
             _('Starting sync: repository=%(repository)s importer=%(importer)s'),
             {
