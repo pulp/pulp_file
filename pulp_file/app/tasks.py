@@ -18,6 +18,7 @@ from pulpcore.plugin.changeset import (
     SizedIterable,
 )
 from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
+from pulpcore.plugin.repository import RepositoryVersion
 
 from pulp_file.app import models as file_models
 from pulp_file.manifest import Entry, Manifest
@@ -41,7 +42,7 @@ def _publish(publication):
         Entry: The manifest entry.
     """
     # Each ContentUnit in the RepositoryVersion
-    for content in publication.repository_version.content():
+    for content in publication.repository_version.content:
         # Each Artifact that is a part of the ContentUnit
         for content_artifact in content.contentartifact_set.all():
             artifact = _find_artifact(content_artifact, publication.repository_version.repository)
@@ -89,7 +90,7 @@ def publish(publisher_pk, repository_pk):
     """
     publisher = file_models.FilePublisher.objects.get(pk=publisher_pk)
     repository = models.Repository.objects.get(pk=repository_pk)
-    repository_version = repository.versions.exclude(complete=False).latest()
+    repository_version = RepositoryVersion.latest(repository)
 
     log.info(
         _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
@@ -100,7 +101,7 @@ def publish(publisher_pk, repository_pk):
         })
 
     with transaction.atomic():
-        publication = models.Publication(publisher=publisher, repository_version=repository_version)
+        publication = models.Publication(publisher=publisher, repository_version=repository_version._model)
         publication.save()
         created_resource = models.CreatedResource(content_object=publication)
         created_resource.save()
@@ -116,6 +117,7 @@ def publish(publisher_pk, repository_pk):
             except Exception as e:
                 publication.delete()
                 created_resource.delete()
+                raise
 
     log.info(
         _('Publication: %(publication)s created'),
@@ -140,37 +142,19 @@ def sync(importer_pk):
     if not importer.feed_url:
         raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
-    base_version = None
-    with suppress(models.RepositoryVersion.DoesNotExist):
-        base_version = importer.repository.versions.exclude(complete=False).latest()
+    base_version = RepositoryVersion.latest(importer.repository)
 
-    with transaction.atomic():
-        new_version = models.RepositoryVersion(repository=importer.repository)
-        new_version.number = importer.repository.last_version + 1
-        importer.repository.last_version = new_version.number
-        new_version.save()
-        importer.repository.save()
-        created_resource = models.CreatedResource(content_object=new_version)
-        created_resource.save()
+    with RepositoryVersion.create(importer.repository) as new_version:
 
-    synchronizer = Synchronizer(importer, new_version, base_version)
-    with WorkingDirectory():
-        log.info(
-            _('Starting sync: repository=%(repository)s importer=%(importer)s'),
-            {
-                'repository': importer.repository.name,
-                'importer': importer.name
-            })
-        try:
+        synchronizer = Synchronizer(importer, new_version, base_version)
+        with WorkingDirectory():
+            log.info(
+                _('Starting sync: repository=%(repository)s importer=%(importer)s'),
+                {
+                    'repository': importer.repository.name,
+                    'importer': importer.name
+                })
             synchronizer.run()
-            with transaction.atomic():
-                new_version.complete = True
-                new_version.save()
-        except Exception as e:
-            with transaction.atomic():
-                new_version.delete()
-                created_resource.delete()
-            raise
 
 
 class Synchronizer:
@@ -244,7 +228,7 @@ class Synchronizer:
         """
         # it's not a problem if there is no pre-existing version.
         if self._old_version is not None:
-            q_set = self._old_version.content()
+            q_set = self._old_version.content
             for content in (c.cast() for c in q_set):
                 key = Key(path=content.path, digest=content.digest)
                 self._inventory_keys.add(key)
@@ -315,7 +299,7 @@ class Synchronizer:
             q = Q()
             for key in natural_keys:
                 q |= Q(filecontent__path=key.path, filecontent__digest=key.digest)
-            q_set = self._old_version.content().filter(q)
+            q_set = self._old_version.content.filter(q)
             q_set = q_set.only('id')
             for content in q_set:
                 yield content
