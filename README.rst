@@ -197,7 +197,7 @@ Check status of a task
 
 ``$ http GET http://localhost:8000/api/v3/tasks/82e64412-47f8-4dd4-aa55-9de89a6c549b/``
 
-Download ``foo.tar.gz`` from Pulp
+Download ``test.iso`` from Pulp
 ---------------------------------
 
-``$ http GET http://localhost:8000/content/foo/foo.tar.gz``
+``$ http GET http://localhost:8000/content/foo/test.iso``
