@@ -1,5 +1,4 @@
 from collections import namedtuple
-from contextlib import suppress
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 import logging
@@ -18,7 +17,6 @@ from pulpcore.plugin.changeset import (
     SizedIterable,
 )
 from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
-from pulpcore.plugin.repository import RepositoryVersion
 
 from pulp_file.app import models as file_models
 from pulp_file.manifest import Entry, Manifest
@@ -90,7 +88,7 @@ def publish(publisher_pk, repository_pk):
     """
     publisher = file_models.FilePublisher.objects.get(pk=publisher_pk)
     repository = models.Repository.objects.get(pk=repository_pk)
-    repository_version = RepositoryVersion.latest(repository)
+    repository_version = models.RepositoryVersion.latest(repository)
 
     log.info(
         _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
@@ -101,7 +99,7 @@ def publish(publisher_pk, repository_pk):
         })
 
     with transaction.atomic():
-        publication = models.Publication(publisher=publisher, repository_version=repository_version._model)
+        publication = models.Publication(publisher=publisher, repository_version=repository_version)
         publication.save()
         created_resource = models.CreatedResource(content_object=publication)
         created_resource.save()
@@ -142,9 +140,9 @@ def sync(importer_pk):
     if not importer.feed_url:
         raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
-    base_version = RepositoryVersion.latest(importer.repository)
+    base_version = models.RepositoryVersion.latest(importer.repository)
 
-    with RepositoryVersion.create(importer.repository) as new_version:
+    with models.RepositoryVersion.create(importer.repository) as new_version:
 
         synchronizer = Synchronizer(importer, new_version, base_version)
         with WorkingDirectory():
