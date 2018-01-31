@@ -1,24 +1,33 @@
+import logging
+import os
+
 from collections import namedtuple
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
-import logging
-import os
 
 from celery import shared_task
 from django.core.files import File
 from django.db import transaction
 from django.db.models import Q
-from pulpcore.plugin import models
+
+from pulpcore.plugin.models import (
+    Artifact,
+    CreatedResource,
+    RepositoryVersion,
+    Publication,
+    PublishedArtifact,
+    PublishedMetadata,
+    RemoteArtifact,
+    Repository)
 from pulpcore.plugin.changeset import (
     BatchIterator,
     ChangeSet,
     PendingArtifact,
     PendingContent,
-    SizedIterable,
-)
+    SizedIterable)
 from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
 
-from pulp_file.app import models as file_models
+from pulp_file.app.models import FileContent, FileImporter, FilePublisher
 from pulp_file.manifest import Entry, Manifest
 
 
@@ -39,12 +48,10 @@ def _publish(publication):
     Yields:
         Entry: The manifest entry.
     """
-    # Each ContentUnit in the RepositoryVersion
     for content in publication.repository_version.content:
-        # Each Artifact that is a part of the ContentUnit
         for content_artifact in content.contentartifact_set.all():
             artifact = _find_artifact(content_artifact, publication.repository_version.repository)
-            published_artifact = models.PublishedArtifact(
+            published_artifact = PublishedArtifact(
                 relative_path=content_artifact.relative_path,
                 publication=publication,
                 content_artifact=content_artifact)
@@ -71,7 +78,7 @@ def _find_artifact(content_artifact, repository):
     """
     artifact = content_artifact.artifact
     if not artifact:
-        artifact = models.RemoteArtifact.objects.get(
+        artifact = RemoteArtifact.objects.get(
             content_artifact=content_artifact,
             importer__repository=repository)
     return artifact
@@ -86,9 +93,9 @@ def publish(publisher_pk, repository_pk):
         publisher_pk (str): Use the publish settings provided by this publisher.
         repository_pk (str): Create a Publication from the latest version of this Repository.
     """
-    publisher = file_models.FilePublisher.objects.get(pk=publisher_pk)
-    repository = models.Repository.objects.get(pk=repository_pk)
-    repository_version = models.RepositoryVersion.latest(repository)
+    publisher = FilePublisher.objects.get(pk=publisher_pk)
+    repository = Repository.objects.get(pk=repository_pk)
+    repository_version = RepositoryVersion.latest(repository)
 
     log.info(
         _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
@@ -99,15 +106,15 @@ def publish(publisher_pk, repository_pk):
         })
 
     with transaction.atomic():
-        publication = models.Publication(publisher=publisher, repository_version=repository_version)
+        publication = Publication(publisher=publisher, repository_version=repository_version)
         publication.save()
-        created_resource = models.CreatedResource(content_object=publication)
+        created_resource = CreatedResource(content_object=publication)
         created_resource.save()
         with WorkingDirectory():
             try:
                 manifest = Manifest('PULP_MANIFEST')
                 manifest.write(_publish(publication))
-                metadata = models.PublishedMetadata(
+                metadata = PublishedMetadata(
                     relative_path=os.path.basename(manifest.path),
                     publication=publication,
                     file=File(open(manifest.path, 'rb')))
@@ -135,14 +142,14 @@ def sync(importer_pk):
     Raises:
         ValueError: When feed_url is empty.
     """
-    importer = file_models.FileImporter.objects.get(pk=importer_pk)
+    importer = FileImporter.objects.get(pk=importer_pk)
 
     if not importer.feed_url:
         raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
-    base_version = models.RepositoryVersion.latest(importer.repository)
+    base_version = RepositoryVersion.latest(importer.repository)
 
-    with models.RepositoryVersion.create(importer.repository) as new_version:
+    with RepositoryVersion.create(importer.repository) as new_version:
 
         synchronizer = Synchronizer(importer, new_version, base_version)
         with WorkingDirectory():
@@ -163,18 +170,18 @@ class Synchronizer:
     for details on that workflow.
     """
 
-    def __init__(self, importer, new_version, old_version):
+    def __init__(self, importer, new_version, base_version):
         """
         Args:
             importer (Importer): the importer to use for the sync operation
             new_version (pulpcore.plugin.models.RepositoryVersion): the new version to which content
                 should be added and removed.
-            old_version (pulpcore.plugin.models.RepositoryVersion): the latest pre-existing version
+            base_version (pulpcore.plugin.models.RepositoryVersion): the latest version
                 or None if one does not exist.
         """
         self._importer = importer
         self._new_version = new_version
-        self._old_version = old_version
+        self._base_version = base_version
         self._manifest = None
         self._inventory_keys = set()
         self._keys_to_add = set()
@@ -225,8 +232,8 @@ class Synchronizer:
         Fetch existing content in the repository.
         """
         # it's not a problem if there is no pre-existing version.
-        if self._old_version is not None:
-            q_set = self._old_version.content
+        if self._base_version is not None:
+            q_set = self._base_version.content
             for content in (c.cast() for c in q_set):
                 key = Key(path=content.path, digest=content.digest)
                 self._inventory_keys.add(key)
@@ -275,8 +282,8 @@ class Synchronizer:
             # Instantiate the content and artifact based on the manifest entry.
             path = os.path.join(root_dir, entry.path)
             url = urlunparse(parsed_url._replace(path=path))
-            file = file_models.FileContent(path=entry.path, digest=entry.digest)
-            artifact = models.Artifact(size=entry.size, sha256=entry.digest)
+            file = FileContent(path=entry.path, digest=entry.digest)
+            artifact = Artifact(size=entry.size, sha256=entry.digest)
 
             # Now that we know what we want to add, hand it to "core" with the API objects.
             content = PendingContent(
@@ -297,7 +304,7 @@ class Synchronizer:
             q = Q()
             for key in natural_keys:
                 q |= Q(filecontent__path=key.path, filecontent__digest=key.digest)
-            q_set = self._old_version.content.filter(q)
+            q_set = self._base_version.content.filter(q)
             q_set = q_set.only('id')
             for content in q_set:
                 yield content
