@@ -6,7 +6,8 @@ from rest_framework.decorators import detail_route
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from pulpcore.plugin.models import Artifact, Repository
+from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
+
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
     ImporterViewSet,
@@ -83,17 +84,32 @@ class FilePublisherViewSet(PublisherViewSet):
 
     @detail_route(methods=('post',))
     def publish(self, request, pk):
-        try:
-            repository_uri = request.data['repository']
-        except KeyError:
-            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
         publisher = self.get_object()
-        repository = self.get_resource(repository_uri, Repository)
+        repository = None
+        repository_version = None
+        if 'repository' not in request.data and 'repository_version' not in request.data:
+            raise serializers.ValidationError("Either the 'repository' or 'repository_version' "
+                                              "need to be specified.")
+
+        if 'repository' in request.data and request.data['repository']:
+            repository = self.get_resource(request.data['repository'], Repository)
+
+        if 'repository_version' in request.data and request.data['repository_version']:
+            repository_version = self.get_resource(request.data['repository_version'],
+                                                   RepositoryVersion)
+
+        if repository and repository_version:
+            raise serializers.ValidationError("Either the 'repository' or 'repository_version' "
+                                              "can be specified - not both.")
+
+        if not repository_version:
+            repository_version = RepositoryVersion.latest(repository)
+
         result = tasks.publish.apply_async_with_reservation(
-            [repository, publisher],
+            [repository_version.repository, publisher],
             kwargs={
                 'publisher_pk': str(publisher.pk),
-                'repository_pk': repository.pk
+                'repository_version_pk': str(repository_version.pk)
             }
         )
         return OperationPostponedResponse([result], request)
