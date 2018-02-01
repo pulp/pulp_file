@@ -23,22 +23,21 @@ log = logging.getLogger(__name__)
 
 
 @shared_task(base=UserFacingTask)
-def publish(publisher_pk, repository_pk):
+def publish(publisher_pk, repository_version_pk):
     """
     Use provided publisher to create a Publication based on a RepositoryVersion.
 
     Args:
         publisher_pk (str): Use the publish settings provided by this publisher.
-        repository_pk (str): Create a Publication from the latest version of this Repository.
+        repository_version_pk (str): Create a publication from this repository version.
     """
     publisher = FilePublisher.objects.get(pk=publisher_pk)
-    repository = Repository.objects.get(pk=repository_pk)
-    repository_version = RepositoryVersion.latest(repository)
+    repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
     log.info(
         _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
         {
-            'repository': repository.name,
+            'repository': repository_version.repository.name,
             'version': repository_version.number,
             'publisher': publisher.name,
         })
