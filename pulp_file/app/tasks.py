@@ -7,12 +7,10 @@ from urllib.parse import urlparse, urlunparse
 
 from celery import shared_task
 from django.core.files import File
-from django.db import transaction
 from django.db.models import Q
 
 from pulpcore.plugin.models import (
     Artifact,
-    CreatedResource,
     RepositoryVersion,
     Publication,
     PublishedArtifact,
@@ -48,9 +46,16 @@ def _publish(publication):
     Yields:
         Entry: The manifest entry.
     """
+    def find_artifact():
+        _artifact = content_artifact.artifact
+        if not _artifact:
+            _artifact = RemoteArtifact.objects.get(
+                content_artifact=content_artifact,
+                importer__repository=publication.repository_version.repository)
+        return _artifact
     for content in publication.repository_version.content:
         for content_artifact in content.contentartifact_set.all():
-            artifact = _find_artifact(content_artifact, publication.repository_version.repository)
+            artifact = find_artifact()
             published_artifact = PublishedArtifact(
                 relative_path=content_artifact.relative_path,
                 publication=publication,
@@ -61,27 +66,6 @@ def _publish(publication):
                 digest=artifact.sha256,
                 size=artifact.size)
             yield entry
-
-
-def _find_artifact(content_artifact, repository):
-    """
-    Return the Artifact (or RemoteArtifact) referenced by a ContentArtifact.
-
-    Args:
-        content_artifact (pulpcore.plugin.models.ContentArtifact): A content artifact.
-        repository (pulpcore.plugin.models.Repository): Used to retrieve Artifacts that have not
-            been downloaded yet.
-
-    Returns:
-        Artifact: When the artifact exists.
-        RemoteArtifact: When the artifact does not exist.
-    """
-    artifact = content_artifact.artifact
-    if not artifact:
-        artifact = RemoteArtifact.objects.get(
-            content_artifact=content_artifact,
-            importer__repository=repository)
-    return artifact
 
 
 @shared_task(base=UserFacingTask)
@@ -101,28 +85,19 @@ def publish(publisher_pk, repository_pk):
         _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
         {
             'repository': repository.name,
-            'publisher': publisher.name,
             'version': repository_version.number,
+            'publisher': publisher.name,
         })
 
-    with transaction.atomic():
-        publication = Publication(publisher=publisher, repository_version=repository_version)
-        publication.save()
-        created_resource = CreatedResource(content_object=publication)
-        created_resource.save()
-        with WorkingDirectory():
-            try:
-                manifest = Manifest('PULP_MANIFEST')
-                manifest.write(_publish(publication))
-                metadata = PublishedMetadata(
-                    relative_path=os.path.basename(manifest.path),
-                    publication=publication,
-                    file=File(open(manifest.path, 'rb')))
-                metadata.save()
-            except Exception as e:
-                publication.delete()
-                created_resource.delete()
-                raise
+    with WorkingDirectory():
+        with Publication.create(repository_version, publisher) as publication:
+            manifest = Manifest('PULP_MANIFEST')
+            manifest.write(_publish(publication))
+            metadata = PublishedMetadata(
+                relative_path=os.path.basename(manifest.path),
+                publication=publication,
+                file=File(open(manifest.path, 'rb')))
+            metadata.save()
 
     log.info(
         _('Publication: %(publication)s created'),
