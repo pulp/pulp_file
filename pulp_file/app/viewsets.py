@@ -29,13 +29,14 @@ class FileImporterViewSet(viewsets.ImporterViewSet):
     @decorators.detail_route(methods=('post',))
     def sync(self, request, pk):
         importer = self.get_object()
+        repository = self.get_resource(request.data['repository'], pulpcore_models.Repository)
         if not importer.feed_url:
             # TODO(asmacdo) make sure this raises a 400
             raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
         async_result = tasks.sync.apply_async_with_reservation(
-            viewsets.tags.RESOURCE_REPOSITORY_TYPE, str(importer.repository.pk),
-            kwargs={'importer_pk': importer.pk}
+            viewsets.tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
+            kwargs={'importer_pk': importer.pk, 'repository_pk': repository.pk}
         )
         return viewsets.OperationPostponedResponse([async_result], request)
 
@@ -48,10 +49,10 @@ class FilePublisherViewSet(viewsets.PublisherViewSet):
     @decorators.detail_route(methods=('post',))
     def publish(self, request, pk):
         publisher = self.get_object()
-        repository_pk = str(publisher.repository.pk)
+        repository = self.get_resource(request.data['repository'], pulpcore_models.Repository)
         async_result = tasks.publish.apply_async_with_reservation(
-            viewsets.tags.RESOURCE_REPOSITORY_TYPE, repository_pk,
+            viewsets.tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
             kwargs={'publisher_pk': str(publisher.pk),
-                    'repository_pk': repository_pk}
+                    'repository_pk': repository.pk}
         )
         return viewsets.OperationPostponedResponse([async_result], request)

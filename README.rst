@@ -94,7 +94,7 @@ Add an importer to repository ``foo``
 Sync repository ``foo`` using importer ``bar``
 ----------------------------------------------
 
-``$ http POST $IMPORTER_HREF'sync/'``
+``$ http POST $IMPORTER_HREF'sync/' repository=$REPO_HREF``
 
 Upload ``foo.tar.gz`` to Pulp
 -----------------------------
@@ -164,7 +164,7 @@ Add a ``file`` Publisher to repository ``foo``
 
 Use the ``bar`` Publisher to create a Publication
 -------------------------------------------------
-``$ http POST $PUBLISHER_HREF'publish/'``
+``$ http POST $PUBLISHER_HREF'publish/' repository=$REPO_HREF``
 
 .. code:: json
 
