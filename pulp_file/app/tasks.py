@@ -49,9 +49,7 @@ def _publish(publication):
     def find_artifact():
         _artifact = content_artifact.artifact
         if not _artifact:
-            _artifact = RemoteArtifact.objects.get(
-                content_artifact=content_artifact,
-                importer__repository=publication.repository_version.repository)
+            _artifact = RemoteArtifact.objects.filter(content_artifact=content_artifact).first()
         return _artifact
     for content in publication.repository_version.content:
         for content_artifact in content.contentartifact_set.all():
@@ -107,7 +105,7 @@ def publish(publisher_pk, repository_pk):
 
 
 @shared_task(base=UserFacingTask)
-def sync(importer_pk):
+def sync(importer_pk, repository_pk):
     """
     Validate the importer, create and finalize RepositoryVersion.
 
@@ -118,20 +116,21 @@ def sync(importer_pk):
         ValueError: When feed_url is empty.
     """
     importer = FileImporter.objects.get(pk=importer_pk)
+    repository = Repository.objects.get(pk=repository_pk)
 
     if not importer.feed_url:
         raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
 
-    base_version = RepositoryVersion.latest(importer.repository)
+    base_version = RepositoryVersion.latest(repository)
 
-    with RepositoryVersion.create(importer.repository) as new_version:
+    with RepositoryVersion.create(repository) as new_version:
 
         synchronizer = Synchronizer(importer, new_version, base_version)
         with WorkingDirectory():
             log.info(
                 _('Starting sync: repository=%(repository)s importer=%(importer)s'),
                 {
-                    'repository': importer.repository.name,
+                    'repository': repository.name,
                     'importer': importer.name
                 })
             synchronizer.run()
