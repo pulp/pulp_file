@@ -1,58 +1,74 @@
 from gettext import gettext as _
 
 from django_filters.rest_framework import filterset
-from pulpcore.plugin import viewsets, models as pulpcore_models
-from rest_framework import decorators, serializers as drf_serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import detail_route
 
-from . import models, serializers, tasks
+from pulpcore.plugin.models import Repository
+from pulpcore.plugin.viewsets import (
+    ContentViewSet,
+    ImporterViewSet,
+    OperationPostponedResponse,
+    PublisherViewSet,
+    tags)
+
+from .models import FileContent, FileImporter, FilePublisher
+from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
+from .tasks import publish, sync
 
 
 class FileContentFilter(filterset.FilterSet):
     class Meta:
-        model = models.FileContent
-        fields = ['path', 'digest']
+        model = FileContent
+        fields = [
+            'path',
+            'digest'
+        ]
 
 
-class FileContentViewSet(viewsets.ContentViewSet):
+class FileContentViewSet(ContentViewSet):
     endpoint_name = 'file'
-    queryset = models.FileContent.objects.all()
-    serializer_class = serializers.FileContentSerializer
+    queryset = FileContent.objects.all()
+    serializer_class = FileContentSerializer
     filter_class = FileContentFilter
 
 
-class FileImporterViewSet(viewsets.ImporterViewSet):
+class FileImporterViewSet(ImporterViewSet):
     endpoint_name = 'file'
-    queryset = models.FileImporter.objects.all()
-    serializer_class = serializers.FileImporterSerializer
+    queryset = FileImporter.objects.all()
+    serializer_class = FileImporterSerializer
 
-    @decorators.detail_route(methods=('post',))
+    @detail_route(methods=('post',))
     def sync(self, request, pk):
         importer = self.get_object()
-        repository = self.get_resource(request.data['repository'], pulpcore_models.Repository)
+        repository = self.get_resource(request.data['repository'], Repository)
         if not importer.feed_url:
             # TODO(asmacdo) make sure this raises a 400
-            raise ValueError(_("An importer must have a 'feed_url' attribute to sync."))
+            raise ValueError(_('A feed_url must be specified.'))
 
-        async_result = tasks.sync.apply_async_with_reservation(
-            viewsets.tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
-            kwargs={'importer_pk': importer.pk, 'repository_pk': repository.pk}
+        result = sync.apply_async_with_reservation(
+            tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
+            kwargs={
+                'importer_pk': importer.pk,
+                'repository_pk': repository.pk
+            }
         )
-        return viewsets.OperationPostponedResponse([async_result], request)
+        return OperationPostponedResponse([result], request)
 
 
-class FilePublisherViewSet(viewsets.PublisherViewSet):
+class FilePublisherViewSet(PublisherViewSet):
     endpoint_name = 'file'
-    queryset = models.FilePublisher.objects.all()
-    serializer_class = serializers.FilePublisherSerializer
+    queryset = FilePublisher.objects.all()
+    serializer_class = FilePublisherSerializer
 
-    @decorators.detail_route(methods=('post',))
+    @detail_route(methods=('post',))
     def publish(self, request, pk):
         publisher = self.get_object()
-        repository = self.get_resource(request.data['repository'], pulpcore_models.Repository)
-        async_result = tasks.publish.apply_async_with_reservation(
-            viewsets.tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
-            kwargs={'publisher_pk': str(publisher.pk),
-                    'repository_pk': repository.pk}
+        repository = self.get_resource(request.data['repository'], Repository)
+        result = publish.apply_async_with_reservation(
+            tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
+            kwargs={
+                'publisher_pk': str(publisher.pk),
+                'repository_pk': repository.pk
+            }
         )
-        return viewsets.OperationPostponedResponse([async_result], request)
+        return OperationPostponedResponse([result], request)
