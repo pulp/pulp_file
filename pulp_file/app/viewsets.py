@@ -9,8 +9,7 @@ from pulpcore.plugin.viewsets import (
     ContentViewSet,
     ImporterViewSet,
     OperationPostponedResponse,
-    PublisherViewSet,
-    tags)
+    PublisherViewSet)
 
 from .models import FileContent, FileImporter, FilePublisher
 from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
@@ -46,7 +45,7 @@ class FileImporterViewSet(ImporterViewSet):
             raise ValidationError(detail=_('A feed_url must be specified.'))
 
         result = sync.apply_async_with_reservation(
-            tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
+            [repository, importer],
             kwargs={
                 'importer_pk': importer.pk,
                 'repository_pk': repository.pk
@@ -65,7 +64,7 @@ class FilePublisherViewSet(PublisherViewSet):
         publisher = self.get_object()
         repository = self.get_resource(request.data['repository'], Repository)
         result = publish.apply_async_with_reservation(
-            tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
+            [repository, publisher],
             kwargs={
                 'publisher_pk': str(publisher.pk),
                 'repository_pk': repository.pk
