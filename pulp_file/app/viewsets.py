@@ -2,6 +2,7 @@ from gettext import gettext as _
 
 from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
+from rest_framework.exceptions import ValidationError
 
 from pulpcore.plugin.models import Repository
 from pulpcore.plugin.viewsets import (
@@ -42,8 +43,7 @@ class FileImporterViewSet(ImporterViewSet):
         importer = self.get_object()
         repository = self.get_resource(request.data['repository'], Repository)
         if not importer.feed_url:
-            # TODO(asmacdo) make sure this raises a 400
-            raise ValueError(_('A feed_url must be specified.'))
+            raise ValidationError(detail=_('A feed_url must be specified.'))
 
         result = sync.apply_async_with_reservation(
             tags.RESOURCE_REPOSITORY_TYPE, str(repository.pk),
