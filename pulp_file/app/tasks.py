@@ -51,7 +51,12 @@ def _publish(publication):
         if not _artifact:
             _artifact = RemoteArtifact.objects.filter(content_artifact=content_artifact).first()
         return _artifact
-    for content in publication.repository_version.content:
+    paths = set()
+    for content in FileContent.objects.filter(
+            pk__in=publication.repository_version.content).order_by('-created'):
+        if content.path in paths:
+            continue
+        paths.add(content.path)
         for content_artifact in content.contentartifact_set.all():
             artifact = find_artifact()
             published_artifact = PublishedArtifact(
@@ -207,8 +212,7 @@ class Synchronizer:
         """
         # it's not a problem if there is no pre-existing version.
         if self._base_version is not None:
-            q_set = self._base_version.content
-            for content in (c.cast() for c in q_set):
+            for content in FileContent.objects.filter(pk__in=self._base_version.content):
                 key = Key(path=content.path, digest=content.digest)
                 self._inventory_keys.add(key)
 
