@@ -15,6 +15,13 @@ class FileContentSerializer(ContentSerializer):
 
 
 class FileImporterSerializer(ImporterSerializer):
+
+    sync_mode = serializers.ChoiceField(
+        help_text='How the importer should sync from the upstream repository.',
+        allow_blank=False,
+        choices=[FileImporter.ADDITIVE],
+    )
+
     class Meta:
         fields = ImporterSerializer.Meta.fields
         model = FileImporter
