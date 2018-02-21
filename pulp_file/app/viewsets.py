@@ -11,9 +11,9 @@ from pulpcore.plugin.viewsets import (
     OperationPostponedResponse,
     PublisherViewSet)
 
+from . import tasks
 from .models import FileContent, FileImporter, FilePublisher
 from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
-from .tasks import publish, sync
 
 
 class FileContentFilter(filterset.FilterSet):
@@ -43,8 +43,7 @@ class FileImporterViewSet(ImporterViewSet):
         repository = self.get_resource(request.data['repository'], Repository)
         if not importer.feed_url:
             raise ValidationError(detail=_('A feed_url must be specified.'))
-
-        result = sync.apply_async_with_reservation(
+        result = tasks.synchronize.apply_async_with_reservation(
             [repository, importer],
             kwargs={
                 'importer_pk': importer.pk,
@@ -63,7 +62,7 @@ class FilePublisherViewSet(PublisherViewSet):
     def publish(self, request, pk):
         publisher = self.get_object()
         repository = self.get_resource(request.data['repository'], Repository)
-        result = publish.apply_async_with_reservation(
+        result = tasks.publish.apply_async_with_reservation(
             [repository, publisher],
             kwargs={
                 'publisher_pk': str(publisher.pk),
