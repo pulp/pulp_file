@@ -1,8 +1,11 @@
 from gettext import gettext as _
 
 from django_filters.rest_framework import filterset
+from rest_framework.compat import coreapi, coreschema
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import ValidationError
+from rest_framework.schemas import ManualSchema
+from rest_framework import serializers
+
 
 from pulpcore.plugin.models import Repository
 from pulpcore.plugin.viewsets import (
@@ -37,12 +40,25 @@ class FileImporterViewSet(ImporterViewSet):
     queryset = FileImporter.objects.all()
     serializer_class = FileImporterSerializer
 
-    @detail_route(methods=('post',))
+    @detail_route(
+        methods=('post',),
+        schema=ManualSchema(
+            fields=[
+                coreapi.Field(
+                    name='repository',
+                    schema=coreschema.String(
+                        description=_('URI for the repository to be synchronized.')),
+                    required=True)
+            ]))
     def sync(self, request, pk):
         importer = self.get_object()
-        repository = self.get_resource(request.data['repository'], Repository)
+        try:
+            repository_uri = request.data['repository']
+        except KeyError:
+            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
         if not importer.feed_url:
-            raise ValidationError(detail=_('A feed_url must be specified.'))
+            raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
+        repository = self.get_resource(repository_uri, Repository)
         result = tasks.synchronize.apply_async_with_reservation(
             [repository, importer],
             kwargs={
@@ -58,10 +74,23 @@ class FilePublisherViewSet(PublisherViewSet):
     queryset = FilePublisher.objects.all()
     serializer_class = FilePublisherSerializer
 
-    @detail_route(methods=('post',))
+    @detail_route(
+        methods=('post',),
+        schema=ManualSchema(
+            fields=[
+                coreapi.Field(
+                    name='repository',
+                    schema=coreschema.String(
+                        description=_('URI for the repository to be published.')),
+                    required=True)
+            ]))
     def publish(self, request, pk):
+        try:
+            repository_uri = request.data['repository']
+        except KeyError:
+            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
         publisher = self.get_object()
-        repository = self.get_resource(request.data['repository'], Repository)
+        repository = self.get_resource(repository_uri, Repository)
         result = tasks.publish.apply_async_with_reservation(
             [repository, publisher],
             kwargs={
