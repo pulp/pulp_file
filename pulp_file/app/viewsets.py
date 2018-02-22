@@ -28,6 +28,39 @@ class FileContentFilter(filterset.FilterSet):
         ]
 
 
+class _RepositorySyncURLSerializer(serializers.Serializer):
+    repository = serializers.URLField(
+        help_text=_('A URI of the repository to be synchronized.'),
+        label=_('Repository'),
+        required=True,
+        error_messages={
+            'required': _('The repository URI must be specified.')
+        })
+
+
+class _RepositoryPublishURLSerializer(serializers.Serializer):
+    repository = serializers.URLField(
+        help_text=_('A URI of the repository to be published.'),
+        label=_('Repository'),
+        required=False
+    )
+    repository_version = serializers.URLField(
+        help_text=_('A URI of the repository version to be published.'),
+        label=_('Repository version'),
+        required=False
+    )
+
+    def validate(self, data):
+        repository = data.get('repository')
+        repository_version = data.get('repository_version')
+        if (repository and not repository_version) or (not repository and repository_version):
+            return data
+        raise serializers.ValidationError(
+            _("Either the 'repository' or 'repository_version' need to be specified "
+              "but not both.")
+        )
+
+
 class FileContentViewSet(ContentViewSet):
     endpoint_name = 'file'
     queryset = FileContent.objects.all()
@@ -57,16 +90,18 @@ class FileImporterViewSet(ImporterViewSet):
     queryset = FileImporter.objects.all()
     serializer_class = FileImporterSerializer
 
-    @detail_route(methods=('post',))
+    @detail_route(methods=('post',), serializer_class=_RepositorySyncURLSerializer)
     def sync(self, request, pk):
+        """
+        Synchronizes a repository. The ``repository`` field has to be provided.
+        """
         importer = self.get_object()
-        try:
-            repository_uri = request.data['repository']
-        except KeyError:
-            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
-        repository = self.get_resource(repository_uri, Repository)
+        serializer = _RepositorySyncURLSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        repository_uri = serializer.data['repository']
         if not importer.feed_url:
             raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
+        repository = self.get_resource(repository_uri, Repository)
         result = tasks.synchronize.apply_async_with_reservation(
             [repository, importer],
             kwargs={
@@ -82,27 +117,22 @@ class FilePublisherViewSet(PublisherViewSet):
     queryset = FilePublisher.objects.all()
     serializer_class = FilePublisherSerializer
 
-    @detail_route(methods=('post',))
+    @detail_route(methods=('post',), serializer_class=_RepositoryPublishURLSerializer)
     def publish(self, request, pk):
+        """
+        Publishes a repository. Either the ``repository`` or the ``repository_version`` fields can
+        be provided but not both at the same time.
+        """
         publisher = self.get_object()
-        repository = None
-        repository_version = None
-        if 'repository' not in request.data and 'repository_version' not in request.data:
-            raise serializers.ValidationError(_("Either the 'repository' or 'repository_version' "
-                                              "need to be specified."))
+        serializer = _RepositoryPublishURLSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        repository_uri = serializer.data.get('repository')
+        repository_version_uri = serializer.data.get('repository_version')
 
-        if 'repository' in request.data and request.data['repository']:
-            repository = self.get_resource(request.data['repository'], Repository)
-
-        if 'repository_version' in request.data and request.data['repository_version']:
-            repository_version = self.get_resource(request.data['repository_version'],
-                                                   RepositoryVersion)
-
-        if repository and repository_version:
-            raise serializers.ValidationError(_("Either the 'repository' or 'repository_version' "
-                                              "can be specified - not both."))
-
-        if not repository_version:
+        if repository_version_uri:
+            repository_version = self.get_resource(repository_version_uri, RepositoryVersion)
+        else:
+            repository = self.get_resource(repository_uri, Repository)
             repository_version = RepositoryVersion.latest(repository)
 
         result = tasks.publish.apply_async_with_reservation(
