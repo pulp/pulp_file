@@ -80,7 +80,7 @@ Create a repository ``foo``
 Add an importer to repository ``foo``
 -------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST' repository=$REPO_HREF``
+``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
@@ -95,6 +95,26 @@ Sync repository ``foo`` using importer ``bar``
 ----------------------------------------------
 
 ``$ http POST $IMPORTER_HREF'sync/' repository=$REPO_HREF``
+
+Look at the new Repository Version created
+------------------------------------------
+
+``$ http GET $REPO_HREF'versions/'``
+
+.. code:: json
+
+    {
+        "_added_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/added_content/",
+        "_content_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/content/",
+        "_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/",
+        "_removed_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/removed_content/",
+        "content_summary": {
+            "file": 3
+        },
+        "created": "2018-02-23T20:29:54.499055Z",
+        "number": 1
+    }
+
 
 Upload ``foo.tar.gz`` to Pulp
 -----------------------------
@@ -144,13 +164,13 @@ Create a file with the json bellow and save it as content.json.
 Add content to repository ``foo``
 ---------------------------------
 
-Currently there is no endpoint to manually associate content to a repository. This functionality
-will be added before pulp3 beta is released.
+``$ http POST $REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
 
-Add a ``file`` Publisher to repository ``foo``
---------------------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/publishers/file/ name=bar repository=$REPO_HREF``
+Create a ``file`` Publisher
+---------------------------
+
+``$ http POST http://localhost:8000/api/v3/publishers/file/ name=bar``
 
 .. code:: json
 
@@ -164,6 +184,7 @@ Add a ``file`` Publisher to repository ``foo``
 
 Use the ``bar`` Publisher to create a Publication
 -------------------------------------------------
+
 ``$ http POST $PUBLISHER_HREF'publish/' repository=$REPO_HREF``
 
 .. code:: json
@@ -177,10 +198,10 @@ Use the ``bar`` Publisher to create a Publication
 
 ``$ export PUBLICATION_HREF=$(http :8000/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
 
-Add a Distribution to Publisher ``bar``
+Create a Distribution for the Publication
 ---------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/distributions/ name='baz' base_path='foo' auto_updated=true http=true https=true publisher=$PUBLISHER_HREF publication=$PUBLICATION_HREF``
+``$ http POST http://localhost:8000/api/v3/distributions/ name='baz' base_path='foo' http=true https=true publication=$PUBLICATION_HREF``
 
 
 .. code:: json
@@ -190,12 +211,6 @@ Add a Distribution to Publisher ``bar``
        ...
     }
 
-
-
-Check status of a task
-----------------------
-
-``$ http GET http://localhost:8000/api/v3/tasks/82e64412-47f8-4dd4-aa55-9de89a6c549b/``
 
 Download ``test.iso`` from Pulp
 ---------------------------------
