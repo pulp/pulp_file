@@ -44,4 +44,3 @@ class FilePublisher(Publisher):
     Publisher for "file" content.
     """
     TYPE = 'file'
-
