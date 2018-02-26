@@ -2,7 +2,7 @@ from gettext import gettext as _
 
 from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
 
 from pulpcore.plugin.models import Repository
 from pulpcore.plugin.viewsets import (
@@ -40,9 +40,14 @@ class FileImporterViewSet(ImporterViewSet):
     @detail_route(methods=('post',))
     def sync(self, request, pk):
         importer = self.get_object()
+
+        if not request.data.get('repository'):
+            raise serializers.ValidationError(_("A repository must be specified."))
         repository = self.get_resource(request.data['repository'], Repository)
+
         if not importer.feed_url:
-            raise ValidationError(detail=_('A feed_url must be specified.'))
+            raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
+
         result = tasks.synchronize.apply_async_with_reservation(
             [repository, importer],
             kwargs={
@@ -61,7 +66,11 @@ class FilePublisherViewSet(PublisherViewSet):
     @detail_route(methods=('post',))
     def publish(self, request, pk):
         publisher = self.get_object()
+
+        if not request.data.get('repository'):
+            raise serializers.ValidationError(_("A repository must be specified."))
         repository = self.get_resource(request.data['repository'], Repository)
+
         result = tasks.publish.apply_async_with_reservation(
             [repository, publisher],
             kwargs={
