@@ -77,8 +77,8 @@ Create a repository ``foo``
 
 ``$ export REPO_HREF=$(http :8000/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
-Add an importer to repository ``foo``
--------------------------------------
+Create a new importer ``bar``
+-----------------------------
 
 ``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
@@ -99,7 +99,7 @@ Sync repository ``foo`` using importer ``bar``
 Look at the new Repository Version created
 ------------------------------------------
 
-``$ http GET $REPO_HREF'versions/'``
+``$ http GET $REPO_HREF'versions/1/'``
 
 .. code:: json
 
