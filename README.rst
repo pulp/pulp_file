@@ -133,32 +133,20 @@ Create an Artifact by uploading the file to Pulp.
 Create ``file`` content from an Artifact
 -------------------------------------------
 
-Create a file with the json bellow and save it as content.json.
+Create a content unit and point it to your artifact
 
-.. code:: json
-
-    {
-      "digest": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
-      "path": "foo.tar.gz",
-      "artifacts": {"foo.tar.gz":"http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"}
-    }
-
-``$ http POST http://localhost:8000/api/v3/content/file/ < content.json``
+``$ http POST http://localhost:8000/api/v3/content/file/ relative_path=foo.tar.gz artifact="http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"``
 
 .. code:: json
 
     {
         "_href": "http://localhost:8000/api/v3/content/file/a9578a5f-c59f-4920-9497-8d1699c112ff/",
-        "artifacts": {
-            "foo.tar.gz": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"
-        },
-        "digest": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
-        "notes": {},
-        "path": "foo.tar.gz",
+        "artifact": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "relative_path": "foo.tar.gz",
         "type": "file"
     }
 
-``$ export CONTENT_HREF=$(http :8000/api/v3/content/file/ | jq -r '.results[] | select(.path == "foo.tar.gz") | ._href')``
+``$ export CONTENT_HREF=$(http :8000/api/v3/content/file/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
 
 
 Add content to repository ``foo``

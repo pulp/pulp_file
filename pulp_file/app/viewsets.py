@@ -1,10 +1,12 @@
 from gettext import gettext as _
 
+from django.db import transaction
 from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers, status
+from rest_framework.response import Response
 
-from pulpcore.plugin.models import Repository
+from pulpcore.plugin.models import Artifact, Repository
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
     ImporterViewSet,
@@ -20,7 +22,7 @@ class FileContentFilter(filterset.FilterSet):
     class Meta:
         model = FileContent
         fields = [
-            'path',
+            'relative_path',
             'digest'
         ]
 
@@ -31,6 +33,23 @@ class FileContentViewSet(ContentViewSet):
     serializer_class = FileContentSerializer
     filter_class = FileContentFilter
 
+    @transaction.atomic
+    def create(self, request):
+        try:
+            artifact = self.get_resource(request.data['artifact'], Artifact)
+        except KeyError:
+            raise serializers.ValidationError(detail={'artifact': _('This field is required')})
+
+        data = request.data
+        data['digest'] = artifact.sha256
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        content = serializer.save()
+        content.artifact = artifact
+
+        headers = self.get_success_headers(request.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class FileImporterViewSet(ImporterViewSet):
     endpoint_name = 'file'
@@ -40,9 +59,13 @@ class FileImporterViewSet(ImporterViewSet):
     @detail_route(methods=('post',))
     def sync(self, request, pk):
         importer = self.get_object()
-        repository = self.get_resource(request.data['repository'], Repository)
+        try:
+            repository_uri = request.data['repository']
+        except KeyError:
+            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
+        repository = self.get_resource(repository_uri, Repository)
         if not importer.feed_url:
-            raise ValidationError(detail=_('A feed_url must be specified.'))
+            raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
         result = tasks.synchronize.apply_async_with_reservation(
             [repository, importer],
             kwargs={
@@ -60,8 +83,12 @@ class FilePublisherViewSet(PublisherViewSet):
 
     @detail_route(methods=('post',))
     def publish(self, request, pk):
+        try:
+            repository_uri = request.data['repository']
+        except KeyError:
+            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
         publisher = self.get_object()
-        repository = self.get_resource(request.data['repository'], Repository)
+        repository = self.get_resource(repository_uri, Repository)
         result = tasks.publish.apply_async_with_reservation(
             [repository, publisher],
             kwargs={

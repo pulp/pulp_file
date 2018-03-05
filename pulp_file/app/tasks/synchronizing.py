@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 # The natural key.
-Key = namedtuple('Key', ('path', 'digest'))
+Key = namedtuple('Key', ('relative_path', 'digest'))
 
 # The set of Key to be added and removed.
 Delta = namedtuple('Delta', ('additions', 'removals'))
@@ -106,7 +106,7 @@ def fetch_content(base_version):
     content = set()
     if base_version:
         for file in FileContent.objects.filter(pk__in=base_version.content):
-            key = Key(path=file.path, digest=file.digest)
+            key = Key(relative_path=file.relative_path, digest=file.digest)
             content.add(key)
     return content
 
@@ -128,7 +128,7 @@ def find_delta(manifest, content, mirror=True):
     """
     remote_content = set(
         [
-            Key(path=e.path, digest=e.digest) for e in manifest.read()
+            Key(relative_path=e.relative_path, digest=e.digest) for e in manifest.read()
         ])
     additions = (remote_content - content)
     if mirror:
@@ -152,17 +152,17 @@ def build_additions(importer, manifest, delta):
     """
     def generate():
         for entry in manifest.read():
-            key = Key(path=entry.path, digest=entry.digest)
+            key = Key(relative_path=entry.relative_path, digest=entry.digest)
             if key not in delta.additions:
                 continue
-            path = os.path.join(root_dir, entry.path)
+            path = os.path.join(root_dir, entry.relative_path)
             url = urlunparse(parsed_url._replace(path=path))
-            file = FileContent(path=entry.path, digest=entry.digest)
+            file = FileContent(relative_path=entry.relative_path, digest=entry.digest)
             artifact = Artifact(size=entry.size, sha256=entry.digest)
             content = PendingContent(
                 file,
                 artifacts={
-                    PendingArtifact(artifact, url, entry.path)
+                    PendingArtifact(artifact, url, entry.relative_path)
                 })
             yield content
     parsed_url = urlparse(importer.feed_url)
@@ -185,7 +185,7 @@ def build_removals(base_version, delta):
         for removals in BatchIterator(delta.removals):
             q = Q()
             for key in removals:
-                q |= Q(filecontent__path=key.path, filecontent__digest=key.digest)
+                q |= Q(filecontent__relative_path=key.relative_path, filecontent__digest=key.digest)
             q_set = base_version.content.filter(q)
             q_set = q_set.only('id')
             for file in q_set:
