@@ -9,12 +9,12 @@ Line = namedtuple('Line', ('number', 'content'))
 class Entry:
     """
     Manifest entry.
-    Format: <path>, <digest>, <size>.
+    Format: <relative_path>, <digest>, <size>.
 
     Lines beginning with `#` are ignored.
 
     Attributes:
-        path (str): A relative path.
+        relative_path (str): A relative path.
         digest (str): The file sha256 hex digest.
         size (int): The file size in bytes.
     """
@@ -37,33 +37,33 @@ class Entry:
         if len(part) != 3:
             raise ValueError(
                 _('Error: manifest line:{n}: '
-                  'must be: <path>, <digest>, <size>').format(
+                  'must be: <relative_path>, <digest>, <size>').format(
                     n=line.number))
-        return Entry(path=part[0],
+        return Entry(relative_path=part[0],
                      digest=part[1],
                      size=int(part[2]))
 
     def __str__(self):
         """
         Returns:
-            str: format: "<path>, <digest>, <size>"
+            str: format: "<relative_path>, <digest>, <size>"
         """
         fields = [
-            self.path,
+            self.relative_path,
             self.digest,
         ]
         if isinstance(self.size, int):
             fields.append(str(self.size))
         return ', '.join(fields)
 
-    def __init__(self, path, size, digest):
+    def __init__(self, relative_path, size, digest):
         """
         Args:
-            path (str): A relative path.
+            relative_path (str): A relative path.
             digest (str): The file sha256 hex digest.
             size (int): The file size in bytes.
         """
-        self.path = path
+        self.relative_path = relative_path
         self.digest = digest
         self.size = size
 
@@ -74,24 +74,24 @@ class Manifest:
     Describes files contained within the directory.
 
     Attributes:
-        path (str): An absolute path to the manifest.
+        relative_path (str): An relative path to the manifest.
     """
 
-    def __init__(self, path):
+    def __init__(self, relative_path):
         """
         Args:
-            path (str): An absolute path to the manifest.
+            relative_path (str): An relative path to the manifest.
         """
-        self.path = path
+        self.relative_path = relative_path
 
     def read(self):
         """
-        Read the file at `path` and yield entries.
+        Read the file at `relative_path` and yield entries.
 
         Yields:
             Entry: for each line.
         """
-        with open(self.path) as fp:
+        with open(self.relative_path) as fp:
             for n, line in enumerate(fp.readlines(), 1):
                 line = line.strip()
                 if not line:
@@ -107,7 +107,7 @@ class Manifest:
         Args:
             entries (iterable): The entries to be written.
         """
-        with open(self.path, 'w+') as fp:
+        with open(self.relative_path, 'w+') as fp:
             for entry in entries:
                 line = str(entry)
                 fp.write(line)

@@ -48,9 +48,9 @@ def publish(publisher_pk, repository_pk):
             manifest = Manifest('PULP_MANIFEST')
             manifest.write(populate(publication))
             metadata = PublishedMetadata(
-                relative_path=os.path.basename(manifest.path),
+                relative_path=os.path.basename(manifest.relative_path),
                 publication=publication,
-                file=File(open(manifest.path, 'rb')))
+                file=File(open(manifest.relative_path, 'rb')))
             metadata.save()
 
     log.info(
@@ -80,9 +80,9 @@ def populate(publication):
     paths = set()
     for content in FileContent.objects.filter(
             pk__in=publication.repository_version.content).order_by('-created'):
-        if content.path in paths:
+        if content.relative_path in paths:
             continue
-        paths.add(content.path)
+        paths.add(content.relative_path)
         for content_artifact in content.contentartifact_set.all():
             artifact = find_artifact()
             published_artifact = PublishedArtifact(
@@ -91,7 +91,7 @@ def populate(publication):
                 content_artifact=content_artifact)
             published_artifact.save()
             entry = Entry(
-                path=content_artifact.relative_path,
+                relative_path=content_artifact.relative_path,
                 digest=artifact.sha256,
                 size=artifact.size)
             yield entry

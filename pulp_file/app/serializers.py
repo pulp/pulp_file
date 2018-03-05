@@ -1,16 +1,23 @@
 from rest_framework import serializers
 
+from pulpcore.plugin.models import Artifact
 from pulpcore.plugin.serializers import ContentSerializer, ImporterSerializer, PublisherSerializer
 
 from .models import FileContent, FileImporter, FilePublisher
 
 
 class FileContentSerializer(ContentSerializer):
-    path = serializers.CharField()
-    digest = serializers.CharField()
+    relative_path = serializers.CharField(
+        help_text="Relative location of the file within the repository"
+    )
+    artifact = serializers.HyperlinkedRelatedField(
+        view_name='artifacts-detail',
+        help_text="Artifact file representing the physical content",
+        queryset=Artifact.objects.all()
+    )
 
     class Meta:
-        fields = ContentSerializer.Meta.fields + ('path', 'digest')
+        fields = ('_href', 'type', 'relative_path', 'artifact')
         model = FileContent
 
 

@@ -2,7 +2,7 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, Importer, Publisher
+from pulpcore.plugin.models import Content, ContentArtifact, Importer, Publisher
 
 
 log = getLogger(__name__)
@@ -16,18 +16,30 @@ class FileContent(Content):
     identified by path and SHA256 digest.
 
     Fields:
-        path (str): The file relative path.
+        relative_path (str): The file relative path.
         digest (str): The SHA256 HEX digest.
 
     """
     TYPE = 'file'
 
-    path = models.TextField(blank=False, null=False)
+    relative_path = models.TextField(blank=False, null=False)
     digest = models.TextField(blank=False, null=False)
+
+    @property
+    def artifact(self):
+        return self.artifacts.get().pk
+
+    @artifact.setter
+    def artifact(self, artifact):
+        if self.pk:
+            ca = ContentArtifact(artifact=artifact,
+                                 content=self,
+                                 relative_path=self.relative_path)
+            ca.save()
 
     class Meta:
         unique_together = (
-            'path',
+            'relative_path',
             'digest'
         )
 
