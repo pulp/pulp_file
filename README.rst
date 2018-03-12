@@ -80,7 +80,7 @@ Create a repository ``foo``
 Create a new importer ``bar``
 -----------------------------
 
-``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='additive' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
@@ -189,7 +189,7 @@ Use the ``bar`` Publisher to create a Publication
 Create a Distribution for the Publication
 ---------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/distributions/ name='baz' base_path='foo' http=true https=true publication=$PUBLICATION_HREF``
+``$ http POST http://localhost:8000/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
 
 
 .. code:: json
