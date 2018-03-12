@@ -11,8 +11,7 @@ from pulpcore.plugin.models import (
     Publication,
     PublishedArtifact,
     PublishedMetadata,
-    RemoteArtifact,
-    Repository)
+    RemoteArtifact)
 from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
 
 from pulp_file.app.models import FileContent, FilePublisher
