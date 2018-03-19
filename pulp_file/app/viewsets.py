@@ -88,8 +88,8 @@ class FilePublisherViewSet(PublisherViewSet):
         repository = None
         repository_version = None
         if 'repository' not in request.data and 'repository_version' not in request.data:
-            raise serializers.ValidationError("Either the 'repository' or 'repository_version' "
-                                              "need to be specified.")
+            raise serializers.ValidationError(_("Either the 'repository' or 'repository_version' "
+                                              "need to be specified."))
 
         if 'repository' in request.data and request.data['repository']:
             repository = self.get_resource(request.data['repository'], Repository)
@@ -99,8 +99,8 @@ class FilePublisherViewSet(PublisherViewSet):
                                                    RepositoryVersion)
 
         if repository and repository_version:
-            raise serializers.ValidationError("Either the 'repository' or 'repository_version' "
-                                              "can be specified - not both.")
+            raise serializers.ValidationError(_("Either the 'repository' or 'repository_version' "
+                                              "can be specified - not both."))
 
         if not repository_version:
             repository_version = RepositoryVersion.latest(repository)
