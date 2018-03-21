@@ -20,7 +20,6 @@ from .serializers import FileContentSerializer, FileImporterSerializer, FilePubl
 from .serializers import FileSyncTaskSerializer
 
 from pulpcore.app.viewsets.task import TaskViewSet
-from rest_framework import mixins
 
 
 class FileTaskViewSet(TaskViewSet):
@@ -30,12 +29,39 @@ class FileTaskViewSet(TaskViewSet):
     model = FileTask
 
 
-class FileSyncTaskViewSet(TaskViewSet, mixins.CreateModelMixin):
+class FileSyncTaskViewSet(TaskViewSet):
 
     endpoint_name = 'file/syncs'
     queryset = FileSyncTask.objects.all()
     model = FileSyncTask
     serializer_class = FileSyncTaskSerializer
+
+    def create(self, request):
+        try:
+            repository_uri = request.data['repository']
+            # repository = self.get_resource(repository_uri, Repository)
+        except KeyError:
+            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
+
+        try:
+            importer_uri = request.data['importer']
+            # importer = self.get_resource(importer_uri, FileImporter)
+        except KeyError:
+            raise serializers.ValidationError(detail=_('Importer URI must be specified.'))
+
+        data = {"repository": repository_uri, "importer": importer_uri}
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as damn:
+            # import ipdb; ipdb.set_trace()
+            print("damn")
+        serializer.save()
+
+        # if not importer.feed_url:
+        #     raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
+
+        return Response(serializer.data)
 
 
 class FileContentFilter(filterset.FilterSet):
@@ -75,26 +101,6 @@ class FileImporterViewSet(ImporterViewSet):
     endpoint_name = 'file'
     queryset = FileImporter.objects.all()
     serializer_class = FileImporterSerializer
-
-    @detail_route(methods=('post',))
-    def sync(self, request, pk):
-        importer = self.get_object()
-        try:
-            repository_uri = request.data['repository']
-        except KeyError:
-            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
-        repository = self.get_resource(repository_uri, Repository)
-        if not importer.feed_url:
-            raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
-        result = tasks.synchronize.apply_async_with_reservation(
-            [repository, importer],
-            kwargs={
-                'importer_pk': importer.pk,
-                'repository_pk': repository.pk
-            }
-        )
-        return OperationPostponedResponse([result], request)
-
 
 class FilePublisherViewSet(PublisherViewSet):
     endpoint_name = 'file'
