@@ -3,9 +3,20 @@ from logging import getLogger
 from django.db import models
 
 from pulpcore.plugin.models import Content, ContentArtifact, Importer, Publisher
+from pulpcore.app.models.task import Task
 
 
 log = getLogger(__name__)
+
+
+class FileTask(Task):
+
+    TYPE = 'file'
+
+
+class FileSyncTask(FileTask):
+
+    TYPE = 'sync'
 
 
 class FileContent(Content):

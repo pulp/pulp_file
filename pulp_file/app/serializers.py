@@ -3,7 +3,16 @@ from rest_framework import serializers
 from pulpcore.plugin.models import Artifact
 from pulpcore.plugin.serializers import ContentSerializer, ImporterSerializer, PublisherSerializer
 
-from .models import FileContent, FileImporter, FilePublisher
+from .models import FileContent, FileImporter, FilePublisher, FileSyncTask
+
+from pulpcore.app.serializers.task import TaskSerializer
+
+
+class FileSyncTaskSerializer(TaskSerializer):
+
+    class Meta:
+        model = FileSyncTask
+        fields = ('_href', 'type')
 
 
 class FileContentSerializer(ContentSerializer):

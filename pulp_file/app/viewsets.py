@@ -15,8 +15,27 @@ from pulpcore.plugin.viewsets import (
     PublisherViewSet)
 
 from . import tasks
-from .models import FileContent, FileImporter, FilePublisher
+from .models import FileContent, FileImporter, FilePublisher, FileTask, FileSyncTask
 from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
+from .serializers import FileSyncTaskSerializer
+
+from pulpcore.app.viewsets.task import TaskViewSet
+from rest_framework import mixins
+
+
+class FileTaskViewSet(TaskViewSet):
+
+    endpoint_name = 'file'
+    queryset = FileTask.objects.all()
+    model = FileTask
+
+
+class FileSyncTaskViewSet(TaskViewSet, mixins.CreateModelMixin):
+
+    endpoint_name = 'file/syncs'
+    queryset = FileSyncTask.objects.all()
+    model = FileSyncTask
+    serializer_class = FileSyncTaskSerializer
 
 
 class FileContentFilter(filterset.FilterSet):
