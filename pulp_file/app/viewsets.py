@@ -15,13 +15,13 @@ from pulpcore.plugin.viewsets import (
     PublisherViewSet)
 
 from . import tasks
-from .models import FileContent, FileImporter, FilePublisher, FileTask, FileSyncTask
+from .models import FileContent, FileImporter, FilePublisher, FileSyncTask, FileTask
 from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
 from .serializers import FileSyncTaskSerializer
 
 from pulpcore.app.viewsets.task import TaskViewSet
 
-
+#
 class FileTaskViewSet(TaskViewSet):
 
     endpoint_name = 'file'
@@ -101,6 +101,7 @@ class FileImporterViewSet(ImporterViewSet):
     endpoint_name = 'file'
     queryset = FileImporter.objects.all()
     serializer_class = FileImporterSerializer
+
 
 class FilePublisherViewSet(PublisherViewSet):
     endpoint_name = 'file'
