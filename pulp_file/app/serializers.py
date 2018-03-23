@@ -20,22 +20,10 @@ class FileSyncTaskSerializer(TaskSerializer):
         queryset=Repository.objects.all(),
     )
 
-    def create(self, validated_data):
-
-        task = super().create(validated_data)
-
-        repository = validated_data['repository']
-        importer = validated_data['importer']
-
-        tasks.synchronize.apply_async_with_reservation(
-            [repository, importer],
-            task_status=task,
-            kwargs={
-                'importer_pk': importer.pk,
-                'repository_pk': repository.pk
-            },
-        )
-        return task
+    task_arg_structure = ["repository", "importer"]
+    task_kwarg_structure = {'importer_pk': "importer.pk",
+                            'repository_pk': "repository.pk"}
+    celery_task = tasks.synchronize
 
     class Meta:
         model = FileSyncTask
