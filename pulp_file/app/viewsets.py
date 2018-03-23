@@ -3,7 +3,7 @@ from gettext import gettext as _
 from django.db import transaction
 from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
-from rest_framework import serializers, status
+from rest_framework import mixins, serializers, status
 from rest_framework.response import Response
 
 from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
@@ -21,7 +21,7 @@ from .serializers import FileSyncTaskSerializer
 
 from pulpcore.app.viewsets.task import TaskViewSet
 
-#
+
 class FileTaskViewSet(TaskViewSet):
 
     endpoint_name = 'file'
@@ -29,39 +29,12 @@ class FileTaskViewSet(TaskViewSet):
     model = FileTask
 
 
-class FileSyncTaskViewSet(TaskViewSet):
+class FileSyncTaskViewSet(TaskViewSet, mixins.CreateModelMixin):
 
     endpoint_name = 'file/syncs'
     queryset = FileSyncTask.objects.all()
     model = FileSyncTask
     serializer_class = FileSyncTaskSerializer
-
-    def create(self, request):
-        try:
-            repository_uri = request.data['repository']
-            # repository = self.get_resource(repository_uri, Repository)
-        except KeyError:
-            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
-
-        try:
-            importer_uri = request.data['importer']
-            # importer = self.get_resource(importer_uri, FileImporter)
-        except KeyError:
-            raise serializers.ValidationError(detail=_('Importer URI must be specified.'))
-
-        data = {"repository": repository_uri, "importer": importer_uri}
-        serializer = self.get_serializer(data=data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception as damn:
-            # import ipdb; ipdb.set_trace()
-            print("damn")
-        serializer.save()
-
-        # if not importer.feed_url:
-        #     raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
-
-        return Response(serializer.data)
 
 
 class FileContentFilter(filterset.FilterSet):
