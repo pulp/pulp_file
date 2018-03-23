@@ -27,7 +27,6 @@ class FileSyncTaskSerializer(TaskSerializer):
 
     class Meta:
         model = FileSyncTask
-        # fields = ("importer", "repository")
         fields = TaskSerializer.Meta.fields + ("importer", "repository")
 
 
