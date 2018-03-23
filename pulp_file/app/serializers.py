@@ -20,7 +20,7 @@ class FileSyncTaskSerializer(TaskSerializer):
         queryset=Repository.objects.all(),
     )
 
-    task_arg_structure = ["repository", "importer"]
+    reservation_structure = ["repository", "importer"]
     task_kwarg_structure = {'importer_pk': "importer.pk",
                             'repository_pk': "repository.pk"}
     celery_task = tasks.synchronize
