@@ -3,7 +3,7 @@ from gettext import gettext as _
 from django.db import transaction
 from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
-from rest_framework import serializers, status
+from rest_framework import mixins, serializers, status
 from rest_framework.response import Response
 
 from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
@@ -15,8 +15,26 @@ from pulpcore.plugin.viewsets import (
     PublisherViewSet)
 
 from . import tasks
-from .models import FileContent, FileImporter, FilePublisher
+from .models import FileContent, FileImporter, FilePublisher, FileSyncTask, FileTask
 from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
+from .serializers import FileSyncTaskSerializer
+
+from pulpcore.app.viewsets.task import TaskViewSet
+
+
+class FileTaskViewSet(TaskViewSet):
+
+    endpoint_name = 'file'
+    queryset = FileTask.objects.all()
+    model = FileTask
+
+
+class FileSyncTaskViewSet(TaskViewSet, mixins.CreateModelMixin):
+
+    endpoint_name = 'file/syncs'
+    queryset = FileSyncTask.objects.all()
+    model = FileSyncTask
+    serializer_class = FileSyncTaskSerializer
 
 
 class FileContentFilter(filterset.FilterSet):
@@ -56,25 +74,6 @@ class FileImporterViewSet(ImporterViewSet):
     endpoint_name = 'file'
     queryset = FileImporter.objects.all()
     serializer_class = FileImporterSerializer
-
-    @detail_route(methods=('post',))
-    def sync(self, request, pk):
-        importer = self.get_object()
-        try:
-            repository_uri = request.data['repository']
-        except KeyError:
-            raise serializers.ValidationError(detail=_('Repository URI must be specified.'))
-        repository = self.get_resource(repository_uri, Repository)
-        if not importer.feed_url:
-            raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
-        result = tasks.synchronize.apply_async_with_reservation(
-            [repository, importer],
-            kwargs={
-                'importer_pk': importer.pk,
-                'repository_pk': repository.pk
-            }
-        )
-        return OperationPostponedResponse([result], request)
 
 
 class FilePublisherViewSet(PublisherViewSet):

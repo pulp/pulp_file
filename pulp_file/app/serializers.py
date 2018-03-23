@@ -1,9 +1,33 @@
 from rest_framework import serializers
 
-from pulpcore.plugin.models import Artifact
+from pulpcore.plugin.models import Artifact, Repository
 from pulpcore.plugin.serializers import ContentSerializer, ImporterSerializer, PublisherSerializer
 
-from .models import FileContent, FileImporter, FilePublisher
+from .models import FileContent, FileImporter, FilePublisher, FileSyncTask
+from . import tasks
+
+from pulpcore.app.serializers.task import TaskSerializer
+from pulpcore.app.serializers.base import DetailRelatedField
+
+
+class FileSyncTaskSerializer(TaskSerializer):
+
+    importer = DetailRelatedField(
+        queryset=FileImporter.objects.all()
+    )
+    repository = serializers.HyperlinkedRelatedField(
+        view_name='repositories-detail',
+        queryset=Repository.objects.all(),
+    )
+
+    reservation_structure = ["repository", "importer"]
+    task_kwarg_structure = {'importer_pk': "importer.pk",
+                            'repository_pk': "repository.pk"}
+    celery_task = tasks.synchronize
+
+    class Meta:
+        model = FileSyncTask
+        fields = TaskSerializer.Meta.fields + ("importer", "repository")
 
 
 class FileContentSerializer(ContentSerializer):

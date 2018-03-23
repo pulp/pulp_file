@@ -2,10 +2,16 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, ContentArtifact, Importer, Publisher
+from pulpcore.plugin.models import Content, ContentArtifact, Importer, Publisher, Repository
+from pulpcore.app.models.task import Task
 
 
 log = getLogger(__name__)
+
+
+class FileTask(Task):
+
+    TYPE = 'file'
 
 
 class FileContent(Content):
@@ -56,3 +62,12 @@ class FilePublisher(Publisher):
     Publisher for "file" content.
     """
     TYPE = 'file'
+
+
+class FileSyncTask(FileTask):
+
+    TYPE = 'sync'
+    importer = models.ForeignKey(FileImporter)
+    repository = models.ForeignKey(Repository)
+
+
