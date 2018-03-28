@@ -5,7 +5,6 @@ from collections import namedtuple
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from celery import shared_task
 from django.db.models import Q
 
 from pulpcore.plugin.models import Artifact, RepositoryVersion, Repository
@@ -15,7 +14,7 @@ from pulpcore.plugin.changeset import (
     PendingArtifact,
     PendingContent,
     SizedIterable)
-from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
+from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_file.app.models import FileContent, FileRemote
 from pulp_file.manifest import Manifest
@@ -31,7 +30,6 @@ Key = namedtuple('Key', ('relative_path', 'digest'))
 Delta = namedtuple('Delta', ('additions', 'removals'))
 
 
-@shared_task(base=UserFacingTask)
 def synchronize(remote_pk, repository_pk):
     """
     Create a new version of the repository that is synchronized with the remote
