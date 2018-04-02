@@ -2,7 +2,7 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, ContentArtifact, Importer, Publisher
+from pulpcore.plugin.models import Content, ContentArtifact, Remote, Publisher
 
 
 log = getLogger(__name__)
@@ -44,9 +44,9 @@ class FileContent(Content):
         )
 
 
-class FileImporter(Importer):
+class FileRemote(Remote):
     """
-    Importer for "file" content.
+    Remote for "file" content.
     """
     TYPE = 'file'
 

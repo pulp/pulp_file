@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
 from pulpcore.plugin.models import Artifact
-from pulpcore.plugin.serializers import ContentSerializer, ImporterSerializer, PublisherSerializer
+from pulpcore.plugin.serializers import ContentSerializer, RemoteSerializer, PublisherSerializer
 
-from .models import FileContent, FileImporter, FilePublisher
+from .models import FileContent, FileRemote, FilePublisher
 
 
 class FileContentSerializer(ContentSerializer):
@@ -21,17 +21,17 @@ class FileContentSerializer(ContentSerializer):
         model = FileContent
 
 
-class FileImporterSerializer(ImporterSerializer):
+class FileRemoteSerializer(RemoteSerializer):
 
     sync_mode = serializers.ChoiceField(
-        help_text='How the importer should sync from the upstream repository.',
+        help_text='How the remote should sync from the upstream repository.',
         allow_blank=False,
-        choices=[FileImporter.MIRROR],
+        choices=[FileRemote.MIRROR],
     )
 
     class Meta:
-        fields = ImporterSerializer.Meta.fields
-        model = FileImporter
+        fields = RemoteSerializer.Meta.fields
+        model = FileRemote
 
 
 class FilePublisherSerializer(PublisherSerializer):

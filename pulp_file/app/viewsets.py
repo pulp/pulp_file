@@ -10,13 +10,13 @@ from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
 
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
-    ImporterViewSet,
+    RemoteViewSet,
     OperationPostponedResponse,
     PublisherViewSet)
 
 from . import tasks
-from .models import FileContent, FileImporter, FilePublisher
-from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
+from .models import FileContent, FileRemote, FilePublisher
+from .serializers import FileContentSerializer, FileRemoteSerializer, FilePublisherSerializer
 
 
 class FileContentFilter(filterset.FilterSet):
@@ -85,27 +85,27 @@ class FileContentViewSet(ContentViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class FileImporterViewSet(ImporterViewSet):
+class FileRemoteViewSet(RemoteViewSet):
     endpoint_name = 'file'
-    queryset = FileImporter.objects.all()
-    serializer_class = FileImporterSerializer
+    queryset = FileRemote.objects.all()
+    serializer_class = FileRemoteSerializer
 
     @detail_route(methods=('post',), serializer_class=_RepositorySyncURLSerializer)
     def sync(self, request, pk):
         """
         Synchronizes a repository. The ``repository`` field has to be provided.
         """
-        importer = self.get_object()
+        remote = self.get_object()
         serializer = _RepositorySyncURLSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         repository_uri = serializer.data['repository']
-        if not importer.feed_url:
+        if not remote.feed_url:
             raise serializers.ValidationError(detail=_('A feed_url must be specified.'))
         repository = self.get_resource(repository_uri, Repository)
         result = tasks.synchronize.apply_async_with_reservation(
-            [repository, importer],
+            [repository, remote],
             kwargs={
-                'importer_pk': importer.pk,
+                'remote_pk': remote.pk,
                 'repository_pk': repository.pk
             }
         )

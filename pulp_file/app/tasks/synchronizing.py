@@ -17,7 +17,7 @@ from pulpcore.plugin.changeset import (
     SizedIterable)
 from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
 
-from pulp_file.app.models import FileContent, FileImporter
+from pulp_file.app.models import FileContent, FileRemote
 from pulp_file.manifest import Manifest
 
 
@@ -32,40 +32,40 @@ Delta = namedtuple('Delta', ('additions', 'removals'))
 
 
 @shared_task(base=UserFacingTask)
-def synchronize(importer_pk, repository_pk):
+def synchronize(remote_pk, repository_pk):
     """
     Create a new version of the repository that is synchronized with the remote
-    as specified by the importer.
+    as specified by the remote.
 
     Args:
-        importer_pk (str): The importer PK.
+        remote_pk (str): The remote PK.
         repository_pk (str): The repository PK.
 
     Raises:
         ValueError: When feed_url is empty.
     """
-    importer = FileImporter.objects.get(pk=importer_pk)
+    remote = FileRemote.objects.get(pk=remote_pk)
     repository = Repository.objects.get(pk=repository_pk)
     base_version = RepositoryVersion.latest(repository)
 
-    if not importer.feed_url:
-        raise ValueError(_('An importer must have a feed_url specified to synchronize.'))
+    if not remote.feed_url:
+        raise ValueError(_('An remote must have a feed_url specified to synchronize.'))
 
     with WorkingDirectory():
         with RepositoryVersion.create(repository) as new_version:
             log.info(
-                _('Synchronizing: repository=%(r)s importer=%(p)s'),
+                _('Synchronizing: repository=%(r)s remote=%(p)s'),
                 {
                     'r': repository.name,
-                    'p': importer.name
+                    'p': remote.name
                 })
-            manifest = fetch_manifest(importer)
+            manifest = fetch_manifest(remote)
             content = fetch_content(base_version)
             delta = find_delta(manifest, content)
-            additions = build_additions(importer, manifest, delta)
+            additions = build_additions(remote, manifest, delta)
             removals = build_removals(base_version, delta)
             changeset = ChangeSet(
-                importer=importer,
+                remote=remote,
                 repository_version=new_version,
                 additions=additions,
                 removals=removals)
@@ -73,22 +73,22 @@ def synchronize(importer_pk, repository_pk):
                 if not log.isEnabledFor(logging.DEBUG):
                     continue
                 log.debug(
-                    _('Applied: repository=%(r)s importer=%(p)s change:%(c)s'),
+                    _('Applied: repository=%(r)s remote=%(p)s change:%(c)s'),
                     {
                         'r': repository.name,
-                        'p': importer.name,
+                        'p': remote.name,
                         'c': report,
                     })
 
 
-def fetch_manifest(importer):
+def fetch_manifest(remote):
     """
     Fetch (download) the manifest.
 
     Args:
-        importer (FileImporter): An importer.
+        remote (FileRemote): An remote.
     """
-    downloader = importer.get_downloader(importer.feed_url)
+    downloader = remote.get_downloader(remote.feed_url)
     downloader.fetch()
     return Manifest(downloader.path)
 
@@ -138,12 +138,12 @@ def find_delta(manifest, content, mirror=True):
     return Delta(additions, removals)
 
 
-def build_additions(importer, manifest, delta):
+def build_additions(remote, manifest, delta):
     """
     Build the content to be added.
 
     Args:
-        importer (FileImporter): An importer.
+        remote (FileRemote): An remote.
         manifest (Manifest): The downloaded manifest.
         delta (Delta): The set of Key to be added and removed.
 
@@ -165,7 +165,7 @@ def build_additions(importer, manifest, delta):
                     PendingArtifact(artifact, url, entry.relative_path)
                 })
             yield content
-    parsed_url = urlparse(importer.feed_url)
+    parsed_url = urlparse(remote.feed_url)
     root_dir = os.path.dirname(parsed_url.path)
     return SizedIterable(generate(), len(delta.additions))
 

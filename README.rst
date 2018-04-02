@@ -77,24 +77,24 @@ Create a repository ``foo``
 
 ``$ export REPO_HREF=$(http :8000/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
-Create a new importer ``bar``
+Create a new remote ``bar``
 -----------------------------
 
-``$ http POST http://localhost:8000/api/v3/importers/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/api/v3/remotes/file/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/importers/file/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
+        "_href": "http://localhost:8000/api/v3/remotes/file/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
         ...
     }
 
-``$ export IMPORTER_HREF=$(http :8000/api/v3/importers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :8000/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
-Sync repository ``foo`` using importer ``bar``
+Sync repository ``foo`` using remote ``bar``
 ----------------------------------------------
 
-``$ http POST $IMPORTER_HREF'sync/' repository=$REPO_HREF``
+``$ http POST $REMOTE_HREF'sync/' repository=$REPO_HREF``
 
 Look at the new Repository Version created
 ------------------------------------------
