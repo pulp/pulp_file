@@ -55,6 +55,9 @@ class FileAddRemoveTaskSerializer(TaskSerializer):
 
     @property
     def task_kwargs(self):
+        """
+        Creates a dictionary that is passed to the celery task as kwargs.
+        """
         add_pks = [content_unit.pk for content_unit in self.task.add_content_units.all()]
         rm_pks = [content_unit.pk for content_unit in self.task.remove_content_units.all()]
         return {'repository_pk': self.task.repository.pk,
