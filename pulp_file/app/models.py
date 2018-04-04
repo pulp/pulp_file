@@ -71,3 +71,9 @@ class FileSyncTask(FileTask):
     repository = models.ForeignKey(Repository)
 
 
+class FileAddRemoveTask(FileTask):
+
+    TYPE = 'add-remove'
+    repository = models.ForeignKey(Repository)
+    add_content_units = models.ManyToManyField(FileContent, related_name="added")
+    remove_content_units = models.ManyToManyField(FileContent, related_name="removed")

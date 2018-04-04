@@ -2,8 +2,9 @@ from rest_framework import serializers
 
 from pulpcore.plugin.models import Artifact, Repository
 from pulpcore.plugin.serializers import ContentSerializer, ImporterSerializer, PublisherSerializer
+from pulpcore.app.tasks import repository as core_tasks
 
-from .models import FileContent, FileImporter, FilePublisher, FileSyncTask
+from .models import FileContent, FileImporter, FilePublisher, FileSyncTask, FileAddRemoveTask
 from . import tasks
 
 from pulpcore.app.serializers.task import TaskSerializer
@@ -28,6 +29,55 @@ class FileSyncTaskSerializer(TaskSerializer):
     class Meta:
         model = FileSyncTask
         fields = TaskSerializer.Meta.fields + ("importer", "repository")
+
+
+class FileAddRemoveTaskSerializer(TaskSerializer):
+
+    repository = serializers.HyperlinkedRelatedField(
+        view_name='repositories-detail',
+        queryset=Repository.objects.all(),
+    )
+
+    add_content_units = DetailRelatedField(
+        queryset=FileContent.objects.all(),
+        many=True,
+    )
+    remove_content_units = DetailRelatedField(
+        queryset=FileContent.objects.all(),
+        many=True,
+    )
+
+    reservation_structure = ["repository"]
+
+    # If there is custom logic related to dependencies, validation, etc, the plugin could create
+    # their own task rather than using the general add/remove from pulpcore.
+    celery_task = core_tasks.add_and_remove
+
+    @property
+    def task_kwargs(self):
+        add_pks = [content_unit.pk for content_unit in self.task.add_content_units.all()]
+        rm_pks = [content_unit.pk for content_unit in self.task.remove_content_units.all()]
+        return {'repository_pk': self.task.repository.pk,
+                'add_content_units': add_pks,
+                'remove_content_units': rm_pks}
+
+    # def validate(self, data):
+    #     """
+    #     OPTIONAL!
+    #     Here, the plugin writer can provide **synchronous** validation. The plugin writer also has
+    #     the opporunity to alter/clean the data.
+    #
+    #     Warning: The content in a repository could change between request time and task time.
+    #     """
+    #     for content_unit in data['add_content_units']:
+    #         if content_unit in data['remove_content_units']:
+    #             raise serializers.ValidationError("Cannot add and remove a single content unit")
+    #     return data
+
+    class Meta:
+        model = FileAddRemoveTask
+        fields = TaskSerializer.Meta.fields + ("add_content_units", "remove_content_units",
+                                               "repository")
 
 
 class FileContentSerializer(ContentSerializer):

@@ -15,9 +15,10 @@ from pulpcore.plugin.viewsets import (
     PublisherViewSet)
 
 from . import tasks
-from .models import FileContent, FileImporter, FilePublisher, FileSyncTask, FileTask
+from .models import (FileContent, FileImporter, FilePublisher, FileSyncTask, FileTask,
+                     FileAddRemoveTask)
 from .serializers import FileContentSerializer, FileImporterSerializer, FilePublisherSerializer
-from .serializers import FileSyncTaskSerializer
+from .serializers import FileSyncTaskSerializer, FileAddRemoveTaskSerializer
 
 from pulpcore.app.viewsets.task import TaskViewSet
 
@@ -35,6 +36,14 @@ class FileSyncTaskViewSet(TaskViewSet, mixins.CreateModelMixin):
     queryset = FileSyncTask.objects.all()
     model = FileSyncTask
     serializer_class = FileSyncTaskSerializer
+
+
+class FileAddRemoveTaskViewSet(TaskViewSet, mixins.CreateModelMixin):
+
+    endpoint_name = 'file/add-remove'
+    queryset = FileAddRemoveTask.objects.all()
+    model = FileAddRemoveTask
+    serializer_class = FileAddRemoveTaskSerializer
 
 
 class FileContentFilter(filterset.FilterSet):
