@@ -42,14 +42,14 @@ def synchronize(remote_pk, repository_pk):
         repository_pk (str): The repository PK.
 
     Raises:
-        ValueError: When feed_url is empty.
+        ValueError: When url is empty.
     """
     remote = FileRemote.objects.get(pk=remote_pk)
     repository = Repository.objects.get(pk=repository_pk)
     base_version = RepositoryVersion.latest(repository)
 
-    if not remote.feed_url:
-        raise ValueError(_('An remote must have a feed_url specified to synchronize.'))
+    if not remote.url:
+        raise ValueError(_('An remote must have a url specified to synchronize.'))
 
     with WorkingDirectory():
         with RepositoryVersion.create(repository) as new_version:
@@ -88,7 +88,7 @@ def fetch_manifest(remote):
     Args:
         remote (FileRemote): An remote.
     """
-    downloader = remote.get_downloader(remote.feed_url)
+    downloader = remote.get_downloader(remote.url)
     downloader.fetch()
     return Manifest(downloader.path)
 
@@ -165,7 +165,7 @@ def build_additions(remote, manifest, delta):
                     PendingArtifact(artifact, url, entry.relative_path)
                 })
             yield content
-    parsed_url = urlparse(remote.feed_url)
+    parsed_url = urlparse(remote.url)
     root_dir = os.path.dirname(parsed_url.path)
     return SizedIterable(generate(), len(delta.additions))
 
