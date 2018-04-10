@@ -99,8 +99,7 @@ class FileRemoteViewSet(RemoteViewSet):
         serializer = _RepositorySyncURLSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         repository_uri = serializer.data['repository']
-        if not remote.url:
-            raise serializers.ValidationError(detail=_('A url must be specified.'))
+
         repository = self.get_resource(repository_uri, Repository)
         result = tasks.synchronize.apply_async_with_reservation(
             [repository, remote],
