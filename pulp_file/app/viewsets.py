@@ -109,7 +109,7 @@ class FileRemoteViewSet(RemoteViewSet):
                 'repository_pk': repository.pk
             }
         )
-        return OperationPostponedResponse([result], request)
+        return OperationPostponedResponse(result, request)
 
 
 class FilePublisherViewSet(PublisherViewSet):
@@ -142,4 +142,4 @@ class FilePublisherViewSet(PublisherViewSet):
                 'repository_version_pk': str(repository_version.pk)
             }
         )
-        return OperationPostponedResponse([result], request)
+        return OperationPostponedResponse(result, request)
