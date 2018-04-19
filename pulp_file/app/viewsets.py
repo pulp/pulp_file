@@ -7,12 +7,13 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
-
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
     RemoteViewSet,
     OperationPostponedResponse,
     PublisherViewSet)
+from rest_framework_nested.relations import NestedHyperlinkedRelatedField
+
 
 from . import tasks
 from .models import FileContent, FileRemote, FilePublisher
@@ -50,13 +51,14 @@ class _RepositoryPublishURLSerializer(serializers.Serializer):
         view_name='repositories-detail',
     )
 
-    repository_version = serializers.HyperlinkedRelatedField(
+    repository_version = NestedHyperlinkedRelatedField(
         help_text=_('A URI of the repository version to be published.'),
         required=False,
-        allow_null=True,
         label=_('Repository Version'),
         queryset=RepositoryVersion.objects.all(),
         view_name='versions-detail',
+        lookup_field='number',
+        parent_lookup_kwargs={'repository_pk': 'repository__pk'},
     )
 
     def validate(self, data):
