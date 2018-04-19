@@ -7,12 +7,13 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
-
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
     RemoteViewSet,
     OperationPostponedResponse,
     PublisherViewSet)
+from rest_framework_nested.relations import NestedHyperlinkedRelatedField
+
 
 from . import tasks
 from .models import FileContent, FileRemote, FilePublisher
@@ -29,25 +30,35 @@ class FileContentFilter(filterset.FilterSet):
 
 
 class _RepositorySyncURLSerializer(serializers.Serializer):
-    repository = serializers.URLField(
-        help_text=_('A URI of the repository to be synchronized.'),
-        label=_('Repository'),
+    repository = serializers.HyperlinkedRelatedField(
         required=True,
+        help_text=_('A URI of the repository to be synchronized.'),
+        queryset=Repository.objects.all(),
+        view_name='repositories-detail',
+        label=_('Repository'),
         error_messages={
             'required': _('The repository URI must be specified.')
         })
 
 
 class _RepositoryPublishURLSerializer(serializers.Serializer):
-    repository = serializers.URLField(
-        help_text=_('A URI of the repository to be published.'),
+
+    repository = serializers.HyperlinkedRelatedField(
+        help_text=_('A URI of the repository to be synchronized.'),
+        required=False,
         label=_('Repository'),
-        required=False
+        queryset=Repository.objects.all(),
+        view_name='repositories-detail',
     )
-    repository_version = serializers.URLField(
+
+    repository_version = NestedHyperlinkedRelatedField(
         help_text=_('A URI of the repository version to be published.'),
-        label=_('Repository version'),
-        required=False
+        required=False,
+        label=_('Repository Version'),
+        queryset=RepositoryVersion.objects.all(),
+        view_name='versions-detail',
+        lookup_field='number',
+        parent_lookup_kwargs={'repository_pk': 'repository__pk'},
     )
 
     def validate(self, data):
@@ -96,11 +107,9 @@ class FileRemoteViewSet(RemoteViewSet):
         Synchronizes a repository. The ``repository`` field has to be provided.
         """
         remote = self.get_object()
-        serializer = _RepositorySyncURLSerializer(data=request.data)
+        serializer = _RepositorySyncURLSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        repository_uri = serializer.data['repository']
-
-        repository = self.get_resource(repository_uri, Repository)
+        repository = serializer.validated_data.get('repository')
         result = tasks.synchronize.apply_async_with_reservation(
             [repository, remote],
             kwargs={
@@ -123,15 +132,14 @@ class FilePublisherViewSet(PublisherViewSet):
         be provided but not both at the same time.
         """
         publisher = self.get_object()
-        serializer = _RepositoryPublishURLSerializer(data=request.data)
+        serializer = _RepositoryPublishURLSerializer(data=request.data,
+                                                     context={'request': request})
         serializer.is_valid(raise_exception=True)
-        repository_uri = serializer.data.get('repository')
-        repository_version_uri = serializer.data.get('repository_version')
+        repository_version = serializer.validated_data.get('repository_version')
 
-        if repository_version_uri:
-            repository_version = self.get_resource(repository_version_uri, RepositoryVersion)
-        else:
-            repository = self.get_resource(repository_uri, Repository)
+        # Safe because version OR repository is enforced by serializer.
+        if not repository_version:
+            repository = serializer.validated_data.get('repository')
             repository_version = RepositoryVersion.latest(repository)
 
         result = tasks.publish.apply_async_with_reservation(
