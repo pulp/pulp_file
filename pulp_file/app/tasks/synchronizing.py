@@ -61,6 +61,7 @@ def synchronize(remote_pk, repository_pk):
                 })
             manifest = fetch_manifest(remote)
             content = fetch_content(base_version)
+            # TODO(asmacdo) add sync mode
             delta = find_delta(manifest, content)
             additions = build_additions(remote, manifest, delta)
             removals = build_removals(base_version, delta)

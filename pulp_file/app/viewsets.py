@@ -6,6 +6,7 @@ from rest_framework.decorators import detail_route
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
+from pulpcore.common import constants
 from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
@@ -39,6 +40,11 @@ class _RepositorySyncURLSerializer(serializers.Serializer):
         error_messages={
             'required': _('The repository URI must be specified.')
         })
+    sync_mode = serializers.ChoiceField(
+        help_text='How the remote should sync from the upstream repository.',
+        allow_blank=False,
+        choices=constants.SYNC_CHOICES,
+    )
 
 
 class _RepositoryPublishURLSerializer(serializers.Serializer):
