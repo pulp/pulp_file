@@ -2,7 +2,7 @@
 =======================
 
 This is the ``pulp_file`` Plugin for `Pulp Project
-3.0+ <https://pypi.python.org/pypi/pulpcore/>`__. This plugin replaces the ISO support in the
+3.0+ <https://pypi.org/project/pulpcore/>`__. This plugin replaces the ISO support in the
 ``pulp_rpm`` plugin for Pulp 2. This plugin uses the
 `ChangeSet API <http://docs.pulpproject.org/en/3.0/nightly/plugins/plugin-api/changeset.html>`_
 to add and remove content from a repository.
