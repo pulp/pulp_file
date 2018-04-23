@@ -22,13 +22,6 @@ class FileContentSerializer(ContentSerializer):
 
 
 class FileRemoteSerializer(RemoteSerializer):
-
-    sync_mode = serializers.ChoiceField(
-        help_text='How the remote should sync from the upstream repository.',
-        allow_blank=False,
-        choices=[FileRemote.MIRROR],
-    )
-
     class Meta:
         fields = RemoteSerializer.Meta.fields
         model = FileRemote
