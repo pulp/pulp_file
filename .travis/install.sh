@@ -12,11 +12,9 @@ cd .. && git clone https://github.com/pulp/pulp.git
 if [ -z $PULP_PR_NUMBER ]; then
   pushd pulp && git checkout 3.0-dev && popd
 else
-  export PULP_SHA=$(curl https://api.github.com/repos/pulp/pulp/pulls/$PULP_PR_NUMBER | jq -r '.merge_commit_sha')
-
   pushd pulp
   git fetch origin +refs/pull/$PULP_PR_NUMBER/merge
-  git checkout $PULP_SHA
+  git checkout FETCH_HEAD
   popd
 fi
 
@@ -27,12 +25,11 @@ pushd pulp/plugin/ && pip install -e .  && popd
 if [ -z $PULP_SMASH_PR_NUMBER ]; then
   pip install git+https://github.com/PulpQE/pulp-smash.git#egg=pulp-smash
 else
-  export PULP_SMASH_SHA=$(curl https://api.github.com/repos/PulpQE/pulp-smash/pulls/$PULP_SMASH_PR_NUMBER | jq -r '.merge_commit_sha')
   git clone https://github.com/PulpQE/pulp-smash.git
 
   pushd pulp-smash
   git fetch origin +refs/pull/$PULP_SMASH_PR_NUMBER/merge
-  git checkout $PULP_SMASH_SHA
+  git checkout FETCH_HEAD
   pip install -e .
   popd
 fi
