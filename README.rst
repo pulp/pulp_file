@@ -204,3 +204,4 @@ Download ``test.iso`` from Pulp
 ---------------------------------
 
 ``$ http GET http://localhost:8000/content/foo/test.iso``
+
