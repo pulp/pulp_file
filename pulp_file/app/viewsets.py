@@ -73,7 +73,7 @@ class _RepositoryPublishURLSerializer(serializers.Serializer):
 
 
 class FileContentViewSet(ContentViewSet):
-    endpoint_name = 'file'
+    endpoint_name = 'file/files'
     queryset = FileContent.objects.all()
     serializer_class = FileContentSerializer
     filter_class = FileContentFilter
