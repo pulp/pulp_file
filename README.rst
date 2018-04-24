@@ -66,30 +66,30 @@ Install ``pulp-file`` From PyPI
 Create a repository ``foo``
 ---------------------------
 
-``$ http POST http://localhost:8000/api/v3/repositories/ name=foo``
+``$ http POST http://localhost:8000/pulp/api/v3/repositories/ name=foo``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
+        "_href": "http://localhost:8000/pulp/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
         ...
     }
 
-``$ export REPO_HREF=$(http :8000/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
 Create a new remote ``bar``
 -----------------------------
 
-``$ http POST http://localhost:8000/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/remotes/file/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
+        "_href": "http://localhost:8000/pulp/api/v3/remotes/file/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
         ...
     }
 
-``$ export REMOTE_HREF=$(http :8000/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using remote ``bar``
 ----------------------------------------------
@@ -104,10 +104,10 @@ Look at the new Repository Version created
 .. code:: json
 
     {
-        "_added_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/added_content/",
-        "_content_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/content/",
-        "_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/",
-        "_removed_href": "http://localhost:8000/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/removed_content/",
+        "_added_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/added_content/",
+        "_content_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/content/",
+        "_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/",
+        "_removed_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/removed_content/",
         "content_summary": {
             "file": 3
         },
@@ -121,12 +121,12 @@ Upload ``foo.tar.gz`` to Pulp
 
 Create an Artifact by uploading the file to Pulp.
 
-``$ http --form POST http://localhost:8000/api/v3/artifacts/ file@./foo.tar.gz``
+``$ http --form POST http://localhost:8000/pulp/api/v3/artifacts/ file@./foo.tar.gz``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "_href": "http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
         ...
     }
 
@@ -135,18 +135,18 @@ Create ``file`` content from an Artifact
 
 Create a content unit and point it to your artifact
 
-``$ http POST http://localhost:8000/api/v3/content/file/ relative_path=foo.tar.gz artifact="http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"``
+``$ http POST http://localhost:8000/pulp/api/v3/content/file/ relative_path=foo.tar.gz artifact="http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/content/file/a9578a5f-c59f-4920-9497-8d1699c112ff/",
-        "artifact": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "_href": "http://localhost:8000/pulp/api/v3/content/file/a9578a5f-c59f-4920-9497-8d1699c112ff/",
+        "artifact": "http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
         "relative_path": "foo.tar.gz",
         "type": "file"
     }
 
-``$ export CONTENT_HREF=$(http :8000/api/v3/content/file/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
+``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/file/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
 
 
 Add content to repository ``foo``
@@ -158,16 +158,16 @@ Add content to repository ``foo``
 Create a ``file`` Publisher
 ---------------------------
 
-``$ http POST http://localhost:8000/api/v3/publishers/file/ name=bar``
+``$ http POST http://localhost:8000/pulp/api/v3/publishers/file/ name=bar``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/publishers/file/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
+        "_href": "http://localhost:8000/pulp/api/v3/publishers/file/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
         ...
     }
 
-``$ export PUBLISHER_HREF=$(http :8000/api/v3/publishers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export PUBLISHER_HREF=$(http :8000/pulp/api/v3/publishers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 
 Use the ``bar`` Publisher to create a Publication
@@ -179,23 +179,23 @@ Use the ``bar`` Publisher to create a Publication
 
     [
         {
-            "_href": "http://localhost:8000/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
+            "_href": "http://localhost:8000/pulp/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
             "task_id": "fd4cbecd-6c6a-4197-9cbe-4e45b0516309"
         }
     ]
 
-``$ export PUBLICATION_HREF=$(http :8000/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
+``$ export PUBLICATION_HREF=$(http :8000/pulp/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
 
 Create a Distribution for the Publication
 ---------------------------------------
 
-``$ http POST http://localhost:8000/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
+``$ http POST http://localhost:8000/pulp/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
 
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/distributions/9b29f1b2-6726-40a2-988a-273d3f009a41/",
+        "_href": "http://localhost:8000/pulp/api/v3/distributions/9b29f1b2-6726-40a2-988a-273d3f009a41/",
        ...
     }
 
