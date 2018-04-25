@@ -1,5 +1,5 @@
 ``pulp_file`` Plugin
-=======================
+====================
 
 This is the ``pulp_file`` Plugin for `Pulp Project
 3.0+ <https://pypi.org/project/pulpcore/>`__. This plugin replaces the ISO support in the
@@ -78,7 +78,7 @@ Create a repository ``foo``
 ``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
 Create a new remote ``bar``
------------------------------
+---------------------------
 
 ``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
@@ -92,7 +92,7 @@ Create a new remote ``bar``
 ``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using remote ``bar``
-----------------------------------------------
+--------------------------------------------
 
 ``$ http POST $REMOTE_HREF'sync/' repository=$REPO_HREF``
 
@@ -131,7 +131,7 @@ Create an Artifact by uploading the file to Pulp.
     }
 
 Create ``file`` content from an Artifact
--------------------------------------------
+-----------------------------------------
 
 Create a content unit and point it to your artifact
 
@@ -187,7 +187,7 @@ Use the ``bar`` Publisher to create a Publication
 ``$ export PUBLICATION_HREF=$(http :8000/pulp/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
 
 Create a Distribution for the Publication
----------------------------------------
+-----------------------------------------
 
 ``$ http POST http://localhost:8000/pulp/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
 
@@ -201,6 +201,6 @@ Create a Distribution for the Publication
 
 
 Download ``test.iso`` from Pulp
----------------------------------
+-------------------------------
 
 ``$ http GET http://localhost:8000/pulp/content/foo/test.iso``
