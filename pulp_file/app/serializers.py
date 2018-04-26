@@ -1,3 +1,5 @@
+import copy
+
 from rest_framework import serializers
 
 from pulpcore.plugin.models import Artifact
@@ -15,6 +17,14 @@ class FileContentSerializer(ContentSerializer):
         help_text="Artifact file representing the physical content",
         queryset=Artifact.objects.all()
     )
+
+    def create(self, validated_data):
+        artifact = validated_data.pop('artifact')
+        data = copy.deepcopy(validated_data)
+        data['digest'] = artifact.sha256
+        instance = FileContent.objects.create(**data)
+        instance.artifact = artifact
+        return instance
 
     class Meta:
         fields = ('_href', 'type', 'relative_path', 'artifact')
