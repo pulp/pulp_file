@@ -64,8 +64,21 @@ class _RepositoryPublishURLSerializer(serializers.Serializer):
     def validate(self, data):
         repository = data.get('repository')
         repository_version = data.get('repository_version')
-        if (repository and not repository_version) or (not repository and repository_version):
+
+        if not repository and not repository_version:
+            raise serializers.ValidationError(
+                _("Either the 'repository' or 'repository_version' need to be specified"))
+        elif not repository and repository_version:
             return data
+        elif repository and not repository_version:
+            version = RepositoryVersion.latest(repository)
+            if version:
+                new_data = {'repository_version': version}
+                new_data.update(data)
+                return new_data
+            else:
+                raise serializers.ValidationError(
+                    detail=_('Repository has no version available to publish'))
         raise serializers.ValidationError(
             _("Either the 'repository' or 'repository_version' need to be specified "
               "but not both.")
@@ -136,11 +149,6 @@ class FilePublisherViewSet(PublisherViewSet):
                                                      context={'request': request})
         serializer.is_valid(raise_exception=True)
         repository_version = serializer.validated_data.get('repository_version')
-
-        # Safe because version OR repository is enforced by serializer.
-        if not repository_version:
-            repository = serializer.validated_data.get('repository')
-            repository_version = RepositoryVersion.latest(repository)
 
         result = tasks.publish.apply_async_with_reservation(
             [repository_version.repository, publisher],
