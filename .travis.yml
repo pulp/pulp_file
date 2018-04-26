@@ -6,9 +6,6 @@ python:
     # python versions used in el7 SCL & supported fedora
     - "3.5"
     - "3.6"
-env:
-  - DB=sqlite
-  - DB=postgres
 addons:
     # postgres versions provided by el7 RHSCL (lowest supportable version)
     postgresql: "9.5"
