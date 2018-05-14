@@ -7,6 +7,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
+from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
     RemoteViewSet,
@@ -123,7 +124,8 @@ class FileRemoteViewSet(RemoteViewSet):
         serializer = _RepositorySyncURLSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         repository = serializer.validated_data.get('repository')
-        result = tasks.synchronize.apply_async_with_reservation(
+        result = enqueue_with_reservation(
+            tasks.synchronize,
             [repository, remote],
             kwargs={
                 'remote_pk': remote.pk,
@@ -150,7 +152,8 @@ class FilePublisherViewSet(PublisherViewSet):
         serializer.is_valid(raise_exception=True)
         repository_version = serializer.validated_data.get('repository_version')
 
-        result = tasks.publish.apply_async_with_reservation(
+        result = enqueue_with_reservation(
+            tasks.publish,
             [repository_version.repository, publisher],
             kwargs={
                 'publisher_pk': str(publisher.pk),

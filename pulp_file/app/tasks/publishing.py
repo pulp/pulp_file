@@ -3,7 +3,6 @@ import os
 
 from gettext import gettext as _
 
-from celery import shared_task
 from django.core.files import File
 
 from pulpcore.plugin.models import (
@@ -12,7 +11,7 @@ from pulpcore.plugin.models import (
     PublishedArtifact,
     PublishedMetadata,
     RemoteArtifact)
-from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
+from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_file.app.models import FileContent, FilePublisher
 from pulp_file.manifest import Entry, Manifest
@@ -21,7 +20,6 @@ from pulp_file.manifest import Entry, Manifest
 log = logging.getLogger(__name__)
 
 
-@shared_task(base=UserFacingTask)
 def publish(publisher_pk, repository_version_pk):
     """
     Use provided publisher to create a Publication based on a RepositoryVersion.
