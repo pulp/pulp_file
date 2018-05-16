@@ -14,6 +14,7 @@ setup(
     version='0.0.1b2',
     description='File plugin for the Pulp Project',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Pulp Project Developers',
     author_email='pulp-dev@redhat.com',
     url='http://www.pulpproject.org/',
