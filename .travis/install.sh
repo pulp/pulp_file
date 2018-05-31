@@ -12,9 +12,7 @@ pip install git+https://github.com/rq/rq.git@3133d94b58e59cb86e8f4677492d48b2add
 
 cd .. && git clone https://github.com/pulp/pulp.git
 
-if [ -z $PULP_PR_NUMBER ]; then
-  pushd pulp && git checkout 3.0-dev && popd
-else
+if [ -n $PULP_PR_NUMBER ]; then
   pushd pulp
   git fetch origin +refs/pull/$PULP_PR_NUMBER/merge
   git checkout FETCH_HEAD
