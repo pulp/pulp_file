@@ -45,11 +45,9 @@ class FileContentViewSet(ContentViewSet):
         except KeyError:
             raise serializers.ValidationError(detail={'artifact': _('This field is required')})
 
-        data = request.data
-        data['digest'] = artifact.sha256
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        content = serializer.save()
+        content = serializer.save(digest=artifact.sha256)
         content.artifact = artifact
 
         headers = self.get_success_headers(request.data)
