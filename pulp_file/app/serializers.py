@@ -17,7 +17,8 @@ class FileContentSerializer(ContentSerializer):
     )
 
     class Meta:
-        fields = ('_href', 'type', 'relative_path', 'artifact')
+        fields = tuple(set(ContentSerializer.Meta.fields) - {'artifacts'}) + ('relative_path',
+                                                                              'artifact')
         model = FileContent
 
 
