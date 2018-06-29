@@ -9,15 +9,29 @@ Line = namedtuple('Line', ('number', 'content'))
 class Entry:
     """
     Manifest entry.
-    Format: <relative_path>, <digest>, <size>.
 
+    Format: <relative_path>, <digest>, <size>.
     Lines beginning with `#` are ignored.
 
     Attributes:
         relative_path (str): A relative path.
         digest (str): The file sha256 hex digest.
         size (int): The file size in bytes.
+
     """
+
+    def __init__(self, relative_path, size, digest):
+        """
+        Create a new Entry.
+
+        Args:
+            relative_path (str): A relative path.
+            digest (str): The file sha256 hex digest.
+            size (int): The file size in bytes.
+        """
+        self.relative_path = relative_path
+        self.digest = digest
+        self.size = size
 
     @staticmethod
     def parse(line):
@@ -32,6 +46,7 @@ class Entry:
 
         Raises:
             ValueError: on parsing error.
+
         """
         part = [s.strip() for s in line.content.split(',')]
         if len(part) != 3:
@@ -45,8 +60,11 @@ class Entry:
 
     def __str__(self):
         """
+        Returns a string representation of the Manifest Entry.
+
         Returns:
             str: format: "<relative_path>, <digest>, <size>"
+
         """
         fields = [
             self.relative_path,
@@ -56,31 +74,25 @@ class Entry:
             fields.append(str(self.size))
         return ', '.join(fields)
 
-    def __init__(self, relative_path, size, digest):
-        """
-        Args:
-            relative_path (str): A relative path.
-            digest (str): The file sha256 hex digest.
-            size (int): The file size in bytes.
-        """
-        self.relative_path = relative_path
-        self.digest = digest
-        self.size = size
-
 
 class Manifest:
     """
     A file manifest.
+
     Describes files contained within the directory.
 
     Attributes:
         relative_path (str): An relative path to the manifest.
+
     """
 
     def __init__(self, relative_path):
         """
+        Create a new Manifest.
+
         Args:
             relative_path (str): An relative path to the manifest.
+
         """
         self.relative_path = relative_path
 
@@ -90,6 +102,7 @@ class Manifest:
 
         Yields:
             Entry: for each line.
+
         """
         with open(self.relative_path) as fp:
             for n, line in enumerate(fp.readlines(), 1):
@@ -106,6 +119,7 @@ class Manifest:
 
         Args:
             entries (iterable): The entries to be written.
+
         """
         with open(self.relative_path, 'w+') as fp:
             for entry in entries:

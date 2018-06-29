@@ -18,8 +18,8 @@ class FileContent(Content):
     Fields:
         relative_path (str): The file relative path.
         digest (str): The SHA256 HEX digest.
-
     """
+
     TYPE = 'file'
 
     relative_path = models.TextField(blank=False, null=False)
@@ -27,10 +27,16 @@ class FileContent(Content):
 
     @property
     def artifact(self):
+        """
+        Return the artifact id (there is only one for this content type).
+        """
         return self.artifacts.get().pk
 
     @artifact.setter
     def artifact(self, artifact):
+        """
+        Set the artifact for this FileContent.
+        """
         if self.pk:
             ca = ContentArtifact(artifact=artifact,
                                  content=self,
@@ -48,6 +54,7 @@ class FileRemote(Remote):
     """
     Remote for "file" content.
     """
+
     TYPE = 'file'
 
 
@@ -55,4 +62,5 @@ class FilePublisher(Publisher):
     """
     Publisher for "file" content.
     """
+
     TYPE = 'file'

@@ -27,17 +27,16 @@ def publish(publisher_pk, repository_version_pk):
     Args:
         publisher_pk (str): Use the publish settings provided by this publisher.
         repository_version_pk (str): Create a publication from this repository version.
+
     """
     publisher = FilePublisher.objects.get(pk=publisher_pk)
     repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
-    log.info(
-        _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
-        {
-            'repository': repository_version.repository.name,
-            'version': repository_version.number,
-            'publisher': publisher.name,
-        })
+    log.info(_('Publishing: repository={repo}, version={ver}, publisher={pub}').format(
+        repo=repository_version.repository.name,
+        ver=repository_version.number,
+        pub=publisher.name,
+    ))
 
     with WorkingDirectory():
         with Publication.create(repository_version, publisher) as publication:
@@ -49,11 +48,7 @@ def publish(publisher_pk, repository_version_pk):
                 file=File(open(manifest.relative_path, 'rb')))
             metadata.save()
 
-    log.info(
-        _('Publication: %(publication)s created'),
-        {
-            'publication': publication.pk
-        })
+    log.info(_('Publication: {publication} created').format(publication=publication.pk))
 
 
 def populate(publication):
@@ -67,6 +62,7 @@ def populate(publication):
 
     Yields:
         Entry: Each manifest entry.
+
     """
     def find_artifact():
         _artifact = content_artifact.artifact
