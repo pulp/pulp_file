@@ -35,33 +35,46 @@ Follow the `installation
 instructions <https://docs.pulpproject.org/en/3.0/nightly/installation/instructions.html>`__
 provided with pulpcore.
 
+Users should install from **either** PyPI or source.
+
 Install ``pulp-file`` from source
 ---------------------------------
 
-1)  sudo -u pulp -i
-2)  source ~/pulpvenv/bin/activate
-3)  git clone https://github.com/pulp/pulp\_file.git
-4)  cd pulp\_file
-5)  python setup.py develop
-6)  pulp-manager makemigrations pulp\_file
-7)  pulp-manager migrate pulp\_file
-8)  django-admin runserver
-9)  sudo systemctl restart pulp\_resource\_manager
-10) sudo systemctl restart pulp\_worker@1
-11) sudo systemctl restart pulp\_worker@2
+.. code-block:: bash
+
+   sudo -u pulp -i
+   source ~/pulpvenv/bin/activate
+   git clone https://github.com/pulp/pulp_file.git
+   cd pulp_file
+   pip install -e .
 
 Install ``pulp-file`` From PyPI
 -------------------------------
 
-1) sudo -u pulp -i
-2) source ~/pulpvenv/bin/activate
-3) pip install pulp-file
-4) pulp-manager makemigrations pulp\_file
-5) pulp-manager migrate pulp\_file
-6) django-admin runserver
-7) sudo systemctl restart pulp\_resource\_manager
-8) sudo systemctl restart pulp\_worker@1
-9) sudo systemctl restart pulp\_worker@2
+.. code-block:: bash
+
+   sudo -u pulp -i
+   source ~/pulpvenv/bin/activate
+   pip install pulp-file
+
+Make and Run Migrations
+-----------------------
+
+.. code-block:: bash
+
+   pulp-manager makemigrations pulp_file
+   pulp-manager migrate pulp_file
+
+Run Services
+------------
+
+.. code-block:: bash
+
+   pulp-manager runserver
+   sudo systemctl restart pulp_resource_manager
+   sudo systemctl restart pulp_worker@1
+   sudo systemctl restart pulp_worker@2
+
 
 Create a repository ``foo``
 ---------------------------
