@@ -71,7 +71,7 @@ Create a repository ``foo``
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
+        "_href": "http://localhost:8000/pulp/api/v3/repositories/1/",
         ...
     }
 
@@ -85,7 +85,7 @@ Create a new remote ``bar``
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/remotes/file/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
+        "_href": "http://localhost:8000/pulp/api/v3/remotes/file/1/",
         ...
     }
 
@@ -104,10 +104,10 @@ Look at the new Repository Version created
 .. code:: json
 
     {
-        "_added_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/added_content/",
-        "_content_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/content/",
-        "_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/",
-        "_removed_href": "http://localhost:8000/pulp/api/v3/repositories/b787e6ad-d6b6-4e3d-ab12-73eba19b42fb/versions/1/removed_content/",
+        "_added_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/added_content/",
+        "_content_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/content/",
+        "_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/",
+        "_removed_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/removed_content/",
         "content_summary": {
             "file": 3
         },
@@ -126,7 +126,7 @@ Create an Artifact by uploading the file to Pulp.
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "_href": "http://localhost:8000/pulp/api/v3/artifacts/1/",
         ...
     }
 
@@ -135,13 +135,13 @@ Create ``file`` content from an Artifact
 
 Create a content unit and point it to your artifact
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz artifact="http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"``
+``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz artifact="http://localhost:8000/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/content/file/files/a9578a5f-c59f-4920-9497-8d1699c112ff/",
-        "artifact": "http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "_href": "http://localhost:8000/pulp/api/v3/content/file/files/1/",
+        "artifact": "http://localhost:8000/pulp/api/v3/artifacts/1/",
         "relative_path": "foo.tar.gz",
         "type": "file"
     }
@@ -163,7 +163,7 @@ Create a ``file`` Publisher
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/publishers/file/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
+        "_href": "http://localhost:8000/pulp/api/v3/publishers/file/1/",
         ...
     }
 
@@ -195,7 +195,7 @@ Create a Distribution for the Publication
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/distributions/9b29f1b2-6726-40a2-988a-273d3f009a41/",
+        "_href": "http://localhost:8000/pulp/api/v3/distributions/1/",
        ...
     }
 
