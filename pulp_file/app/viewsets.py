@@ -38,7 +38,7 @@ class FileContentViewSet(ContentViewSet):
     endpoint_name = 'file/files'
     queryset = FileContent.objects.all()
     serializer_class = FileContentSerializer
-    filter_class = FileContentFilter
+    filterset_class = FileContentFilter
 
     @transaction.atomic
     def create(self, request):
