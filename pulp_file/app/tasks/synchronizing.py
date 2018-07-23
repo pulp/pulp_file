@@ -1,13 +1,10 @@
-import asyncio
 import logging
 import os
 
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import (
-    Artifact, ProgressBar, RepositoryVersion, Repository
-)
+from pulpcore.plugin.models import Artifact, ProgressBar, Repository
 from pulpcore.plugin.stages import (
     DeclarativeArtifact, DeclarativeContent, DeclarativeVersion, FirstStage
 )
