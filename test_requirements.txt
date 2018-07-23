@@ -1,0 +1,4 @@
+coverage
+flake8
+git+https://github.com/PulpQE/pulp-smash.git#egg=pulp-smash
+pytest
