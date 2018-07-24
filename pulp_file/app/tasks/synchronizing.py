@@ -42,6 +42,7 @@ class FileFirstStage(FirstStage):
 
     def __init__(self, remote):
         """
+        The first stage of a pulp_file sync pipeline.
 
         Args:
             remote (FileRemote): The remote data to be used when syncing
