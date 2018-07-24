@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from pulpcore.plugin.models import Artifact
 from pulpcore.plugin.serializers import (
-    AsnycOperationResponseSerializer,
+    AsyncOperationResponseSerializer,
     RepositoryPublishURLSerializer,
     RepositorySyncURLSerializer,
 )
@@ -63,7 +63,7 @@ class FileRemoteViewSet(RemoteViewSet):
 
     @swagger_auto_schema(operation_description="Trigger an asynchronous task to sync file "
                                                "content.",
-                         responses={202: AsnycOperationResponseSerializer})
+                         responses={202: AsyncOperationResponseSerializer})
     @detail_route(methods=('post',), serializer_class=RepositorySyncURLSerializer)
     def sync(self, request, pk):
         """
@@ -90,8 +90,8 @@ class FilePublisherViewSet(PublisherViewSet):
     serializer_class = FilePublisherSerializer
 
     @swagger_auto_schema(operation_description="Trigger an asynchronous task to publish "
-                                               "file content.",
-                         responses={202: AsnycOperationResponseSerializer})
+                                               "R content.",
+                         responses={202: AsyncOperationResponseSerializer})
     @detail_route(methods=('post',), serializer_class=RepositoryPublishURLSerializer)
     def publish(self, request, pk):
         """
