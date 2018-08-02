@@ -49,7 +49,7 @@ class FileFirstStage(FirstStage):
         """
         self.remote = remote
 
-    async def gen_declarative_content(self, in_q, out_q):
+    async def __call__(self, in_q, out_q):
         """
         Build and emit `DeclarativeContent` from the Manifest data.
 
