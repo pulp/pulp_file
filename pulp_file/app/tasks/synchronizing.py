@@ -6,7 +6,7 @@ from urllib.parse import urlparse, urlunparse
 
 from pulpcore.plugin.models import Artifact, ProgressBar, Repository
 from pulpcore.plugin.stages import (
-    DeclarativeArtifact, DeclarativeContent, DeclarativeVersion, FirstStage
+    DeclarativeArtifact, DeclarativeContent, DeclarativeVersion, Stage
 )
 
 from pulp_file.app.models import FileContent, FileRemote
@@ -38,7 +38,7 @@ def synchronize(remote_pk, repository_pk):
     DeclarativeVersion(first_stage, repository).create()
 
 
-class FileFirstStage(FirstStage):
+class FileFirstStage(Stage):
 
     def __init__(self, remote):
         """
