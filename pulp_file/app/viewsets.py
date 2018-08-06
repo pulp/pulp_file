@@ -17,8 +17,8 @@ from pulpcore.plugin.viewsets import (
     ContentViewSet,
     RemoteViewSet,
     OperationPostponedResponse,
-    PublisherViewSet)
-from pulpcore.app.viewsets import BaseFilterSet
+    PublisherViewSet,
+    BaseFilterSet)
 
 from . import tasks
 from .models import FileContent, FileRemote, FilePublisher
