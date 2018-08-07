@@ -107,7 +107,7 @@ Create a new remote ``bar``
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
-``$ http POST ':8000'$REMOTE_HREF'sync/' repository=$REPO_HREF``
+``$ http POST ':8000'$REMOTE_HREF'sync/' repository=$REPO_HREF mirror=True``
 
 Look at the new Repository Version created
 ------------------------------------------
