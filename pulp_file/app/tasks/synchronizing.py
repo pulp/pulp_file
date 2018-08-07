@@ -16,7 +16,7 @@ from pulp_file.manifest import Manifest
 log = logging.getLogger(__name__)
 
 
-def synchronize(remote_pk, repository_pk):
+def synchronize(remote_pk, repository_pk, mirror):
     """
     Sync content from the remote repository.
 
@@ -25,6 +25,7 @@ def synchronize(remote_pk, repository_pk):
     Args:
         remote_pk (str): The remote PK.
         repository_pk (str): The repository PK.
+        mirror (bool): True for mirror mode, False for additive.
 
     Raises:
         ValueError: If the remote does not specify a URL to sync.
@@ -37,7 +38,7 @@ def synchronize(remote_pk, repository_pk):
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
     first_stage = FileFirstStage(remote)
-    DeclarativeVersion(first_stage, repository).create()
+    DeclarativeVersion(first_stage, repository, mirror).create()
 
 
 class FileFirstStage(Stage):
