@@ -7,7 +7,6 @@ from urllib.parse import urljoin
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
-from pulp_smash.constants import FILE_FEED_URL
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_remote,
@@ -20,6 +19,7 @@ from pulp_smash.pulp3.utils import (
 from pulp_file.tests.functional.api.utils import gen_publisher
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_PATH,
+    FILE_FIXTURE_URL,
     FILE_REMOTE_PATH,
     FILE_PUBLISHER_PATH,
 )
@@ -51,8 +51,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-
-        body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
+        body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
