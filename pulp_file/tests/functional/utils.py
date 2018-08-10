@@ -5,11 +5,7 @@ from unittest import SkipTest
 from urllib.parse import urljoin
 
 from pulp_smash import api, selectors
-from pulp_smash.pulp3.constants import (
-    FILE_CONTENT_PATH,
-    FILE_REMOTE_PATH,
-    REPO_PATH,
-)
+from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
@@ -18,7 +14,11 @@ from pulp_smash.pulp3.utils import (
     sync,
 )
 
-from pulp_file.tests.functional.constants import FILE_FIXTURE_URL
+from pulp_file.tests.functional.constants import (
+    FILE_CONTENT_PATH,
+    FILE_FIXTURE_URL,
+    FILE_REMOTE_PATH
+)
 
 
 def populate_pulp(cfg, url=None):
