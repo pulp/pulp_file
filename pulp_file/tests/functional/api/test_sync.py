@@ -47,8 +47,10 @@ class SyncFileRepoTestCase(unittest.TestCase):
         6. Assert that repository version is different from the previous one.
         """
         client = api.Client(self.cfg, api.json_handler)
+
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
+
         body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
@@ -88,8 +90,10 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
+
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
+
         body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
@@ -128,14 +132,19 @@ class MultiResourceLockingTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
+
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
+
         body = gen_remote(urljoin(FILE_LARGE_FIXTURE_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
+
         url = {'url': urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST')}
         client.patch(remote['_href'], url)
+
         sync(cfg, remote, repo)
+
         repo = client.get(repo['_href'])
         remote = client.get(remote['_href'])
         self.assertEqual(remote['url'], url['url'])

@@ -51,12 +51,16 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
+
         body = gen_remote(urljoin(FILE_FEED_URL, 'PULP_MANIFEST'))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
+
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
+
         sync(cfg, remote, repo)
+
         publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
         self.addCleanup(client.delete, publisher['_href'])
 
