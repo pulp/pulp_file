@@ -2,12 +2,11 @@
 """Tests that sync file plugin repositories."""
 import unittest
 from random import randint
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlsplit
 
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
-    gen_remote,
     gen_repo,
     get_content,
     sync,
@@ -15,10 +14,11 @@ from pulp_smash.pulp3.utils import (
 
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_COUNT,
-    FILE_FIXTURE_URL,
-    FILE_LARGE_FIXTURE_URL,
+    FILE_FIXTURE_MANIFEST_URL,
+    FILE_LARGE_FIXTURE_MANIFEST_URL,
     FILE_REMOTE_PATH
 )
+from pulp_file.tests.functional.utils import gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -33,13 +33,13 @@ class SyncFileRepoTestCase(unittest.TestCase):
     def test_sync(self):
         """Sync repositories with the file plugin.
 
-        In order to sync a repository an remote has to be associated within
+        In order to sync a repository a remote has to be associated within
         this repository. When a repository is created this version field is set
         as None. After a sync the repository version is updated.
 
         Do the following:
 
-        1. Create a repository, and an remote.
+        1. Create a repository, and a remote.
         2. Assert that repository version is None.
         3. Sync the remote.
         4. Assert that repository version is not None.
@@ -51,7 +51,7 @@ class SyncFileRepoTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
+        body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
@@ -83,7 +83,7 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
 
         Do the following:
 
-        1. Create a repository, and an remote.
+        1. Create a repository, and a remote.
         2. Sync the repository an arbitrary number of times.
         3. Verify that the repository version is equal to the previous number
            of syncs.
@@ -94,7 +94,7 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
+        body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
@@ -136,11 +136,11 @@ class MultiResourceLockingTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_remote(urljoin(FILE_LARGE_FIXTURE_URL, 'PULP_MANIFEST'))
+        body = gen_file_remote(url=FILE_LARGE_FIXTURE_MANIFEST_URL)
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
-        url = {'url': urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST')}
+        url = {'url': FILE_FIXTURE_MANIFEST_URL}
         client.patch(remote['_href'], url)
 
         sync(cfg, remote, repo)

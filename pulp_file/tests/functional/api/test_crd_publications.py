@@ -1,7 +1,6 @@
 # coding=utf-8
 """Tests that perform actions over publications."""
 import unittest
-from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
@@ -9,20 +8,21 @@ from pulp_smash import api, config
 from pulp_smash.pulp3.constants import DISTRIBUTION_PATH, PUBLICATIONS_PATH, REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_distribution,
-    gen_remote,
     gen_repo,
     publish,
     sync,
 )
 
-from pulp_file.tests.functional.api.utils import gen_publisher
 from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_URL,
     FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH
 )
+from pulp_file.tests.functional.utils import (
+    gen_file_publisher,
+    gen_file_remote,
+    skip_if
+)
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-from pulp_file.tests.functional.utils import skip_if
 
 
 class PublicationsTestCase(unittest.TestCase):
@@ -39,13 +39,13 @@ class PublicationsTestCase(unittest.TestCase):
         cls.repo = {}
         try:
             cls.repo.update(cls.client.post(REPO_PATH, gen_repo()))
-            body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
+            body = gen_file_remote()
             cls.remote.update(cls.client.post(FILE_REMOTE_PATH, body))
             cls.publisher.update(
-                cls.client.post(FILE_PUBLISHER_PATH, gen_publisher())
+                cls.client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
             )
             sync(cls.cfg, cls.remote, cls.repo)
-        except:  # noqa:E722
+        except Exception:
             cls.tearDownClass()
             raise
 
@@ -110,6 +110,7 @@ class PublicationsTestCase(unittest.TestCase):
         body['publication'] = self.publication['_href']
         distribution = self.client.post(DISTRIBUTION_PATH, body)
         self.addCleanup(self.client.delete, distribution['_href'])
+
         self.publication.update(self.client.get(self.publication['_href']))
         publications = self.client.get(PUBLICATIONS_PATH, params={
             'distributions': distribution['_href']

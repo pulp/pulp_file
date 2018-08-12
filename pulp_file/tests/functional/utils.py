@@ -2,13 +2,14 @@
 """Utilities for tests for the file plugin."""
 from functools import partial
 from unittest import SkipTest
-from urllib.parse import urljoin
 
 from pulp_smash import api, selectors
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
+    gen_publisher,
     gen_remote,
     gen_repo,
+    get_content,
     require_pulp_3,
     require_pulp_plugins,
     sync,
@@ -16,7 +17,7 @@ from pulp_smash.pulp3.utils import (
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_PATH,
-    FILE_FIXTURE_URL,
+    FILE_FIXTURE_MANIFEST_URL,
     FILE_REMOTE_PATH
 )
 
@@ -32,7 +33,8 @@ def populate_pulp(cfg, url=None):
         Pulp.
     """
     if url is None:
-        url = urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST')
+        url = FILE_FIXTURE_MANIFEST_URL
+
     client = api.Client(cfg, api.json_handler)
     remote = {}
     repo = {}
@@ -46,6 +48,35 @@ def populate_pulp(cfg, url=None):
         if repo:
             client.delete(repo['_href'])
     return client.get(FILE_CONTENT_PATH)['results']
+
+
+def gen_file_remote(url=None, **kwargs):
+    """Return a semi-random dict for use in creating a file Remote.
+
+    :param url: The URL of an external content source.
+    """
+    if url is None:
+        url = FILE_FIXTURE_MANIFEST_URL
+
+    return gen_remote(url, **kwargs)
+
+
+def gen_file_publisher(**kwargs):
+    """Return a semi-random dict for use in creating a file Remote.
+
+    :param url: The URL of an external content source.
+    """
+    return gen_publisher(**kwargs)
+
+
+def get_file_content_unit_paths(repo):
+    """Return the relative path of content units present in a file repository.
+
+    :param repo: A dict of information about the repository.
+    :returns: A list with the paths of units present in a given repository.
+    """
+    # The "relative_path" is actually a file path and name
+    return [content_unit['relative_path'] for content_unit in get_content(repo)]
 
 
 def set_up_module():

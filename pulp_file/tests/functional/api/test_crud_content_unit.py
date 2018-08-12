@@ -2,7 +2,6 @@
 """Tests that perform actions over content unit."""
 import unittest
 from random import choice
-from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
@@ -10,20 +9,18 @@ from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import ARTIFACTS_PATH, REPO_PATH
 from pulp_smash.pulp3.utils import (
     delete_orphans,
-    gen_remote,
     gen_repo,
     get_content,
     sync,
 )
 
 from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_URL,
     FILE_URL,
     FILE_CONTENT_PATH,
     FILE_REMOTE_PATH,
 )
+from pulp_file.tests.functional.utils import gen_file_remote, skip_if
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-from pulp_file.tests.functional.utils import skip_if
 
 
 class ContentUnitTestCase(unittest.TestCase):
@@ -129,12 +126,16 @@ class DeleteContentUnitRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
-        body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
+
+        body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
+
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
+
         sync(cfg, remote, repo)
+
         repo = client.get(repo['_href'])
         content = get_content(repo)
         with self.assertRaises(HTTPError):
