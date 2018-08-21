@@ -49,7 +49,7 @@ class ContentUnitTestCase(unittest.TestCase):
 
     def test_01_create_content_unit(self):
         """Create content unit."""
-        attrs = _gen_content_unit_attrs(self.artifact)
+        attrs = _gen_file_content_unit_attrs(self.artifact)
         self.content_unit.update(self.client.post(FILE_CONTENT_PATH, attrs))
         for key, val in attrs.items():
             with self.subTest(key=key):
@@ -80,7 +80,7 @@ class ContentUnitTestCase(unittest.TestCase):
 
         This HTTP method is not supported and a HTTP exception is expected.
         """
-        attrs = _gen_content_unit_attrs(self.artifact)
+        attrs = _gen_file_content_unit_attrs(self.artifact)
         with self.assertRaises(HTTPError):
             self.client.patch(self.content_unit['_href'], attrs)
 
@@ -90,12 +90,12 @@ class ContentUnitTestCase(unittest.TestCase):
 
         This HTTP method is not supported and a HTTP exception is expected.
         """
-        attrs = _gen_content_unit_attrs(self.artifact)
+        attrs = _gen_file_content_unit_attrs(self.artifact)
         with self.assertRaises(HTTPError):
             self.client.put(self.content_unit['_href'], attrs)
 
 
-def _gen_content_unit_attrs(artifact):
+def _gen_file_content_unit_attrs(artifact):
     """Generate a dict with content unit attributes.
 
     :param: artifact: A dict of info about the artifact.
