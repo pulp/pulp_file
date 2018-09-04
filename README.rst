@@ -84,7 +84,7 @@ Create a repository ``foo``
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/repositories/1/",
+        "_href": "/pulp/api/v3/repositories/1/",
         ...
     }
 
@@ -98,7 +98,7 @@ Create a new remote ``bar``
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/remotes/file/1/",
+        "_href": "/pulp/api/v3/remotes/file/1/",
         ...
     }
 
@@ -107,20 +107,20 @@ Create a new remote ``bar``
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
-``$ http POST $REMOTE_HREF'sync/' repository=$REPO_HREF``
+``$ http POST ':8000'$REMOTE_HREF'sync/' repository=$REPO_HREF``
 
 Look at the new Repository Version created
 ------------------------------------------
 
-``$ http GET $REPO_HREF'versions/1/'``
+``$ http GET ':8000'$REPO_HREF'versions/1/'``
 
 .. code:: json
 
     {
-        "_added_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/added_content/",
-        "_content_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/content/",
-        "_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/",
-        "_removed_href": "http://localhost:8000/pulp/api/v3/repositories/1/versions/1/removed_content/",
+        "_added_href": "/pulp/api/v3/repositories/1/versions/1/added_content/",
+        "_content_href": "/pulp/api/v3/repositories/1/versions/1/content/",
+        "_href": "/pulp/api/v3/repositories/1/versions/1/",
+        "_removed_href": "/pulp/api/v3/repositories/1/versions/1/removed_content/",
         "content_summary": {
             "file": 3
         },
@@ -139,7 +139,7 @@ Create an Artifact by uploading the file to Pulp.
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/artifacts/1/",
+        "_href": "/pulp/api/v3/artifacts/1/",
         ...
     }
 
@@ -148,13 +148,13 @@ Create ``file`` content from an Artifact
 
 Create a content unit and point it to your artifact
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz artifact="http://localhost:8000/pulp/api/v3/artifacts/1/"``
+``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz artifact="/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/content/file/files/1/",
-        "artifact": "http://localhost:8000/pulp/api/v3/artifacts/1/",
+        "_href": "/pulp/api/v3/content/file/files/1/",
+        "artifact": "/pulp/api/v3/artifacts/1/",
         "relative_path": "foo.tar.gz",
         "type": "file"
     }
@@ -165,7 +165,7 @@ Create a content unit and point it to your artifact
 Add content to repository ``foo``
 ---------------------------------
 
-``$ http POST $REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
+``$ http POST ':8000'$REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
 
 
 Create a ``file`` Publisher
@@ -176,7 +176,7 @@ Create a ``file`` Publisher
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/publishers/file/1/",
+        "_href": "/pulp/api/v3/publishers/file/1/",
         ...
     }
 
@@ -186,13 +186,13 @@ Create a ``file`` Publisher
 Use the ``bar`` Publisher to create a Publication
 -------------------------------------------------
 
-``$ http POST $PUBLISHER_HREF'publish/' repository=$REPO_HREF``
+``$ http POST ':8000'$PUBLISHER_HREF'publish/' repository=$REPO_HREF``
 
 .. code:: json
 
     [
         {
-            "_href": "http://localhost:8000/pulp/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
+            "_href": "/pulp/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/",
             "task_id": "fd4cbecd-6c6a-4197-9cbe-4e45b0516309"
         }
     ]
@@ -208,7 +208,7 @@ Create a Distribution for the Publication
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/distributions/1/",
+        "_href": "/pulp/api/v3/distributions/1/",
        ...
     }
 
