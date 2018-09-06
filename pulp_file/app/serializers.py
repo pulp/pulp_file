@@ -36,8 +36,14 @@ class FileRemoteSerializer(RemoteSerializer):
     Serializer for File Remotes.
     """
 
+    manifest = serializers.CharField(
+        help_text='Name of the file manifest, the full path will be url/manifest',
+        required=False,
+        default='manifest.csv'
+    )
+
     class Meta:
-        fields = RemoteSerializer.Meta.fields
+        fields = RemoteSerializer.Meta.fields + ('manifest',)
         model = FileRemote
 
 
@@ -46,6 +52,12 @@ class FilePublisherSerializer(PublisherSerializer):
     Serializer for File Publishers.
     """
 
+    manifest = serializers.CharField(
+        help_text='Name of the file manifest, the full path will be url/manifest',
+        required=False,
+        default='manifest.csv'
+    )
+
     class Meta:
-        fields = PublisherSerializer.Meta.fields
+        fields = PublisherSerializer.Meta.fields + ('manifest',)
         model = FilePublisher

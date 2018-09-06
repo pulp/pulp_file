@@ -49,6 +49,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         """
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
+
         body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])

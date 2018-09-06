@@ -40,7 +40,7 @@ def publish(publisher_pk, repository_version_pk):
 
     with WorkingDirectory():
         with Publication.create(repository_version, publisher) as publication:
-            manifest = Manifest('PULP_MANIFEST')
+            manifest = Manifest(publisher.manifest)
             manifest.write(populate(publication))
             metadata = PublishedMetadata(
                 relative_path=os.path.basename(manifest.relative_path),

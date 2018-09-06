@@ -2,7 +2,7 @@ import logging
 import os
 
 from gettext import gettext as _
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, urljoin
 
 from pulpcore.plugin.models import Artifact, ProgressBar, Repository
 from pulpcore.plugin.stages import (
@@ -66,9 +66,11 @@ class FileFirstStage(Stage):
 
         """
         with ProgressBar(message='Downloading Metadata') as pb:
+            if self.remote.url[-1] != '/':
+                self.remote.url += '/'
             parsed_url = urlparse(self.remote.url)
-            root_dir = os.path.dirname(parsed_url.path)
-            downloader = self.remote.get_downloader(self.remote.url)
+            root_dir = parsed_url.path
+            downloader = self.remote.get_downloader(urljoin(self.remote.url, self.remote.manifest))
             result = await downloader.run()
             pb.increment()
 
