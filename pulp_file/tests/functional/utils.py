@@ -17,8 +17,9 @@ from pulp_smash.pulp3.utils import (
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_PATH,
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE_REMOTE_PATH
+    FILE_FIXTURE_URL,
+    FILE_REMOTE_PATH,
+    FILE_MANIFEST,
 )
 
 
@@ -33,7 +34,7 @@ def populate_pulp(cfg, url=None):
         Pulp.
     """
     if url is None:
-        url = FILE_FIXTURE_MANIFEST_URL
+        url = FILE_FIXTURE_URL
 
     client = api.Client(cfg, api.json_handler)
     remote = {}
@@ -50,15 +51,19 @@ def populate_pulp(cfg, url=None):
     return client.get(FILE_CONTENT_PATH)['results']
 
 
-def gen_file_remote(url=None, **kwargs):
+def gen_file_remote(url=None, manifest=None, **kwargs):
     """Return a semi-random dict for use in creating a file Remote.
 
     :param url: The URL of an external content source.
+    :param manifest: The name of a file manifest.
     """
     if url is None:
-        url = FILE_FIXTURE_MANIFEST_URL
+        url = FILE_FIXTURE_URL
 
-    return gen_remote(url, **kwargs)
+    if manifest is None:
+        manifest = FILE_MANIFEST
+
+    return gen_remote(url, manifest=manifest, **kwargs)
 
 
 def gen_file_publisher(**kwargs):
