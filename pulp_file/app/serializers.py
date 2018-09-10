@@ -1,8 +1,12 @@
 from rest_framework import serializers
 
 from pulpcore.plugin.models import Artifact
-from pulpcore.plugin.serializers import ContentSerializer, RelatedField, RemoteSerializer, \
+from pulpcore.plugin.serializers import (
+    ContentSerializer,
+    RelatedField,
+    RemoteSerializer,
     PublisherSerializer
+)
 
 from .models import FileContent, FileRemote, FilePublisher
 

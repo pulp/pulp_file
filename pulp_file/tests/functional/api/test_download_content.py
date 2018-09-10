@@ -9,20 +9,20 @@ from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import DISTRIBUTION_PATH, REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_distribution,
-    gen_remote,
     gen_repo,
     publish,
     sync,
 )
 
-from pulp_file.tests.functional.api.utils import (
-    gen_publisher,
-    get_content_unit_paths,
-)
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_URL,
     FILE_REMOTE_PATH,
     FILE_PUBLISHER_PATH,
+)
+from pulp_file.tests.functional.utils import (
+    get_file_content_paths,
+    gen_file_publisher,
+    gen_file_remote,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
@@ -62,7 +62,7 @@ class DownloadContentTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_remote(urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST'))
+        body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
@@ -70,7 +70,7 @@ class DownloadContentTestCase(unittest.TestCase):
         repo = client.get(repo['_href'])
 
         # Create a publisher.
-        publisher = client.post(FILE_PUBLISHER_PATH, gen_publisher())
+        publisher = client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
         self.addCleanup(client.delete, publisher['_href'])
 
         # Create a publication.
@@ -84,7 +84,7 @@ class DownloadContentTestCase(unittest.TestCase):
         self.addCleanup(client.delete, distribution['_href'])
 
         # Pick a file, and download it from both Pulp Fixtures…
-        unit_path = choice(get_content_unit_paths(repo))
+        unit_path = choice(get_file_content_paths(repo))
         fixtures_hash = hashlib.sha256(
             utils.http_get(urljoin(FILE_FIXTURE_URL, unit_path))
         ).hexdigest()
