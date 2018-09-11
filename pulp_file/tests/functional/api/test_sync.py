@@ -40,10 +40,12 @@ class BasicFileSyncTestCase(unittest.TestCase):
         2. Assert that repository version is None.
         3. Sync the remote.
         4. Assert that repository version is not None.
-        5. Assert that the correct number of units were added and are present in the repo.
+        5. Assert that the correct number of units were added and are present
+        in the repo.
         6. Sync the remote one more time.
         7. Assert that repository version is different from the previous one.
-        8. Assert that the same number of are present and that no units were added.
+        8. Assert that the same number of are present and that no units were
+        added.
         """
         client = api.Client(self.cfg, api.json_handler)
 
@@ -89,7 +91,7 @@ class SyncInvalidURLTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_file_remote(url="http://i-am-an-invalid-url.com/invalid/")
+        body = gen_file_remote(url='http://i-am-an-invalid-url.com/invalid/')
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
