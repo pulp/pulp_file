@@ -16,13 +16,13 @@ from pulp_smash.pulp3.utils import (
 
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_URL,
-    FILE_REMOTE_PATH,
     FILE_PUBLISHER_PATH,
+    FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
-    get_file_content_paths,
     gen_file_publisher,
     gen_file_remote,
+    get_file_content_paths,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 

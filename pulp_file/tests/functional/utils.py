@@ -18,8 +18,8 @@ from pulp_smash.pulp3.utils import (
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_PATH,
     FILE_FIXTURE_URL,
-    FILE_REMOTE_PATH,
     FILE_MANIFEST,
+    FILE_REMOTE_PATH,
 )
 
 

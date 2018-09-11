@@ -15,11 +15,15 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_file.tests.functional.constants import (
-    FILE_URL,
     FILE_CONTENT_PATH,
     FILE_REMOTE_PATH,
+    FILE_URL,
 )
-from pulp_file.tests.functional.utils import gen_file_remote, gen_file_content_attrs, skip_if
+from pulp_file.tests.functional.utils import (
+    gen_file_remote,
+    gen_file_content_attrs,
+    skip_if,
+)
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
