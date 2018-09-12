@@ -30,6 +30,10 @@ show_logs_and_return_non_zero() {
 }
 pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional || show_logs_and_return_non_zero
 
+# test against pulpcore as well since pulpcore has a set of tests which use pulp_file
+cd ../pulp
+pytest -v -r sx --color=yes --pyargs tests.functional.api.using_plugin || show_logs_and_return_non_zero
+
 # Travis' scripts use unbound variables. This is problematic, because the
 # changes made to this script's environment appear to persist when Travis'
 # scripts execute. Perhaps this script is sourced by Travis? Regardless of why,
