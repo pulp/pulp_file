@@ -88,7 +88,7 @@ Create a repository ``foo``
         ...
     }
 
-``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href' | sed s,http://,,)``
 
 Create a new remote ``bar``
 ---------------------------
@@ -102,12 +102,12 @@ Create a new remote ``bar``
         ...
     }
 
-``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href' | sed s,http://,,)``
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
-``$ http POST ':8000'$REMOTE_HREF'sync/' repository=$REPO_HREF mirror=True``
+``$ http POST :8000"$REMOTE_HREF"sync/ repository=http://"$REPO_HREF" mirror=True``
 
 Look at the new Repository Version created
 ------------------------------------------
