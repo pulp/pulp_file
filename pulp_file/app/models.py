@@ -56,7 +56,6 @@ class FileRemote(Remote):
     """
 
     TYPE = 'file'
-    manifest = models.TextField(blank=True, null=True)
 
 
 class FilePublisher(Publisher):

@@ -93,7 +93,7 @@ Create a repository ``foo``
 Create a new remote ``bar``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/' manifest=PULP_MANIFEST``
+``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
@@ -171,7 +171,7 @@ Add content to repository ``foo``
 Create a ``file`` Publisher
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/publishers/file/ name=bar manifest=my_manifest.csv``
+``$ http POST http://localhost:8000/pulp/api/v3/publishers/file/ name=bar``
 
 .. code:: json
 
