@@ -10,8 +10,8 @@ from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_URL,
-    FILE2_FIXTURE_URL,
+    FILE_FIXTURE_MANIFEST_URL,
+    FILE2_FIXTURE_MANIFEST_URL,
     FILE_REMOTE_PATH
 )
 from pulp_file.tests.functional.utils import gen_file_remote, skip_if
@@ -137,7 +137,7 @@ def _gen_verbose_remote():
 
     Note that 'username' and 'password' are write-only attributes.
     """
-    attrs = gen_file_remote(url=choice((FILE_FIXTURE_URL, FILE2_FIXTURE_URL)))
+    attrs = gen_file_remote(url=choice((FILE_FIXTURE_MANIFEST_URL, FILE2_FIXTURE_MANIFEST_URL)))
     attrs.update({
         'password': utils.uuid4(),
         'username': utils.uuid4(),
