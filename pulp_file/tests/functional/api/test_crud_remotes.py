@@ -137,7 +137,10 @@ def _gen_verbose_remote():
 
     Note that 'username' and 'password' are write-only attributes.
     """
-    attrs = gen_file_remote(url=choice((FILE_FIXTURE_MANIFEST_URL, FILE2_FIXTURE_MANIFEST_URL)))
+    attrs = gen_file_remote(url=choice((
+        FILE_FIXTURE_MANIFEST_URL,
+        FILE2_FIXTURE_MANIFEST_URL
+    )))
     attrs.update({
         'password': utils.uuid4(),
         'username': utils.uuid4(),

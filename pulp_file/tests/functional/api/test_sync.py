@@ -2,7 +2,8 @@
 """Tests that sync file plugin repositories."""
 import unittest
 
-from pulp_smash import api, config, exceptions
+from pulp_smash import api, config
+from pulp_smash.exceptions import TaskReportError
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_repo,
@@ -13,6 +14,7 @@ from pulp_smash.pulp3.utils import (
 
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_COUNT,
+    FILE_INVALID_MANIFEST_URL,
     FILE_REMOTE_PATH
 )
 from pulp_file.tests.functional.utils import gen_file_remote
@@ -75,25 +77,40 @@ class BasicFileSyncTestCase(unittest.TestCase):
         self.assertEqual(len(get_added_content(repo)), 0)
 
 
-class SyncInvalidURLTestCase(unittest.TestCase):
-    """Sync a repository with an invalid url on the Remote."""
+class SyncInvalidTestCase(unittest.TestCase):
+    """Sync a repository with a given url on the remote."""
 
-    def test_all(self):
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+
+    def test_invalid_url(self):
+        """Sync a repository using a remote url that does not exist.
+
+        Test that we get a task failure. See :meth:`do_test`.
         """
-        Sync a repository using a Remote url that does not exist.
+        context = self.do_test('http://i-am-an-invalid-url.com/invalid/')
+        self.assertIsNotNone(context.exception.task['error']['description'])
 
-        Test that we get a task failure.
+    def test_invalid_file(self):
+        """Sync a repository using an invalid file repository.
 
+        Assert that an exception is raised, and that error message has
+        keywords related to the reason of the failure. See :meth:`do_test`.
         """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+        context = self.do_test(FILE_INVALID_MANIFEST_URL)
+        for key in ('checksum', 'failed'):
+            self.assertIn(key, context.exception.task['error']['description'])
 
-        repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
-
-        body = gen_file_remote(url='http://i-am-an-invalid-url.com/invalid/')
-        remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
-
-        with self.assertRaises(exceptions.TaskReportError):
-            sync(cfg, remote, repo)
+    def do_test(self, url):
+        """Sync a repository given ``url`` on the remote."""
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+        body = gen_file_remote(url=url)
+        remote = self.client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(self.client.delete, remote['_href'])
+        with self.assertRaises(TaskReportError) as context:
+            sync(self.cfg, remote, repo)
+        return context
