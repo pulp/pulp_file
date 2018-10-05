@@ -8,7 +8,6 @@ from django.core.files import File
 from pulpcore.plugin.models import (
     RepositoryVersion,
     Publication,
-    PublishedArtifact,
     PublishedMetadata,
     RemoteArtifact)
 from pulpcore.plugin.tasking import WorkingDirectory
@@ -39,7 +38,7 @@ def publish(publisher_pk, repository_version_pk):
     ))
 
     with WorkingDirectory():
-        with Publication.create(repository_version, publisher) as publication:
+        with Publication.create(repository_version, publisher, pass_through=True) as publication:
             manifest = Manifest(publisher.manifest)
             manifest.write(populate(publication))
             metadata = PublishedMetadata(
@@ -77,11 +76,6 @@ def populate(publication):
         paths.add(content.relative_path)
         for content_artifact in content.contentartifact_set.all():
             artifact = find_artifact()
-            published_artifact = PublishedArtifact(
-                relative_path=content_artifact.relative_path,
-                publication=publication,
-                content_artifact=content_artifact)
-            published_artifact.save()
             entry = Entry(
                 relative_path=content_artifact.relative_path,
                 digest=artifact.sha256,
