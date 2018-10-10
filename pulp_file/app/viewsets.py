@@ -15,17 +15,18 @@ from pulpcore.plugin.serializers import (
 from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
+    ContentFilter,
     RemoteViewSet,
     OperationPostponedResponse,
     PublisherViewSet,
-    BaseFilterSet)
+)
 
 from . import tasks
 from .models import FileContent, FileRemote, FilePublisher
 from .serializers import FileContentSerializer, FileRemoteSerializer, FilePublisherSerializer
 
 
-class FileContentFilter(BaseFilterSet):
+class FileContentFilter(ContentFilter):
     """
     FilterSet for FileContent.
     """
@@ -34,7 +35,7 @@ class FileContentFilter(BaseFilterSet):
         model = FileContent
         fields = [
             'relative_path',
-            'digest'
+            'digest',
         ]
 
 
