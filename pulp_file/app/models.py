@@ -22,8 +22,8 @@ class FileContent(Content):
 
     TYPE = 'file'
 
-    relative_path = models.TextField(blank=False, null=False)
-    digest = models.TextField(blank=False, null=False)
+    relative_path = models.TextField(null=False)
+    digest = models.TextField(null=False)
 
     @property
     def artifact(self):
@@ -64,4 +64,4 @@ class FilePublisher(Publisher):
     """
 
     TYPE = 'file'
-    manifest = models.TextField(blank=True, null=True)
+    manifest = models.TextField(null=True)
