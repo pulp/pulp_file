@@ -16,6 +16,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_file.tests.functional.constants import (
+    FILE_CONTENT_NAME,
     FILE_CONTENT_PATH,
     FILE_FIXTURE_MANIFEST_URL,
     FILE_REMOTE_PATH
@@ -69,23 +70,27 @@ def gen_file_publisher(**kwargs):
     return gen_publisher(**kwargs)
 
 
-def get_file_content_paths(repo):
-    """Return the relative path of content units present in a file repository.
-
-    :param repo: A dict of information about the repository.
-    :returns: A list with the paths of units present in a given repository.
-    """
-    # The "relative_path" is actually a file path and name
-    return [content_unit['relative_path'] for content_unit in get_content(repo)]
-
-
 def gen_file_content_attrs(artifact):
     """Generate a dict with content unit attributes.
 
-    :param: artifact: A dict of info about the artifact.
+    :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
     return {'artifact': artifact['_href'], 'relative_path': utils.uuid4()}
+
+
+def get_file_content_paths(repo, version_href=None):
+    """Return the relative path of content units present in a file repository.
+
+    :param repo: A dict of information about the repository.
+    :param version_href: The repository version to read.
+    :returns: A list with the paths of units present in a given repository.
+    """
+    # The "relative_path" is actually a file path and name
+    return [
+        content_unit['relative_path']
+        for content_unit in get_content(repo, version_href)[FILE_CONTENT_NAME]
+    ]
 
 
 def set_up_module():

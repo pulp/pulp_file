@@ -12,6 +12,8 @@ from pulp_smash.pulp3.constants import (
 DOWNLOAD_POLICIES = ['streamed', 'immediate', 'on_demand']
 """Allowed download policies. Defaults to immediate."""
 
+FILE_CONTENT_NAME = 'file'
+
 FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/files/')
 
 FILE_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'file/')
