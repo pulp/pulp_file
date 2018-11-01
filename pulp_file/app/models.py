@@ -64,4 +64,4 @@ class FilePublisher(Publisher):
     """
 
     TYPE = 'file'
-    manifest = models.TextField(null=True)
+    manifest = models.TextField()
