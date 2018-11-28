@@ -2,9 +2,9 @@
 """Tests that sync file plugin repositories."""
 import unittest
 
-from pulp_smash import api, config
+from pulp_smash import api, cli, config
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.constants import REPO_PATH
+from pulp_smash.pulp3.constants import MEDIA_PATH, REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_repo,
     get_added_content,
@@ -28,6 +28,40 @@ class BasicFileSyncTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+
+    def test_file_decriptors(self):
+        """Test whether file descriptors are closed properly.
+
+        This test targets the following issue:
+
+        `Pulp #4073 <https://pulp.plan.io/issues/4073>`_
+
+        Do the following:
+
+        1. Create and sync a repo.
+        2. Install ``lsof``, and issue a command to verify that files in the
+           path ``/var/lib/pulp/`` are closed after the sync.
+        3. Assert that issued command returns `0` opened files.
+        """
+        pkg_mgr = cli.PackageManager(self.cfg)
+        pkg_mgr.raise_if_unsupported(unittest.SkipTest)
+
+        pkg_mgr.install('lsof')
+        self.addCleanup(pkg_mgr.uninstall, 'lsof')
+
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+
+        remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
+        self.addCleanup(self.client.delete, remote['_href'])
+
+        sync(self.cfg, remote, repo)
+
+        cli_client = cli.Client(self.cfg, cli.echo_handler)
+        cmd = 'lsof -t +D {}'.format(MEDIA_PATH).split()
+        response = cli_client.run(cmd).stdout
+        self.assertEqual(len(response), 0, response)
 
     def test_sync(self):
         """Sync repositories with the file plugin.
@@ -43,25 +77,23 @@ class BasicFileSyncTestCase(unittest.TestCase):
         3. Sync the remote.
         4. Assert that repository version is not None.
         5. Assert that the correct number of units were added and are present
-        in the repo.
+           in the repo.
         6. Sync the remote one more time.
         7. Assert that repository version is different from the previous one.
         8. Assert that the same number of are present and that no units were
-        added.
+           added.
         """
-        client = api.Client(self.cfg, api.json_handler)
-
-        repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
 
         body = gen_file_remote()
-        remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        remote = self.client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(self.client.delete, remote['_href'])
 
         # Sync the repository.
         self.assertIsNone(repo['_latest_version_href'])
         sync(self.cfg, remote, repo)
-        repo = client.get(repo['_href'])
+        repo = self.client.get(repo['_href'])
 
         self.assertIsNotNone(repo['_latest_version_href'])
         self.assertEqual(len(get_content(repo)), FILE_FIXTURE_COUNT)
@@ -70,7 +102,7 @@ class BasicFileSyncTestCase(unittest.TestCase):
         # Sync the repository again.
         latest_version_href = repo['_latest_version_href']
         sync(self.cfg, remote, repo)
-        repo = client.get(repo['_href'])
+        repo = self.client.get(repo['_href'])
 
         self.assertNotEqual(latest_version_href, repo['_latest_version_href'])
         self.assertEqual(len(get_content(repo)), FILE_FIXTURE_COUNT)
