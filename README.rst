@@ -93,7 +93,7 @@ Create a repository ``foo``
 Create a new remote ``bar``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST' policy='cache_only'``
 
 .. code:: json
 
