@@ -10,6 +10,7 @@ from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulp_file.tests.functional.constants import (
+    DOWNLOAD_POLICIES,
     FILE_FIXTURE_MANIFEST_URL,
     FILE2_FIXTURE_MANIFEST_URL,
     FILE_REMOTE_PATH
@@ -143,6 +144,7 @@ def _gen_verbose_remote():
     )))
     attrs.update({
         'password': utils.uuid4(),
+        'policy': choice(DOWNLOAD_POLICIES),
         'username': utils.uuid4(),
         'validate': choice((False, True)),
     })
