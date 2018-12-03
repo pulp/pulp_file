@@ -44,11 +44,11 @@ class BasicFileSyncTestCase(unittest.TestCase):
            path ``/var/lib/pulp/`` are closed after the sync.
         3. Assert that issued command returns `0` opened files.
         """
-        pkg_mgr = cli.PackageManager(self.cfg)
-        pkg_mgr.raise_if_unsupported(unittest.SkipTest)
+        cli_client = cli.Client(self.cfg, cli.echo_handler)
 
-        pkg_mgr.install('lsof')
-        self.addCleanup(pkg_mgr.uninstall, 'lsof')
+        # check if 'lsof' is available
+        if cli_client.run(('which', 'lsof')).returncode != 0:
+            raise unittest.SkipTest('lsof package is not present')
 
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo['_href'])
@@ -58,7 +58,6 @@ class BasicFileSyncTestCase(unittest.TestCase):
 
         sync(self.cfg, remote, repo)
 
-        cli_client = cli.Client(self.cfg, cli.echo_handler)
         cmd = 'lsof -t +D {}'.format(MEDIA_PATH).split()
         response = cli_client.run(cmd).stdout
         self.assertEqual(len(response), 0, response)
