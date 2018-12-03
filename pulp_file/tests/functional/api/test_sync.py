@@ -39,10 +39,11 @@ class BasicFileSyncTestCase(unittest.TestCase):
 
         Do the following:
 
-        1. Create and sync a repo.
-        2. Install ``lsof``, and issue a command to verify that files in the
+        1. Check if 'lsof' is installed. If it is not, skip this test.
+        2. Create and sync a repo.
+        3. Run the 'lsof' command to verify that files in the
            path ``/var/lib/pulp/`` are closed after the sync.
-        3. Assert that issued command returns `0` opened files.
+        4. Assert that issued command returns `0` opened files.
         """
         cli_client = cli.Client(self.cfg, cli.echo_handler)
 
