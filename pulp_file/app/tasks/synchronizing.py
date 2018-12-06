@@ -39,7 +39,9 @@ def synchronize(remote_pk, repository_pk, mirror):
 
     first_stage = FileFirstStage(remote)
     download = (remote.policy == Remote.IMMEDIATE)  # Interpret policy to download Artifacts or not
-    dv = DeclarativeVersion(first_stage, repository, mirror=mirror, download_artifacts=download)
+    remove_dupes = [{'model': FileContent, 'field_names': ['relative_path']}]
+    dv = DeclarativeVersion(first_stage, repository, mirror=mirror, download_artifacts=download,
+                            remove_duplicates=remove_dupes)
     dv.create()
 
 
