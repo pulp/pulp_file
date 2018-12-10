@@ -1,6 +1,13 @@
 ``pulp_file`` Plugin
 ====================
 
+.. image:: https://travis-ci.org/pulp/pulp_file.svg?branch=master
+    :target: https://travis-ci.org/pulp/pulp_file
+.. image:: https://img.shields.io/pypi/pyversions/pulp_file.svg
+    :target: https://pypi.python.org/pypi/pulp_file
+.. image:: https://codecov.io/gh/pulp/pulp_file/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/pulp/pulp_file
+
 This is the ``pulp_file`` Plugin for `Pulp Project
 3.0+ <https://pypi.org/project/pulpcore/>`__. This plugin replaces the ISO support in the
 ``pulp_rpm`` plugin for Pulp 2. This plugin uses the

@@ -1,0 +1,8 @@
+[run]
+cover_pylib = 0
+branch = False
+
+omit =
+  /*/tests/*
+  /*/docs/*
+  /*/migrations/*
