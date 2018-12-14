@@ -70,7 +70,7 @@ def populate(publication):
         return _artifact
     paths = set()
     for content in FileContent.objects.filter(
-            pk__in=publication.repository_version.content).order_by('-created'):
+            pk__in=publication.repository_version.content).order_by('-_created'):
         if content.relative_path in paths:
             continue
         paths.add(content.relative_path)

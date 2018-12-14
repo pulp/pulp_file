@@ -41,8 +41,8 @@ class FileContentSerializer(ContentSerializer):
         return data
 
     class Meta:
-        fields = tuple(set(ContentSerializer.Meta.fields) - {'artifacts'}) + ('relative_path',
-                                                                              'artifact')
+        fields = tuple(set(ContentSerializer.Meta.fields) - {'_artifacts'}) + ('relative_path',
+                                                                               'artifact')
         model = FileContent
 
 
