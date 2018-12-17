@@ -17,10 +17,8 @@ from pulp_file.tests.functional.constants import (
     FILE_INVALID_MANIFEST_URL,
     FILE_REMOTE_PATH
 )
-from pulp_file.tests.functional.utils import (  # noqa:F401
-    gen_file_remote,
-    set_up_module as setUpModule
-)
+from pulp_file.tests.functional.utils import gen_file_remote
+from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
 class BasicFileSyncTestCase(unittest.TestCase):
