@@ -7,13 +7,13 @@ from pulp_smash.exceptions import TaskReportError
 from pulp_smash.pulp3.constants import MEDIA_PATH, REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_repo,
-    get_added_content,
-    get_content,
+    get_content_summary,
+    get_added_content_summary,
     sync,
 )
 
 from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_COUNT,
+    FILE_FIXTURE_SUMMARY,
     FILE_INVALID_MANIFEST_URL,
     FILE_REMOTE_PATH
 )
@@ -96,8 +96,8 @@ class BasicFileSyncTestCase(unittest.TestCase):
         repo = self.client.get(repo['_href'])
 
         self.assertIsNotNone(repo['_latest_version_href'])
-        self.assertEqual(len(get_content(repo)), FILE_FIXTURE_COUNT)
-        self.assertEqual(len(get_added_content(repo)), FILE_FIXTURE_COUNT)
+        self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
 
         # Sync the repository again.
         latest_version_href = repo['_latest_version_href']
@@ -105,8 +105,8 @@ class BasicFileSyncTestCase(unittest.TestCase):
         repo = self.client.get(repo['_href'])
 
         self.assertNotEqual(latest_version_href, repo['_latest_version_href'])
-        self.assertEqual(len(get_content(repo)), FILE_FIXTURE_COUNT)
-        self.assertEqual(len(get_added_content(repo)), 0)
+        self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        self.assertDictEqual(get_added_content_summary(repo), {})
 
 
 class SyncInvalidTestCase(unittest.TestCase):
@@ -140,9 +140,11 @@ class SyncInvalidTestCase(unittest.TestCase):
         """Sync a repository given ``url`` on the remote."""
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo['_href'])
+
         body = gen_file_remote(url=url)
         remote = self.client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(self.client.delete, remote['_href'])
+
         with self.assertRaises(TaskReportError) as context:
             sync(self.cfg, remote, repo)
         return context
