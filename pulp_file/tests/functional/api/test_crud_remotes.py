@@ -117,6 +117,84 @@ class CreateRemoteNoURLTestCase(unittest.TestCase):
             api.Client(config.get_config()).post(FILE_REMOTE_PATH, body)
 
 
+class RemoteDownloadPolicyTestCase(unittest.TestCase):
+    """Verify download policy behavior for valid and invalid values.
+
+    In Pulp 3, there are are different download policies.
+
+    This test targets the following testing scenarios:
+
+    1. Creating a remote without a download policy.
+       Verify the creation is successful and immediate it is policy applied.
+    2. Change the remote policy from default.
+       Verify the change is successful.
+    3. Attempt to change the remote policy to an invalid string.
+       Verify an HTTPError is given for the invalid policy as well
+       as the policy remaining unchanged.
+
+    For more information on the remote policies, see the Pulp3
+    API on an installed server:
+
+    * /pulp/api/v3/docs/#operation`
+
+    This test targets the following issues:
+
+    * `Pulp #4420 <https://pulp.plan.io/issues/4420>`_
+    * `Pulp #3763 <https://pulp.plan.io/issues/3763>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.remote = {}
+        cls.body = _gen_verbose_remote()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean class-wide variable."""
+        cls.client.delete(cls.remote['_href'])
+
+    def test_01_no_defined_policy(self):
+        """Verify the default policy `immediate`.
+
+        When no policy is defined, the default policy of `immediate`
+        is applied.
+        """
+        del self.body['policy']
+        self.remote.update(self.client.post(FILE_REMOTE_PATH, self.body))
+        self.assertEqual(self.remote['policy'], 'immediate', self.remote)
+
+    @skip_if(bool, 'remote', False)
+    def test_02_change_policy(self):
+        """Verify ability to change policy to value other than the default.
+
+        Update the remote policy to a valid value other than `immedaite`
+        and verify the new set value.
+        """
+        changed_policy = choice(
+            [item for item in DOWNLOAD_POLICIES if item != 'immediate']
+        )
+        self.client.patch(self.remote['_href'], {'policy': changed_policy})
+        self.remote.update(self.client.get(self.remote['_href']))
+        self.assertEqual(self.remote['policy'], changed_policy, self.remote)
+
+    @skip_if(bool, 'remote', False)
+    def test_03_invalid_policy(self):
+        """Verify an invalid policy does not update the remote policy.
+
+        Get the current remote policy.
+        Attempt to update the remote policy to an invalid value.
+        Verify the policy remains the same.
+        """
+        remote = self.client.get(self.remote['_href'])
+        with self.assertRaises(HTTPError):
+            self.client.patch(self.remote['_href'], {'policy': utils.uuid4()})
+        self.remote.update(self.client.get(self.remote['_href']))
+        self.assertEqual(remote['policy'], self.remote['policy'], self.remote)
+
+
 def _gen_verbose_remote():
     """Return a semi-random dict for use in defining a remote.
 
