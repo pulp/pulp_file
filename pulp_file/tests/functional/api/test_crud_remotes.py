@@ -6,9 +6,9 @@ import unittest
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, utils
+from pulp_smash.pulp3.constants import DOWNLOAD_POLICIES
 
 from pulp_file.tests.functional.constants import (
-    DOWNLOAD_POLICIES,
     FILE_FIXTURE_MANIFEST_URL,
     FILE2_FIXTURE_MANIFEST_URL,
     FILE_REMOTE_PATH
