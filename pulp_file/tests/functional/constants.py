@@ -9,9 +9,6 @@ from pulp_smash.pulp3.constants import (
     CONTENT_PATH
 )
 
-DOWNLOAD_POLICIES = ['streamed', 'immediate', 'on_demand']
-"""Allowed download policies. Defaults to immediate."""
-
 FILE_CONTENT_NAME = 'file'
 
 FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/files/')
