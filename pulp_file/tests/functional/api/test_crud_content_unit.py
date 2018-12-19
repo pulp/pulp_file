@@ -99,36 +99,45 @@ class ContentUnitTestCase(unittest.TestCase):
 
 
 class DuplicateContentUnit(unittest.TestCase):
-    """Attempt to create a duplicate content unit."""
+    """Attempt to create a duplicate content unit.
 
-    def test_all(self):
-        """Attempt to create a duplicate content unit.
+    This test targets the following issues:
+
+    *  `Pulp #4125 <https://pulp.plan.io/issue/4125>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean created resources."""
+        delete_orphans(cls.cfg)
+
+    def test_raise_error(self):
+        """Create a duplicate content unit using same relative_path.
 
         Artifacts are unique by ``relative_path`` and ``file``.
 
         In order to raise an HTTP error, the same ``artifact`` and the same
         ``relative_path`` should be used.
-
-        This test targets the following issue:
-
-        *  `Pulp #4125 <https://pulp.plan.io/issue/4125>`_
         """
-        cfg = config.get_config()
-        delete_orphans(cfg)
-        client = api.Client(cfg, api.json_handler)
+        delete_orphans(self.cfg)
         files = {'file': utils.http_get(FILE_URL)}
-        artifact = client.post(ARTIFACTS_PATH, files=files)
+        artifact = self.client.post(ARTIFACTS_PATH, files=files)
         attrs = gen_file_content_attrs(artifact)
 
-        # create frist content unit.
-        client.post(FILE_CONTENT_PATH, attrs)
-
-        # update client response_handler in order to not catch
-        # the HTTP exception and be able to assert as part of the test.
-        client.response_handler = api.echo_handler
+        # create first content unit.
+        self.client.post(FILE_CONTENT_PATH, attrs)
 
         # using the same attrs used to create the first content unit.
-        response = client.post(FILE_CONTENT_PATH, attrs)
+        response = api.Client(self.cfg, api.echo_handler).post(
+            FILE_CONTENT_PATH,
+            attrs
+        )
         with self.assertRaises(HTTPError):
             response.raise_for_status()
         for key in ('already', 'content', 'relative', 'path', 'artifact'):
@@ -137,5 +146,21 @@ class DuplicateContentUnit(unittest.TestCase):
                 response.json()['non_field_errors'][0].lower(),
                 response.json()
             )
-        # clean up
-        delete_orphans(cfg)
+
+    def test_non_error(self):
+        """Create a duplicate content unit with different relative_path.
+
+        Artifacts are unique by ``relative_path`` and ``file``.
+
+        In order to avoid an HTTP error, use the same ``artifact`` and
+        different ``relative_path``.
+        """
+        delete_orphans(self.cfg)
+        files = {'file': utils.http_get(FILE_URL)}
+        artifact = self.client.post(ARTIFACTS_PATH, files=files)
+
+        # create first content unit.
+        self.client.post(FILE_CONTENT_PATH, gen_file_content_attrs(artifact))
+
+        # create second content unit.
+        self.client.post(FILE_CONTENT_PATH, gen_file_content_attrs(artifact))
