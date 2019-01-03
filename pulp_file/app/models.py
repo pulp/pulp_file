@@ -22,8 +22,8 @@ class FileContent(Content):
 
     TYPE = 'file'
 
-    relative_path = models.TextField(null=False)
-    digest = models.TextField(null=False)
+    relative_path = models.CharField(max_length=255, null=False)
+    digest = models.CharField(max_length=255, null=False)
 
     @property
     def artifact(self):
