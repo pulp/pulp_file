@@ -62,8 +62,8 @@ Make and Run Migrations
 
 .. code-block:: bash
 
-   pulp-manager makemigrations pulp_file
-   pulp-manager migrate pulp_file
+   pulp-manager makemigrations file
+   pulp-manager migrate file
 
 Run Services
 ------------
@@ -94,16 +94,16 @@ Create a repository ``foo``
 Create a new remote ``bar``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/remotes/file/1/",
+        "_href": "/pulp/api/v3/remotes/file/file/1/",
         ...
     }
 
-``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/file | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
@@ -144,6 +144,7 @@ Create an Artifact by uploading the file to Pulp.
         ...
     }
 
+
 Create ``file`` content from an Artifact
 -----------------------------------------
 
@@ -172,16 +173,16 @@ Add content to repository ``foo``
 Create a ``file`` Publisher
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/publishers/file/ name=bar``
+``$ http POST http://localhost:8000/pulp/api/v3/publishers/file/file/ name=bar``
 
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/publishers/file/1/",
+        "_href": "/pulp/api/v3/publishers/file/file/1/",
         ...
     }
 
-``$ export PUBLISHER_HREF=$(http :8000/pulp/api/v3/publishers/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export PUBLISHER_HREF=$(http :8000/pulp/api/v3/publishers/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 
 Use the ``bar`` Publisher to create a Publication
