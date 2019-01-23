@@ -55,14 +55,15 @@ class FileContentViewSet(ContentViewSet):
         Create a new FileContent from a request.
         """
         try:
-            artifact = self.get_resource(request.data['artifact'], Artifact)
+            artifact = self.get_resource(request.data['_artifact'], Artifact)
         except KeyError:
-            raise serializers.ValidationError(detail={'artifact': _('This field is required')})
+            raise serializers.ValidationError(detail={'_artifact': _('This field is required')})
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         content = serializer.save(digest=artifact.sha256)
-        content.artifact = artifact
+
+        content._artifact = artifact
 
         headers = self.get_success_headers(request.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

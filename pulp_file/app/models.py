@@ -26,14 +26,14 @@ class FileContent(Content):
     digest = models.TextField(null=False)
 
     @property
-    def artifact(self):
+    def _artifact(self):
         """
         Return the artifact id (there is only one for this content type).
         """
         return self._artifacts.get().pk
 
-    @artifact.setter
-    def artifact(self, artifact):
+    @_artifact.setter
+    def _artifact(self, artifact):
         """
         Set the artifact for this FileContent.
         """

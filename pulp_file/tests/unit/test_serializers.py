@@ -23,7 +23,7 @@ class TestFileContentSerializer(TestCase):
 
     def test_valid_data(self):
         """Test that the FileContentSerializer accepts valid data."""
-        data = {"artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+        data = {"_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
                 "relative_path": "foo"}
         serializer = FileContentSerializer(data=data)
         self.assertTrue(serializer.is_valid())
@@ -31,7 +31,7 @@ class TestFileContentSerializer(TestCase):
     def test_duplicate_data(self):
         """Test that the FileContentSerializer does not accept data."""
         FileContent.objects.create(relative_path="foo", digest=self.artifact.sha256)
-        data = {"artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+        data = {"_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
                 "relative_path": "foo"}
         serializer = FileContentSerializer(data=data)
         self.assertFalse(serializer.is_valid())

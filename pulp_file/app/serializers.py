@@ -21,7 +21,7 @@ class FileContentSerializer(ContentSerializer):
     relative_path = serializers.CharField(
         help_text="Relative location of the file within the repository"
     )
-    artifact = RelatedField(
+    _artifact = RelatedField(
         view_name='artifacts-detail',
         help_text="Artifact file representing the physical content",
         queryset=Artifact.objects.all()
@@ -29,7 +29,7 @@ class FileContentSerializer(ContentSerializer):
 
     def validate(self, data):
         """Validate the FileContent data."""
-        artifact = data['artifact']
+        artifact = data['_artifact']
         content = FileContent.objects.filter(digest=artifact.sha256,
                                              relative_path=data['relative_path'])
 
@@ -37,12 +37,12 @@ class FileContentSerializer(ContentSerializer):
             raise serializers.ValidationError(_("There is already a file content with relative "
                                                 "path '{path}' and artifact '{artifact}'."
                                                 ).format(path=data["relative_path"],
-                                                         artifact=self.initial_data["artifact"]))
+                                                         artifact=self.initial_data["_artifact"]))
         return data
 
     class Meta:
         fields = tuple(set(ContentSerializer.Meta.fields) - {'_artifacts'}) + ('relative_path',
-                                                                               'artifact')
+                                                                               '_artifact')
         model = FileContent
 
 
