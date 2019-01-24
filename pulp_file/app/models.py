@@ -2,7 +2,7 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, ContentArtifact, Remote, Publisher
+from pulpcore.plugin.models import Content, Remote, Publisher
 
 
 log = getLogger(__name__)
@@ -24,24 +24,6 @@ class FileContent(Content):
 
     relative_path = models.TextField(null=False)
     digest = models.TextField(null=False)
-
-    @property
-    def artifact(self):
-        """
-        Return the artifact id (there is only one for this content type).
-        """
-        return self._artifacts.get().pk
-
-    @artifact.setter
-    def artifact(self, artifact):
-        """
-        Set the artifact for this FileContent.
-        """
-        if self.pk:
-            ca = ContentArtifact(artifact=artifact,
-                                 content=self,
-                                 relative_path=self.relative_path)
-            ca.save()
 
     class Meta:
         unique_together = (

@@ -76,7 +76,7 @@ def gen_file_content_attrs(artifact):
     :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    return {'artifact': artifact['_href'], 'relative_path': utils.uuid4()}
+    return {'_artifact': artifact['_href'], 'relative_path': utils.uuid4()}
 
 
 def get_file_content_paths(repo, version_href=None):
