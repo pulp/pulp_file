@@ -149,13 +149,13 @@ Create ``file`` content from an Artifact
 
 Create a content unit and point it to your artifact
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz artifact="/pulp/api/v3/artifacts/1/"``
+``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz _artifact="/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
     {
         "_href": "/pulp/api/v3/content/file/files/1/",
-        "artifact": "/pulp/api/v3/artifacts/1/",
+        "_artifact": "/pulp/api/v3/artifacts/1/",
         "relative_path": "foo.tar.gz",
         "type": "file"
     }
