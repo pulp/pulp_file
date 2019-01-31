@@ -7,4 +7,4 @@ class PulpFilePluginAppConfig(PulpPluginAppConfig):
     """
 
     name = 'pulp_file.app'
-    label = 'pulp_file'
+    label = 'file'

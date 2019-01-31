@@ -44,7 +44,7 @@ class FileContentViewSet(ContentViewSet):
     ViewSet for FileContent.
     """
 
-    endpoint_name = 'file/files'
+    endpoint_name = 'files'
     queryset = FileContent.objects.all()
     serializer_class = FileContentSerializer
     filterset_class = FileContentFilter
