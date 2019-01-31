@@ -214,4 +214,4 @@ Create a Distribution for the Publication
 Download ``test.iso`` from Pulp
 -------------------------------
 
-``$ http GET http://localhost:8000/pulp/content/foo/test.iso``
+``$ http GET http://localhost:8080/pulp/content/foo/test.iso``
