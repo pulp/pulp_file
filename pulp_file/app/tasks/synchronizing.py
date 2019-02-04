@@ -56,16 +56,12 @@ class FileFirstStage(Stage):
             remote (FileRemote): The remote data to be used when syncing
 
         """
+        super().__init__()
         self.remote = remote
 
-    async def __call__(self, in_q, out_q):
+    async def run(self):
         """
         Build and emit `DeclarativeContent` from the Manifest data.
-
-        Args:
-            in_q (asyncio.Queue): Unused because the first stage doesn't read from an input queue.
-            out_q (asyncio.Queue): The out_q to send `DeclarativeContent` objects to
-
         """
         with ProgressBar(message='Downloading Metadata') as pb:
             parsed_url = urlparse(self.remote.url)
@@ -84,5 +80,4 @@ class FileFirstStage(Stage):
                 da = DeclarativeArtifact(artifact, url, entry.relative_path, self.remote)
                 dc = DeclarativeContent(content=file, d_artifacts=[da])
                 pb.increment()
-                await out_q.put(dc)
-        await out_q.put(None)
+                await self.put(dc)
