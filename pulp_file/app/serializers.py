@@ -5,7 +5,8 @@ from rest_framework import serializers
 from pulpcore.plugin.serializers import (
     SingleArtifactContentSerializer,
     RemoteSerializer,
-    PublisherSerializer
+    PublisherSerializer,
+    relative_path_validator,
 )
 
 from .models import FileContent, FileRemote, FilePublisher
@@ -17,13 +18,18 @@ class FileContentSerializer(SingleArtifactContentSerializer):
     """
 
     relative_path = serializers.CharField(
-        help_text="Relative location of the file within the repository"
+        help_text="Relative location of the file within the repository",
+        validators=[relative_path_validator],
     )
 
     def validate(self, data):
         """Validate the FileContent data."""
-        artifact = data['_artifact']
-        content = FileContent.objects.filter(digest=artifact.sha256,
+        data = super().validate(data)
+
+        data['digest'] = data['_artifact'].sha256
+        data['_relative_path'] = data['relative_path']
+
+        content = FileContent.objects.filter(digest=data['digest'],
                                              relative_path=data['relative_path'])
 
         if content.exists():
@@ -35,7 +41,9 @@ class FileContentSerializer(SingleArtifactContentSerializer):
         return data
 
     class Meta:
-        fields = SingleArtifactContentSerializer.Meta.fields + ('relative_path',)
+        fields = tuple(
+            set(SingleArtifactContentSerializer.Meta.fields) - {'_relative_path'}
+        ) + ('relative_path',)
         model = FileContent
 
 

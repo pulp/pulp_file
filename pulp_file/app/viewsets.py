@@ -1,12 +1,8 @@
 from gettext import gettext as _  # noqa
 
-from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import detail_route
-from rest_framework import status
-from rest_framework.response import Response
 
-from pulpcore.plugin.models import ContentArtifact
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     RepositoryPublishURLSerializer,
@@ -48,25 +44,6 @@ class FileContentViewSet(ContentViewSet):
     queryset = FileContent.objects.all()
     serializer_class = FileContentSerializer
     filterset_class = FileContentFilter
-
-    @transaction.atomic
-    def create(self, request):
-        """
-        Create a new FileContent from a request.
-        """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        artifact = serializer.validated_data.pop('_artifact')
-        content = serializer.save(digest=artifact.sha256)
-
-        if content.pk:
-            ContentArtifact.objects.create(
-                artifact=artifact,
-                content=content,
-                relative_path=content.relative_path
-            )
-        headers = self.get_success_headers(request.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class FileRemoteViewSet(RemoteViewSet):
