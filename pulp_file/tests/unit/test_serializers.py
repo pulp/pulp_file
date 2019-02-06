@@ -28,6 +28,13 @@ class TestFileContentSerializer(TestCase):
         serializer = FileContentSerializer(data=data)
         self.assertTrue(serializer.is_valid())
 
+    def test_absolute_path_data(self):
+        """Test that the FileContentSerializer does not accept data."""
+        data = {"_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+                "relative_path": "/foo"}
+        serializer = FileContentSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+
     def test_duplicate_data(self):
         """Test that the FileContentSerializer does not accept data."""
         FileContent.objects.create(relative_path="foo", digest=self.artifact.sha256)
