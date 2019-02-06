@@ -158,7 +158,6 @@ Create a content unit and point it to your artifact
         "_href": "/pulp/api/v3/content/file/files/1/",
         "_artifact": "/pulp/api/v3/artifacts/1/",
         "relative_path": "foo.tar.gz",
-        "type": "file"
     }
 
 ``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/file/files/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
