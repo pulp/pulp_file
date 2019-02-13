@@ -8,8 +8,14 @@ from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.pulp3.utils import delete_orphans
 
-from pulp_file.tests.functional.constants import FILE_CONTENT_PATH, FILE_URL
-from pulp_file.tests.functional.utils import gen_file_content_attrs, skip_if
+from pulp_file.tests.functional.constants import (
+    FILE_CONTENT_PATH,
+    FILE_URL,
+)
+from pulp_file.tests.functional.utils import (
+    gen_file_content_attrs,
+    skip_if,
+)
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
