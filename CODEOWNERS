@@ -1,0 +1,2 @@
+# have QE own the functional tests
+/pulp_file/tests/functional/ @pulp/qe
