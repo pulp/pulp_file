@@ -12,7 +12,7 @@ class FileContent(Content):
     """
     The "file" content type.
 
-    Content of this type represents a collection of 0 or more files uniquely
+    Content of this type represents a single file uniquely
     identified by path and SHA256 digest.
 
     Fields:
