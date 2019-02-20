@@ -9,6 +9,7 @@ from requests.exceptions import HTTPError
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
+    delete_orphans,
     gen_repo,
     get_content,
     get_versions,
@@ -93,3 +94,50 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
             body = {'repository': repo['_href'],
                     'repository_version': non_latest}
             client.post(urljoin(publisher['_href'], 'publish/'), body)
+
+
+class SyncPublishContentPathTestCase(unittest.TestCase):
+    """Test whether sync/publish for content already in Pulp.
+
+    Different code paths are used in Pulp for the cases when artifacts are
+    already present on the filesystem during sync and when they are not
+    downloaded yet
+
+    This test targets the following issue:
+
+    `Pulp #4442 <https://pulp.plan.io/issues/4442>`_
+
+    Does the following:
+
+    1. Assure that no content from repository A is downloaded.
+    2. Sync/publish repository A with download policy immediate.
+    3. Sync/publish repository A again with download policy immediate.
+    4. No failure in 2 shows that sync went fine when content was
+       not present on the disk and in the database.
+    5. No failure in 3 shows that sync went fine when content was already
+       present on the disk and in the database.
+
+    """
+
+    def test_all(self):
+        """Test whether sync/publish for content already in Pulp."""
+        cfg = config.get_config()
+        client = api.Client(cfg, api.page_handler)
+
+        # step 1. delete orphans to assure that no content is present on disk,
+        # or database.
+        delete_orphans(cfg)
+
+        remote = client.post(FILE_REMOTE_PATH, gen_file_remote())
+        self.addCleanup(client.delete, remote['_href'])
+
+        repo = client.post(REPO_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+
+        publisher = client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
+        self.addCleanup(client.delete, publisher['_href'])
+
+        for _ in range(2):
+            sync(cfg, remote, repo)
+            repo = client.get(repo['_href'])
+            publish(cfg, publisher, repo)
