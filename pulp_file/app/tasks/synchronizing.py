@@ -38,8 +38,7 @@ def synchronize(remote_pk, repository_pk, mirror):
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
     first_stage = FileFirstStage(remote)
-    download = (remote.policy == Remote.IMMEDIATE)  # Interpret policy to download Artifacts or not
-    dv = DeclarativeVersion(first_stage, repository, mirror=mirror, download_artifacts=download)
+    dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
     dv.create()
 
 
@@ -63,6 +62,7 @@ class FileFirstStage(Stage):
         """
         Build and emit `DeclarativeContent` from the Manifest data.
         """
+        deferred_download = (self.remote.policy != Remote.IMMEDIATE)  # Interpret download policy
         with ProgressBar(message='Downloading Metadata') as pb:
             parsed_url = urlparse(self.remote.url)
             root_dir = os.path.dirname(parsed_url.path)
@@ -77,7 +77,13 @@ class FileFirstStage(Stage):
                 url = urlunparse(parsed_url._replace(path=path))
                 file = FileContent(relative_path=entry.relative_path, digest=entry.digest)
                 artifact = Artifact(size=entry.size, sha256=entry.digest)
-                da = DeclarativeArtifact(artifact, url, entry.relative_path, self.remote)
+                da = DeclarativeArtifact(
+                    artifact=artifact,
+                    url=url,
+                    relative_path=entry.relative_path,
+                    remote=self.remote,
+                    deferred_download=deferred_download,
+                )
                 dc = DeclarativeContent(content=file, d_artifacts=[da])
                 pb.increment()
                 await self.put(dc)
