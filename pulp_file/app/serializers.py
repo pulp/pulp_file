@@ -18,7 +18,7 @@ class FileContentSerializer(SingleArtifactContentSerializer):
     """
 
     relative_path = serializers.CharField(
-        help_text="Relative location of the file within the repository",
+        help_text=_("Relative location of the file within the repository"),
         validators=[relative_path_validator],
     )
 
