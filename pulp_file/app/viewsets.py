@@ -70,7 +70,7 @@ class FileRemoteViewSet(RemoteViewSet):
         serializer = RepositorySyncURLSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         repository = serializer.validated_data.get('repository')
-        mirror = serializer.validated_data.get('mirror', True)
+        mirror = serializer.validated_data.get('mirror', False)
         result = enqueue_with_reservation(
             tasks.synchronize,
             [repository, remote],
