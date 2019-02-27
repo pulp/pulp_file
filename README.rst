@@ -103,7 +103,7 @@ Create a new remote ``bar``
         ...
     }
 
-``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/file | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
