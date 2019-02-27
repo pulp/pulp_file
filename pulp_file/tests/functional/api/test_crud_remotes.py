@@ -11,9 +11,9 @@ from pulp_smash.pulp3.constants import DOWNLOAD_POLICIES
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_MANIFEST_URL,
     FILE2_FIXTURE_MANIFEST_URL,
-    FILE_REMOTE_PATH
+    FILE_REMOTE_PATH,
 )
-from pulp_file.tests.functional.utils import gen_file_remote, skip_if
+from pulp_file.tests.functional.utils import skip_if, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -25,7 +25,6 @@ class CRUDRemotesTestCase(unittest.TestCase):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
         cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.remote = {}
 
     def test_01_create_remote(self):
         """Create a remote."""
@@ -111,7 +110,7 @@ class CreateRemoteNoURLTestCase(unittest.TestCase):
         * `Pulp #3395 <https://pulp.plan.io/issues/3395>`_
         * `Pulp Smash #984 <https://github.com/PulpQE/pulp-smash/issues/984>`_
         """
-        body = gen_file_remote(url=utils.uuid4())
+        body = gen_file_remote()
         del body['url']
         with self.assertRaises(HTTPError):
             api.Client(config.get_config()).post(FILE_REMOTE_PATH, body)
@@ -211,8 +210,8 @@ def _gen_verbose_remote():
     )))
     attrs.update({
         'password': utils.uuid4(),
-        'policy': choice(DOWNLOAD_POLICIES),
         'username': utils.uuid4(),
+        'policy': choice(DOWNLOAD_POLICIES),
         'validate': choice((False, True)),
     })
     return attrs

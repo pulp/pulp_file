@@ -19,64 +19,30 @@ from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
     FILE_CONTENT_PATH,
     FILE_FIXTURE_MANIFEST_URL,
-    FILE_REMOTE_PATH
+    FILE_REMOTE_PATH,
 )
 
 
-def populate_pulp(cfg, url=None):
-    """Add file contents to Pulp.
-
-    :param pulp_smash.config.PulpSmashConfig: Information about a Pulp
-        application.
-    :param url: The URL to a file repository's ``PULP_MANIFEST`` file. Defaults
-        to :data:`pulp_smash.constants.FILE_FIXTURE_URL` + ``PULP_MANIFEST``.
-    :returns: A list of dicts, where each dict describes one file content in
-        Pulp.
-    """
-    if url is None:
-        url = FILE_FIXTURE_MANIFEST_URL
-
-    client = api.Client(cfg, api.json_handler)
-    remote = {}
-    repo = {}
-    try:
-        remote.update(client.post(FILE_REMOTE_PATH, gen_remote(url)))
-        repo.update(client.post(REPO_PATH, gen_repo()))
-        sync(cfg, remote, repo)
-    finally:
-        if remote:
-            client.delete(remote['_href'])
-        if repo:
-            client.delete(repo['_href'])
-    return client.get(FILE_CONTENT_PATH)['results']
+def set_up_module():
+    """Skip tests Pulp 3 isn't under test or if pulp-file isn't installed."""
+    require_pulp_3(SkipTest)
+    require_pulp_plugins({'pulp_file'}, SkipTest)
 
 
-def gen_file_remote(url=None, **kwargs):
+def gen_file_remote(url=FILE_FIXTURE_MANIFEST_URL, **kwargs):
     """Return a semi-random dict for use in creating a file Remote.
 
     :param url: The URL of an external content source.
     """
-    if url is None:
-        url = FILE_FIXTURE_MANIFEST_URL
-
     return gen_remote(url, **kwargs)
 
 
 def gen_file_publisher(**kwargs):
-    """Return a semi-random dict for use in creating a file Remote.
+    """Return a semi-random dict for use in creating a file Publisher.
 
     :param url: The URL of an external content source.
     """
     return gen_publisher(**kwargs)
-
-
-def gen_file_content_attrs(artifact):
-    """Generate a dict with content unit attributes.
-
-    :param artifact: A dict of info about the artifact.
-    :returns: A semi-random dict for use in creating a content unit.
-    """
-    return {'_artifact': artifact['_href'], 'relative_path': utils.uuid4()}
 
 
 def get_file_content_paths(repo, version_href=None):
@@ -93,10 +59,36 @@ def get_file_content_paths(repo, version_href=None):
     ]
 
 
-def set_up_module():
-    """Skip tests Pulp 3 isn't under test or if pulp-file isn't installed."""
-    require_pulp_3(SkipTest)
-    require_pulp_plugins({'pulp_file'}, SkipTest)
+def gen_file_content_attrs(artifact):
+    """Generate a dict with content unit attributes.
+
+    :param artifact: A dict of info about the artifact.
+    :returns: A semi-random dict for use in creating a content unit.
+    """
+    return {'_artifact': artifact['_href'], 'relative_path': utils.uuid4()}
+
+
+def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
+    """Add file contents to Pulp.
+
+    :param pulp_smash.config.PulpSmashConfig: Information about a Pulp application.
+    :param url: The URL to a file repository's ``PULP_MANIFEST`` file. Defaults to
+        :data:`pulp_smash.constants.FILE_FIXTURE_URL` + ``PULP_MANIFEST``.
+    :returns: A list of dicts, where each dict describes one file content in Pulp.
+    """
+    client = api.Client(cfg, api.json_handler)
+    remote = {}
+    repo = {}
+    try:
+        remote.update(client.post(FILE_REMOTE_PATH, gen_remote(url)))
+        repo.update(client.post(REPO_PATH, gen_repo()))
+        sync(cfg, remote, repo)
+    finally:
+        if remote:
+            client.delete(remote['_href'])
+        if repo:
+            client.delete(repo['_href'])
+    return client.get(FILE_CONTENT_PATH)['results']
 
 
 skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name

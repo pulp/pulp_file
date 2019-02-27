@@ -26,14 +26,22 @@ FILE_FIXTURE_MANIFEST_URL = urljoin(FILE_FIXTURE_URL, 'PULP_MANIFEST')
 FILE_FIXTURE_COUNT = 3
 """The number of packages available at :data:`FILE_FIXTURE_URL`."""
 
-FILE_FIXTURE_SUMMARY = {FILE_CONTENT_NAME: FILE_FIXTURE_COUNT}
+FILE_FIXTURE_SUMMARY = {
+    FILE_CONTENT_NAME: FILE_FIXTURE_COUNT,
+}
 """The desired content summary after syncing :data:`FILE_FIXTURE_URL`."""
+
+FILE_URL = urljoin(FILE_FIXTURE_URL, '1.iso')
+"""The URL to an ISO file at :data:`FILE_FIXTURE_URL`."""
 
 FILE2_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file2/')
 """The URL to a file repository."""
 
 FILE2_FIXTURE_MANIFEST_URL = urljoin(FILE2_FIXTURE_URL, 'PULP_MANIFEST')
 """The URL to a file repository manifest"""
+
+FILE2_URL = urljoin(FILE2_FIXTURE_URL, '1.iso')
+"""The URL to an ISO file at :data:`FILE2_FIXTURE_URL`."""
 
 FILE_INVALID_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'file-invalid/')
 """The URL to an invalid file repository."""
@@ -49,9 +57,3 @@ FILE_LARGE_FIXTURE_MANIFEST_URL = urljoin(
     'PULP_MANIFEST'
 )
 """The URL to a file repository manifest."""
-
-FILE_URL = urljoin(FILE_FIXTURE_URL, '1.iso')
-"""The URL to an ISO file at :data:`FILE_FIXTURE_URL`."""
-
-FILE2_URL = urljoin(FILE2_FIXTURE_URL, '1.iso')
-"""The URL to an ISO file at :data:`FILE2_FIXTURE_URL`."""
