@@ -15,7 +15,7 @@ pulp-manager makemigrations file
 pulp-manager migrate --noinput
 
 # Run unit tests.
-(cd ../pulp && coverage run manage.py test pulp_file.tests.unit)
+(cd ../pulpcore && coverage run manage.py test pulp_file.tests.unit)
 
 # Run functional tests.
 pulp-manager reset-admin-password --password admin
@@ -36,7 +36,7 @@ show_logs_and_return_non_zero() {
 pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional || show_logs_and_return_non_zero
 
 # test against pulpcore as well since pulpcore has a set of tests which use pulp_file
-cd ../pulp
+cd ../pulpcore
 pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional.api.using_plugin || show_logs_and_return_non_zero
 
 # Travis' scripts use unbound variables. This is problematic, because the
