@@ -27,7 +27,7 @@ FILE_FIXTURE_COUNT = 3
 """The number of packages available at :data:`FILE_FIXTURE_URL`."""
 
 FILE_FIXTURE_SUMMARY = {
-    FILE_CONTENT_NAME: FILE_FIXTURE_COUNT,
+    FILE_CONTENT_NAME: {'count': FILE_FIXTURE_COUNT},
 }
 """The desired content summary after syncing :data:`FILE_FIXTURE_URL`."""
 
