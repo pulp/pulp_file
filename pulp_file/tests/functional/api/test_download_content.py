@@ -6,7 +6,11 @@ from random import choice
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import DISTRIBUTION_PATH, REPO_PATH
+from pulp_smash.pulp3.constants import (
+    DISTRIBUTION_PATH,
+    LAZY_DOWNLOAD_POLICIES,
+    REPO_PATH,
+)
 from pulp_smash.pulp3.utils import (
     download_content_unit,
     gen_distribution,
@@ -31,7 +35,27 @@ from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noq
 class DownloadContentTestCase(unittest.TestCase):
     """Verify whether content served by pulp can be downloaded."""
 
-    def test_all(self):
+    def test_immediate(self):
+        """Download content from Pulp. Content is synced with immediate.
+
+        See :meth:`do_test`.
+        """
+        self.do_test('immediate')
+
+    def test_lazy_download_policies(self):
+        """Download content from Pulp. Content is synced with lazy policy.
+
+        See :meth:`do_test`.
+
+        This test targets the following issue:
+
+        `Pulp #4496 <https://pulp.plan.io/issues/4496>`_
+        """
+        for policy in LAZY_DOWNLOAD_POLICIES:
+            with self.subTest(policy):
+                self.do_test(policy)
+
+    def do_test(self, policy):
         """Verify whether content served by pulp can be downloaded.
 
         The process of publishing content is more involved in Pulp 3 than it
@@ -63,7 +87,7 @@ class DownloadContentTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_file_remote()
+        body = gen_file_remote(policy=policy)
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
