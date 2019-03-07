@@ -78,7 +78,7 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo['_href'])
 
-        body = gen_file_remote(**{'policy': download_policy})
+        body = gen_file_remote(policy=download_policy)
         remote = self.client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(self.client.delete, remote['_href'])
 
