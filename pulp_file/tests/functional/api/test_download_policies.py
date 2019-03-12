@@ -13,6 +13,8 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_file.tests.functional.constants import (
+    FILE_CONTENT_PATH,
+    FILE_FIXTURE_COUNT,
     FILE_FIXTURE_SUMMARY,
     FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH,
@@ -120,3 +122,51 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
 
         publication = publish(self.cfg, publisher, repo)
         self.assertIsNotNone(publication['repository_version'], publication)
+
+
+class LazySyncedContentAccessTestCase(unittest.TestCase):
+    """Verify that lazy synced content can be acessed using content endpoint.
+
+    Assert that one acessing lazy synced content using the content endpoint,
+    e.g. ``http://localhost/pulp/api/v3/content/file/files`` will not raise an
+    HTTP exception.
+
+    This test targets the following issue:
+
+    `Pulp #4463 <https://pulp.plan.io/issues/4463>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.page_handler)
+
+    def test_on_demand(self):
+        """Test ``on_demand``. See :meth:`do_test`."""
+        self.do_test('on_demand')
+
+    def test_streamed(self):
+        """Test ``streamed``. See :meth:`do_test`."""
+        self.do_test('streamed')
+
+    def do_test(self, policy):
+        """Access lazy synced content on using content endpoint."""
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+
+        body = gen_file_remote(policy=policy)
+        remote = self.client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(self.client.delete, remote['_href'])
+
+        # Sync the repository.
+        self.assertIsNone(repo['_latest_version_href'])
+        sync(self.cfg, remote, repo)
+        repo = self.client.get(repo['_href'])
+        self.assertIsNotNone(repo['_latest_version_href'])
+
+        # Assert that no HTTP error was raised.
+        # Assert that the number of units present is according to the synced
+        # feed.
+        content = self.client.get(FILE_CONTENT_PATH)
+        self.assertEqual(len(content), FILE_FIXTURE_COUNT, content)
