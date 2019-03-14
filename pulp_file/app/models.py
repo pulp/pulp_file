@@ -23,7 +23,7 @@ class FileContent(Content):
     TYPE = 'file'
 
     relative_path = models.CharField(max_length=255, null=False)
-    digest = models.CharField(max_length=255, null=False)
+    digest = models.CharField(max_length=64, null=False)
 
     class Meta:
         unique_together = (
