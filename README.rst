@@ -62,6 +62,7 @@ Make and Run Migrations
 
 .. code-block:: bash
 
+   export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
    django-admin makemigrations file
    django-admin migrate file
 
