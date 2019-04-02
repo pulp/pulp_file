@@ -4,10 +4,13 @@ from urllib.parse import urljoin
 
 from pulp_smash.constants import PULP_FIXTURES_BASE_URL
 from pulp_smash.pulp3.constants import (
+    API_DOCS_PATH,
     BASE_PUBLISHER_PATH,
     BASE_REMOTE_PATH,
-    CONTENT_PATH
+    CONTENT_PATH,
 )
+
+API_SCHEMA_PATH = urljoin(API_DOCS_PATH, '.json?format=openapi')
 
 FILE_CONTENT_NAME = 'file.file'
 
