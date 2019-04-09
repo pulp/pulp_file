@@ -71,8 +71,8 @@ Run Services
 
 .. code-block:: bash
 
-   django-admin runserver
-   gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
+   django-admin runserver 24817
+   gunicorn pulpcore.content:server --bind 'localhost:24816' --worker-class 'aiohttp.GunicornWebWorker' -w 2
    sudo systemctl restart pulp-resource-manager
    sudo systemctl restart pulp-worker@1
    sudo systemctl restart pulp-worker@2
@@ -81,7 +81,7 @@ Run Services
 Create a repository ``foo``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/repositories/ name=foo``
+``$ http POST http://localhost:24817/pulp/api/v3/repositories/ name=foo``
 
 .. code:: json
 
@@ -90,12 +90,12 @@ Create a repository ``foo``
         ...
     }
 
-``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export REPO_HREF=$(http :24817/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
 Create a new remote ``bar``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/file/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+``$ http POST http://localhost:24817/pulp/api/v3/remotes/file/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
 
 .. code:: json
 
@@ -104,17 +104,17 @@ Create a new remote ``bar``
         ...
     }
 
-``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :24817/pulp/api/v3/remotes/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
-``$ http POST ':8000'$REMOTE_HREF'sync/' repository=$REPO_HREF mirror=True``
+``$ http POST ':24817'$REMOTE_HREF'sync/' repository=$REPO_HREF mirror=True``
 
 Look at the new Repository Version created
 ------------------------------------------
 
-``$ http GET ':8000'$REPO_HREF'versions/1/'``
+``$ http GET ':24817'$REPO_HREF'versions/1/'``
 
 .. code:: json
 
@@ -136,7 +136,7 @@ Upload ``foo.tar.gz`` to Pulp
 
 Create an Artifact by uploading the file to Pulp.
 
-``$ http --form POST http://localhost:8000/pulp/api/v3/artifacts/ file@./foo.tar.gz``
+``$ http --form POST http://localhost:24817/pulp/api/v3/artifacts/ file@./foo.tar.gz``
 
 .. code:: json
 
@@ -151,7 +151,7 @@ Create ``file`` content from an Artifact
 
 Create a content unit and point it to your artifact
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz _artifact="/pulp/api/v3/artifacts/1/"``
+``$ http POST http://localhost:24817/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz _artifact="/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
@@ -162,19 +162,19 @@ Create a content unit and point it to your artifact
         "type": "file"
     }
 
-``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/file/files/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
+``$ export CONTENT_HREF=$(http :24817/pulp/api/v3/content/file/files/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
 
 
 Add content to repository ``foo``
 ---------------------------------
 
-``$ http POST ':8000'$REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
+``$ http POST ':24817'$REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
 
 
 Create a ``file`` Publisher
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/publishers/file/file/ name=bar``
+``$ http POST http://localhost:24817/pulp/api/v3/publishers/file/file/ name=bar``
 
 .. code:: json
 
@@ -183,13 +183,13 @@ Create a ``file`` Publisher
         ...
     }
 
-``$ export PUBLISHER_HREF=$(http :8000/pulp/api/v3/publishers/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export PUBLISHER_HREF=$(http :24817/pulp/api/v3/publishers/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 
 Use the ``bar`` Publisher to create a Publication
 -------------------------------------------------
 
-``$ http POST ':8000'$PUBLISHER_HREF'publish/' repository=$REPO_HREF``
+``$ http POST ':24817'$PUBLISHER_HREF'publish/' repository=$REPO_HREF``
 
 .. code:: json
 
@@ -197,12 +197,12 @@ Use the ``bar`` Publisher to create a Publication
         "task": "/pulp/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/"
     }
 
-``$ export PUBLICATION_HREF=$(http :8000/pulp/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
+``$ export PUBLICATION_HREF=$(http :24817/pulp/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
 
 Create a Distribution for the Publication
 -----------------------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
+``$ http POST http://localhost:24817/pulp/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
 
 
 .. code:: json
@@ -216,4 +216,4 @@ Create a Distribution for the Publication
 Download ``test.iso`` from Pulp
 -------------------------------
 
-``$ http GET http://localhost:8080/pulp/content/foo/test.iso``
+``$ http GET http://localhost:24816/pulp/content/foo/test.iso``
