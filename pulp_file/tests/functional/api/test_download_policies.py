@@ -1,10 +1,16 @@
 # coding=utf-8
 """Tests for Pulp`s download policies."""
+from random import choice
 import unittest
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.constants import REPO_PATH
+from pulp_smash.pulp3.constants import (
+    ARTIFACTS_PATH,
+    LAZY_DOWNLOAD_POLICIES,
+    REPO_PATH,
+)
 from pulp_smash.pulp3.utils import (
+    delete_orphans,
     gen_repo,
     get_added_content_summary,
     get_content_summary,
@@ -170,3 +176,47 @@ class LazySyncedContentAccessTestCase(unittest.TestCase):
         # feed.
         content = self.client.get(FILE_CONTENT_PATH)
         self.assertEqual(len(content), FILE_FIXTURE_COUNT, content)
+
+
+class SwitchDownloadPolicyTestCase(unittest.TestCase):
+    """Perform a lazy sync, and change to immediate to force download.
+
+    Perform an immediate sync to download artifacts for content units that
+    are already created.
+
+    This test case targets the following issue:
+
+    * `Pulp #4467 <https://pulp.plan.io/issues/4467>`_
+    """
+
+    def test_all(self):
+        """Perform a lazy sync and change to immeditae to force download."""
+        cfg = config.get_config()
+        # delete orphans to assure that no content units are present on the
+        # file system
+        delete_orphans(cfg)
+        client = api.Client(cfg, api.page_handler)
+
+        repo = client.post(REPO_PATH, gen_repo())
+        self.addCleanup(client.delete, repo['_href'])
+
+        body = gen_file_remote(policy=choice(LAZY_DOWNLOAD_POLICIES))
+        remote = client.post(FILE_REMOTE_PATH, body)
+        self.addCleanup(client.delete, remote['_href'])
+
+        # Sync the repository using a lazy download policy
+        sync(cfg, remote, repo)
+        artifacts = client.get(ARTIFACTS_PATH)
+        self.assertEqual(len(artifacts), 0, artifacts)
+
+        # Update the policy to immediate
+        client.patch(remote['_href'], {'policy': 'immediate'})
+        remote = client.get(remote['_href'])
+        self.assertEqual(remote['policy'], 'immediate')
+
+        # Sync using immediate download policy
+        sync(cfg, remote, repo)
+
+        # Assert that missing artifacts are downloaded
+        artifacts = client.get(ARTIFACTS_PATH)
+        self.assertEqual(len(artifacts), FILE_FIXTURE_COUNT, artifacts)
