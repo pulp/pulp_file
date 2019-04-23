@@ -3,13 +3,14 @@ from gettext import gettext as _
 from rest_framework import serializers
 
 from pulpcore.plugin.serializers import (
-    SingleArtifactContentSerializer,
-    RemoteSerializer,
+    PublicationSerializer,
     PublisherSerializer,
+    RemoteSerializer,
+    SingleArtifactContentSerializer,
     relative_path_validator,
 )
 
-from .models import FileContent, FileRemote, FilePublisher
+from .models import FileContent, FileRemote, FilePublication, FilePublisher
 
 
 class FileContentSerializer(SingleArtifactContentSerializer):
@@ -71,3 +72,13 @@ class FilePublisherSerializer(PublisherSerializer):
     class Meta:
         fields = PublisherSerializer.Meta.fields + ('manifest',)
         model = FilePublisher
+
+
+class FilePublicationSerializer(PublicationSerializer):
+    """
+    Serializer for File Publications.
+    """
+
+    class Meta:
+        fields = PublicationSerializer.Meta.fields
+        model = FilePublication
