@@ -14,12 +14,18 @@ from pulpcore.plugin.viewsets import (
     ContentFilter,
     RemoteViewSet,
     OperationPostponedResponse,
+    PublicationViewSet,
     PublisherViewSet,
 )
 
 from . import tasks
-from .models import FileContent, FileRemote, FilePublisher
-from .serializers import FileContentSerializer, FileRemoteSerializer, FilePublisherSerializer
+from .models import FileContent, FileRemote, FilePublication, FilePublisher
+from .serializers import (
+    FileContentSerializer,
+    FileRemoteSerializer,
+    FilePublicationSerializer,
+    FilePublisherSerializer,
+)
 
 
 class FileContentFilter(ContentFilter):
@@ -119,3 +125,13 @@ class FilePublisherViewSet(PublisherViewSet):
             }
         )
         return OperationPostponedResponse(result, request)
+
+
+class FilePublicationViewSet(PublicationViewSet):
+    """
+    ViewSet for File Publications.
+    """
+
+    endpoint_name = 'file'
+    queryset = FilePublication.objects.all()
+    serializer_class = FilePublicationSerializer

@@ -7,12 +7,11 @@ from django.core.files import File
 
 from pulpcore.plugin.models import (
     RepositoryVersion,
-    Publication,
     PublishedMetadata,
     RemoteArtifact)
 from pulpcore.plugin.tasking import WorkingDirectory
 
-from pulp_file.app.models import FileContent, FilePublisher
+from pulp_file.app.models import FileContent, FilePublication, FilePublisher
 from pulp_file.manifest import Entry, Manifest
 
 
@@ -29,16 +28,16 @@ def publish(publisher_pk, repository_version_pk):
 
     """
     publisher = FilePublisher.objects.get(pk=publisher_pk)
-    repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
+    repo_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
     log.info(_('Publishing: repository={repo}, version={ver}, publisher={pub}').format(
-        repo=repository_version.repository.name,
-        ver=repository_version.number,
+        repo=repo_version.repository.name,
+        ver=repo_version.number,
         pub=publisher.name,
     ))
 
     with WorkingDirectory():
-        with Publication.create(repository_version, publisher, pass_through=True) as publication:
+        with FilePublication.create(repo_version, publisher, pass_through=True) as publication:
             manifest = Manifest(publisher.manifest)
             manifest.write(populate(publication))
             metadata = PublishedMetadata(

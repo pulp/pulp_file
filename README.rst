@@ -197,7 +197,7 @@ Use the ``bar`` Publisher to create a Publication
         "task": "/pulp/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/"
     }
 
-``$ export PUBLICATION_HREF=$(http :24817/pulp/api/v3/publications/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
+``$ export PUBLICATION_HREF=$(http :24817/pulp/api/v3/publications/file/file/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
 
 Create a Distribution for the Publication
 -----------------------------------------
