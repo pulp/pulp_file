@@ -19,6 +19,7 @@ from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
     FILE_CONTENT_PATH,
     FILE_FIXTURE_MANIFEST_URL,
+    FILE_PUBLICATION_PATH,
     FILE_REMOTE_PATH,
 )
 
@@ -89,6 +90,31 @@ def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
         if repo:
             client.delete(repo['_href'])
     return client.get(FILE_CONTENT_PATH)['results']
+
+
+def create_file_publication(cfg, repo, version_href=None, publisher=None):
+    """Create a file publication.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param repo: A dict of information about the repository.
+    :param version_href: A href for the repo version to be published.
+    :param publisher: A dict of publisher info to use to publish.
+    :returns: A publication. A dict of information about the just created
+        publication.
+    """
+    if version_href:
+        body = {"repository_version": version_href}
+    else:
+        body = {"repository": repo["_href"]}
+
+    if publisher:
+        body['publisher'] = publisher['_href']
+
+    client = api.Client(cfg, api.json_handler)
+    call_report = client.post(FILE_PUBLICATION_PATH, body)
+    tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
+    return client.get(tasks[-1]["created_resources"][0])
 
 
 skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name

@@ -3,6 +3,7 @@ from gettext import gettext as _
 from rest_framework import serializers
 
 from pulpcore.plugin.serializers import (
+    DetailRelatedField,
     PublicationSerializer,
     PublisherSerializer,
     RemoteSerializer,
@@ -79,6 +80,12 @@ class FilePublicationSerializer(PublicationSerializer):
     Serializer for File Publications.
     """
 
+    publisher = DetailRelatedField(
+        help_text=_('The publisher that created this publication.'),
+        queryset=FilePublisher.objects.all(),
+        required=False,
+    )
+
     class Meta:
-        fields = PublicationSerializer.Meta.fields
+        fields = PublicationSerializer.Meta.fields + ('publisher',)
         model = FilePublication

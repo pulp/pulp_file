@@ -186,10 +186,10 @@ Create a ``file`` Publisher
 ``$ export PUBLISHER_HREF=$(http :24817/pulp/api/v3/publishers/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 
-Use the ``bar`` Publisher to create a Publication
--------------------------------------------------
+Create a Publication
+--------------------
 
-``$ http POST ':24817'$PUBLISHER_HREF'publish/' repository=$REPO_HREF``
+``$ http POST http://localhost:24817/pulp/api/v3/publications/file/file/ repository=$REPO_HREF publisher=$PUBLISHER_HREF``
 
 .. code:: json
 
