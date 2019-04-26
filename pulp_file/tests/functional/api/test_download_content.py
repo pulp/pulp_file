@@ -15,7 +15,6 @@ from pulp_smash.pulp3.utils import (
     download_content_unit,
     gen_distribution,
     gen_repo,
-    publish,
     sync,
 )
 
@@ -25,6 +24,7 @@ from pulp_file.tests.functional.constants import (
     FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
+    create_file_publication,
     gen_file_publisher,
     gen_file_remote,
     get_file_content_paths,
@@ -99,7 +99,7 @@ class DownloadContentTestCase(unittest.TestCase):
         self.addCleanup(client.delete, publisher['_href'])
 
         # Create a publication.
-        publication = publish(cfg, publisher, repo)
+        publication = create_file_publication(cfg, repo, publisher=publisher)
         self.addCleanup(client.delete, publication['_href'])
 
         # Create a distribution.

@@ -5,7 +5,6 @@ from rest_framework.decorators import detail_route
 
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
-    RepositoryPublishURLSerializer,
     RepositorySyncURLSerializer,
 )
 from pulpcore.plugin.tasking import enqueue_with_reservation
@@ -98,34 +97,6 @@ class FilePublisherViewSet(PublisherViewSet):
     queryset = FilePublisher.objects.all()
     serializer_class = FilePublisherSerializer
 
-    @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to publish file content.",
-        responses={202: AsyncOperationResponseSerializer}
-    )
-    @detail_route(methods=('post',), serializer_class=RepositoryPublishURLSerializer)
-    def publish(self, request, pk):
-        """
-        Publishes a repository.
-
-        Either the ``repository`` or the ``repository_version`` fields can
-        be provided but not both at the same time.
-        """
-        publisher = self.get_object()
-        serializer = RepositoryPublishURLSerializer(data=request.data,
-                                                    context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        repository_version = serializer.validated_data.get('repository_version')
-
-        result = enqueue_with_reservation(
-            tasks.publish,
-            [repository_version.repository, publisher],
-            kwargs={
-                'publisher_pk': str(publisher.pk),
-                'repository_version_pk': str(repository_version.pk)
-            }
-        )
-        return OperationPostponedResponse(result, request)
-
 
 class FilePublicationViewSet(PublicationViewSet):
     """
@@ -135,3 +106,34 @@ class FilePublicationViewSet(PublicationViewSet):
     endpoint_name = 'file'
     queryset = FilePublication.objects.all()
     serializer_class = FilePublicationSerializer
+
+    @swagger_auto_schema(
+        operation_description="Trigger an asynchronous task to publish file content.",
+        responses={202: AsyncOperationResponseSerializer}
+    )
+    def create(self, request):
+        """
+        Publishes a repository.
+
+        Either the ``repository`` or the ``repository_version`` fields can
+        be provided but not both at the same time.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        repository_version = serializer.validated_data.get('repository_version')
+        publisher = serializer.validated_data.get('publisher')
+
+        if publisher:
+            publisher_pk = str(publisher.pk)
+        else:
+            publisher_pk = ''
+
+        result = enqueue_with_reservation(
+            tasks.publish,
+            [repository_version.repository, publisher_pk],
+            kwargs={
+                'publisher_pk': publisher_pk,
+                'repository_version_pk': str(repository_version.pk)
+            }
+        )
+        return OperationPostponedResponse(result, request)

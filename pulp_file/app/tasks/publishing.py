@@ -27,18 +27,26 @@ def publish(publisher_pk, repository_version_pk):
         repository_version_pk (str): Create a publication from this repository version.
 
     """
-    publisher = FilePublisher.objects.get(pk=publisher_pk)
+    if publisher_pk:
+        publisher = FilePublisher.objects.get(pk=publisher_pk)
+        manifest = publisher.manifest
+        publisher_name = publisher.name
+    else:
+        publisher = None
+        manifest = 'PULP_MANIFEST'
+        publisher_name = ''
+
     repo_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
     log.info(_('Publishing: repository={repo}, version={ver}, publisher={pub}').format(
         repo=repo_version.repository.name,
         ver=repo_version.number,
-        pub=publisher.name,
+        pub=publisher_name,
     ))
 
     with WorkingDirectory():
         with FilePublication.create(repo_version, publisher, pass_through=True) as publication:
-            manifest = Manifest(publisher.manifest)
+            manifest = Manifest(manifest)
             manifest.write(populate(publication))
             metadata = PublishedMetadata(
                 relative_path=os.path.basename(manifest.relative_path),

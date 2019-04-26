@@ -2,7 +2,6 @@
 """Tests that publish file plugin repositories."""
 import unittest
 from random import choice
-from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
@@ -12,16 +11,17 @@ from pulp_smash.pulp3.utils import (
     gen_repo,
     get_content,
     get_versions,
-    publish,
     sync,
 )
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
+    FILE_PUBLICATION_PATH,
     FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
+    create_file_publication,
     gen_file_publisher,
     gen_file_remote,
 )
@@ -76,13 +76,13 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
-        publication = publish(cfg, publisher, repo)
+        publication = create_file_publication(cfg, repo, publisher=publisher)
 
         # Step 3
         self.assertEqual(publication['repository_version'], version_hrefs[-1])
 
         # Step 4
-        publication = publish(cfg, publisher, repo, non_latest)
+        publication = create_file_publication(cfg, repo, non_latest, publisher)
 
         # Step 5
         self.assertEqual(publication['repository_version'], non_latest)
@@ -93,4 +93,4 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
                 'repository': repo['_href'],
                 'repository_version': non_latest,
             }
-            client.post(urljoin(publisher['_href'], 'publish/'), body)
+            client.post(FILE_PUBLICATION_PATH, body)

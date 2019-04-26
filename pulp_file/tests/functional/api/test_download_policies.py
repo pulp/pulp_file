@@ -14,7 +14,6 @@ from pulp_smash.pulp3.utils import (
     gen_repo,
     get_added_content_summary,
     get_content_summary,
-    publish,
     sync,
 )
 
@@ -26,6 +25,7 @@ from pulp_file.tests.functional.constants import (
     FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
+    create_file_publication,
     gen_file_publisher,
     gen_file_remote,
 )
@@ -126,7 +126,7 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
         publisher = self.client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
         self.addCleanup(self.client.delete, publisher['_href'])
 
-        publication = publish(self.cfg, publisher, repo)
+        publication = create_file_publication(self.cfg, repo, publisher=publisher)
         self.assertIsNotNone(publication['repository_version'], publication)
 
 
