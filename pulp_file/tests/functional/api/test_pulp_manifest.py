@@ -13,7 +13,6 @@ from pulp_smash.pulp3.constants import (
 from pulp_smash.pulp3.utils import (
     gen_distribution,
     gen_repo,
-    publish,
     sync,
 )
 
@@ -23,6 +22,7 @@ from pulp_file.tests.functional.constants import (
     FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
+    create_file_publication,
     gen_file_publisher,
     gen_file_remote,
 )
@@ -54,10 +54,10 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo['_href'])
 
-        pubisher = self.client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
-        self.addCleanup(self.client.delete, pubisher['_href'])
+        publisher = self.client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
+        self.addCleanup(self.client.delete, publisher['_href'])
 
-        publication = publish(self.cfg, pubisher, repo)
+        publication = create_file_publication(self.cfg, repo, publisher=publisher)
         self.addCleanup(self.client.delete, publication['_href'])
 
         body = gen_distribution()
