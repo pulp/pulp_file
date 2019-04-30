@@ -35,3 +35,6 @@ jobs:
         secure: pQVElIk7hM0cyyGz8K+0R23OlcSBocYibi7yOPYUvQ/x8oTEuH/WFt18M5i3YK2tPg3Mypnm+uaUg1vxd+QlJRZTTTj+sSIiGflTkTMIWPpoQ9bm8/oo5MlOP630mK3/Lp117BLAqNJfUm6XW8dikhBFiWZ+IVge3bsuaIOTs+8TNmXT6F0aZZ66RQElcfdllfGSmYv39QzH95XL6d/AgSBh93he26mqlOpHf7gcsT/5UwggW8wDjyF53WYBBuYjg3A7umwHzoilLy98E3ortGF1RaMjlu0jSrlsT+pBdu1ZKwgxEfk3zqKaTYNr/0w9AudsRWMXY8F2oAOG1W5qUoabqiFiVc4AvrP2oZ6q3y1ikv1kLSjGpfmPdz524XY25xoXZOp2M5NIuVo36bZZ9tUhNtkGnE0pufzaRYDAAChWW5xvcOU1ngSDfFkogg4cUmWkVrARBhRwaUcbN2fU/lPDpdaPjg0UCLTCmO8VsGfdvX0NAGu8MUQjbOLvPqzAIR+pEDgKiRIqgW8UlByIAmjh7Z0W8NXLGcTNt2vP9qXnSJpjXP6YU7WlfFEQn9sFwIBQEiCiU2vUfV83iNoVDSaN+0zeeJCHmrY5g/FaqHvXw++vu0ZzK43ZLDy6TU58QP2qooZ6pie8/PGYWVr6U3avXtk/epC3hSHwo6tv1GA=
       on:
         tags: true
+  - stage: publish-pulp-file-client-gem
+    script: bash .travis/publish_pulp_file_client_gem.sh
+    if: type != pull_request
