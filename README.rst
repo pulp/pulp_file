@@ -92,6 +92,9 @@ Create a repository ``foo``
 
 ``$ export REPO_HREF=$(http :24817/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
+Reference (pulpcore): `Repository API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/repositories>`_
+
 Create a new remote ``bar``
 ---------------------------
 
@@ -106,10 +109,16 @@ Create a new remote ``bar``
 
 ``$ export REMOTE_HREF=$(http :24817/pulp/api/v3/remotes/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
+Reference: `File Remote API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/remotes>`_
+
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
 ``$ http POST ':24817'$REMOTE_HREF'sync/' repository=$REPO_HREF mirror=True``
+
+Reference: `File Sync API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#operation/remotes_file_file_sync>`_
 
 Look at the new Repository Version created
 ------------------------------------------
@@ -130,6 +139,9 @@ Look at the new Repository Version created
         "number": 1
     }
 
+Reference (pulpcore): `Repository Version API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#operation/repositories_versions_list>`_
+
 
 Upload ``foo.tar.gz`` to Pulp
 -----------------------------
@@ -144,6 +156,9 @@ Create an Artifact by uploading the file to Pulp.
         "_href": "/pulp/api/v3/artifacts/1/",
         ...
     }
+
+Reference (pulpcore): `Artifact API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/artifacts>`_
 
 
 Create ``file`` content from an Artifact
@@ -164,11 +179,17 @@ Create a content unit and point it to your artifact
 
 ``$ export CONTENT_HREF=$(http :24817/pulp/api/v3/content/file/files/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
 
+Reference: `File Content API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/content>`_
+
 
 Add content to repository ``foo``
 ---------------------------------
 
 ``$ http POST ':24817'$REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
+
+Reference (pulpcore): `Repository Version API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#operation/repositories_versions_create>`_
 
 
 Create a ``file`` Publisher
@@ -185,6 +206,8 @@ Create a ``file`` Publisher
 
 ``$ export PUBLISHER_HREF=$(http :24817/pulp/api/v3/publishers/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
+Reference: `File Publisher API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/publishers>`_
 
 Create a Publication
 --------------------
@@ -199,6 +222,9 @@ Create a Publication
 
 ``$ export PUBLICATION_HREF=$(http :24817/pulp/api/v3/publications/file/file/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
 
+Reference: `File Publication API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/publication>`_
+
 Create a Distribution for the Publication
 -----------------------------------------
 
@@ -212,6 +238,8 @@ Create a Distribution for the Publication
        ...
     }
 
+Reference (pulpcore): `Distribution API Usage
+<https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/distributions>`_
 
 Download ``test.iso`` from Pulp
 -------------------------------
