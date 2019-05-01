@@ -17,7 +17,7 @@ cd pulp-swagger-codegen
 
 
 sudo ./generate.sh pulp_file ruby $COMMIT_SHA
-sudo chown -R vagrant:vagrant pulp_file-client
+sudo chown -R travis:travis pulp_file-client
 cd pulp_file-client
 gem build pulp_file_client
 GEM_FILE="$(ls | grep pulp_file_client-)"
