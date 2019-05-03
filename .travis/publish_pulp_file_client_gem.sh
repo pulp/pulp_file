@@ -6,17 +6,23 @@ sudo chmod 600 ~/.gem/credentials
 django-admin runserver 24817 >> ~/django_runserver.log 2>&1 &
 sleep 5
 
-cd /home/vagrant/devel/pulp_file/
-COMMIT_SHA="$(git rev-parse HEAD | cut -c1-8)"
-export COMMIT_SHA
+cd /home/travis/build/pulp/pulp_file/
+export REPORTED_VERSION=$(http :24817/pulp/api/v3/status/ | jq --arg plugin pulp_file -r '.versions[] | select(.component == $plugin) | .version')
+export COMMIT_COUNT="$(git rev-list ${REPORTED_VERSION}^..HEAD | wc -l)"
+export VERSION=${REPORTED_VERSION}.dev.${COMMIT_COUNT}
+
+export response=$(curl --write-out %{http_code} --silent --output /dev/null https://rubygems.org/gems/pulp_file_client/versions/$VERSION)
+
+if [ "$response" == "200" ];
+then
+    exit
+fi
 
 cd
-
 git clone https://github.com/pulp/pulp-swagger-codegen.git
 cd pulp-swagger-codegen
 
-
-sudo ./generate.sh pulp_file ruby $COMMIT_SHA
+sudo ./generate.sh pulp_file ruby $VERSION
 sudo chown -R travis:travis pulp_file-client
 cd pulp_file-client
 gem build pulp_file_client
