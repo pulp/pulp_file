@@ -104,7 +104,7 @@ class FilePublicationViewSet(PublicationViewSet):
     """
 
     endpoint_name = 'file'
-    queryset = FilePublication.objects.all()
+    queryset = FilePublication.objects.exclude(complete=False)
     serializer_class = FilePublicationSerializer
 
     @swagger_auto_schema(
