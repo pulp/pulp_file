@@ -13,6 +13,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_file.tests.functional.constants import (
+    FILE2_FIXTURE_MANIFEST_URL,
     FILE_FIXTURE_SUMMARY,
     FILE_INVALID_MANIFEST_URL,
     FILE_REMOTE_PATH,
@@ -148,3 +149,50 @@ class SyncInvalidTestCase(unittest.TestCase):
         with self.assertRaises(TaskReportError) as context:
             sync(self.cfg, remote, repo)
         return context
+
+
+class SyncDuplicateFileRepoTestCase(unittest.TestCase):
+    """Sync multiple remotes containing duplicate files."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+
+    def test_duplicate_file_sync(self):
+        """Sync a repository with remotes containing same file names.
+
+        This test does the following.
+
+        1. Create a repository in pulp.
+        2. Create two remotes containing the same file.
+        3. Check whether the created repo has only one copy of the file.
+
+        This test targets the following issue:
+
+        `Pulp #4738 <https://pulp.plan.io/issues/4738>`_
+        """
+        # Step 1
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
+
+        # Step 2
+        remote = self.client.post(
+            FILE_REMOTE_PATH,
+            gen_file_remote()
+        )
+        self.addCleanup(self.client.delete, remote['_href'])
+        remote2 = self.client.post(
+            FILE_REMOTE_PATH,
+            gen_file_remote(url=FILE2_FIXTURE_MANIFEST_URL)
+        )
+        self.addCleanup(self.client.delete, remote2['_href'])
+        sync(self.cfg, remote, repo)
+        repo = self.client.get(repo['_href'])
+        self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
+
+        sync(self.cfg, remote2, repo)
+        repo = self.client.get(repo['_href'])
+        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
