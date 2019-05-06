@@ -2,7 +2,7 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, Remote, Publication, Publisher
+from pulpcore.plugin.models import Content, Distribution, Remote, Publication, Publisher
 
 
 log = getLogger(__name__)
@@ -52,6 +52,14 @@ class FilePublisher(Publisher):
 class FilePublication(Publication):
     """
     Publication for 'file' content.
+    """
+
+    TYPE = 'file'
+
+
+class FileDistribution(Distribution):
+    """
+    Distribution for 'file' content.
     """
 
     TYPE = 'file'

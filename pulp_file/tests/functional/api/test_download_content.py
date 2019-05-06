@@ -7,7 +7,6 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import (
-    DISTRIBUTION_PATH,
     LAZY_DOWNLOAD_POLICIES,
     REPO_PATH,
 )
@@ -19,6 +18,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_file.tests.functional.constants import (
+    FILE_DISTRIBUTION_PATH,
     FILE_FIXTURE_URL,
     FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH,
@@ -106,7 +106,7 @@ class DownloadContentTestCase(unittest.TestCase):
         body = gen_distribution()
         body['publication'] = publication['_href']
         distribution = client.using_handler(api.task_handler).post(
-            DISTRIBUTION_PATH,
+            FILE_DISTRIBUTION_PATH,
             body
         )
         self.addCleanup(client.delete, distribution['_href'])

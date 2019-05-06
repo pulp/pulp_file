@@ -11,6 +11,7 @@ from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
     ContentFilter,
+    DistributionViewSet,
     RemoteViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
@@ -18,9 +19,10 @@ from pulpcore.plugin.viewsets import (
 )
 
 from . import tasks
-from .models import FileContent, FileRemote, FilePublication, FilePublisher
+from .models import FileContent, FileDistribution, FileRemote, FilePublication, FilePublisher
 from .serializers import (
     FileContentSerializer,
+    FileDistributionSerializer,
     FileRemoteSerializer,
     FilePublicationSerializer,
     FilePublisherSerializer,
@@ -137,3 +139,13 @@ class FilePublicationViewSet(PublicationViewSet):
             }
         )
         return OperationPostponedResponse(result, request)
+
+
+class FileDistributionViewSet(DistributionViewSet):
+    """
+    ViewSet for File Distributions.
+    """
+
+    endpoint_name = 'file'
+    queryset = FileDistribution.objects.all()
+    serializer_class = FileDistributionSerializer

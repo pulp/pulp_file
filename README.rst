@@ -86,7 +86,7 @@ Create a repository ``foo``
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/repositories/1/",
+        "_href": "/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/",
         ...
     }
 
@@ -100,7 +100,7 @@ Create a new remote ``bar``
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/remotes/file/file/1/",
+        "_href": "/pulp/api/v3/remotes/file/file/8098cf53-df95-4889-bb3b-3c10e23063ce/",
         ...
     }
 
@@ -119,14 +119,24 @@ Look at the new Repository Version created
 .. code:: json
 
     {
-        "_added_href": "/pulp/api/v3/repositories/1/versions/1/added_content/",
-        "_content_href": "/pulp/api/v3/repositories/1/versions/1/content/",
-        "_href": "/pulp/api/v3/repositories/1/versions/1/",
-        "_removed_href": "/pulp/api/v3/repositories/1/versions/1/removed_content/",
+        "_created": "2019-05-05T13:41:47.434490Z",
+        "_href": "/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/versions/1/",
+        "base_version": null,
         "content_summary": {
-            "file": 3
+            "added": {
+                "file.file": {
+                    "count": 3,
+                    "href": "/pulp/api/v3/content/file/files/?repository_version_added=/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/versions/1/"
+                }
+            },
+            "present": {
+                "file.file": {
+                    "count": 3,
+                    "href": "/pulp/api/v3/content/file/files/?repository_version=/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/versions/1/"
+                }
+            },
+            "removed": {}
         },
-        "created": "2018-02-23T20:29:54.499055Z",
         "number": 1
     }
 
@@ -141,7 +151,7 @@ Create an Artifact by uploading the file to Pulp.
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/artifacts/1/",
+        "_href": "/pulp/api/v3/artifacts/54997c3a-9dc6-4319-bdb8-206bd2fc469e/",
         ...
     }
 
@@ -149,17 +159,18 @@ Create an Artifact by uploading the file to Pulp.
 Create ``file`` content from an Artifact
 -----------------------------------------
 
-Create a content unit and point it to your artifact
+Create a content unit and point it to your artifact (use the `_href` field you obtained when creating the artifact)
 
-``$ http POST http://localhost:24817/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz _artifact="/pulp/api/v3/artifacts/1/"``
+``$ http POST http://localhost:24817/pulp/api/v3/content/file/files/ relative_path=foo.tar.gz _artifact="/pulp/api/v3/artifacts/54997c3a-9dc6-4319-bdb8-206bd2fc469e/"``
 
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/content/file/files/1/",
-        "_artifact": "/pulp/api/v3/artifacts/1/",
-        "relative_path": "foo.tar.gz",
-        "type": "file"
+        "_artifact": "/pulp/api/v3/artifacts/54997c3a-9dc6-4319-bdb8-206bd2fc469e/",
+        "_created": "2019-05-05T13:47:18.519243Z",
+        "_href": "/pulp/api/v3/content/file/files/6a334efb-e59b-42ab-8fa9-cc706d85af25/",
+        "_type": "file.file",
+        "relative_path": "foo.tar.gz"
     }
 
 ``$ export CONTENT_HREF=$(http :24817/pulp/api/v3/content/file/files/ | jq -r '.results[] | select(.relative_path == "foo.tar.gz") | ._href')``
@@ -179,7 +190,7 @@ Create a ``file`` Publisher
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/publishers/file/file/1/",
+        "_href": "/pulp/api/v3/publishers/file/file/9f2ae92a-c599-444b-a272-dc8e4d425f4a/",
         ...
     }
 
@@ -202,18 +213,10 @@ Create a Publication
 Create a Distribution for the Publication
 -----------------------------------------
 
-``$ http POST http://localhost:24817/pulp/api/v3/distributions/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
+``$ http POST http://localhost:24817/pulp/api/v3/distributions/file/file/ name='baz' base_path='foo' publication=$PUBLICATION_HREF``
 
 
-.. code:: json
+Download ``foo.tar.gz`` from Pulp
+---------------------------------
 
-    {
-        "_href": "/pulp/api/v3/distributions/1/",
-       ...
-    }
-
-
-Download ``test.iso`` from Pulp
--------------------------------
-
-``$ http GET http://localhost:24816/pulp/content/foo/test.iso``
+``$ http GET http://localhost:24816/pulp/content/foo/foo.tar.gz``

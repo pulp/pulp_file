@@ -7,7 +7,6 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import (
-    DISTRIBUTION_PATH,
     REPO_PATH,
 )
 from pulp_smash.pulp3.utils import (
@@ -17,6 +16,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_file.tests.functional.constants import (
+    FILE_DISTRIBUTION_PATH,
     FILE_FIXTURE_COUNT,
     FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH,
@@ -63,7 +63,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
         body = gen_distribution()
         body['publication'] = publication['_href']
 
-        distribution = self.client.post(DISTRIBUTION_PATH, body)
+        distribution = self.client.post(FILE_DISTRIBUTION_PATH, body)
         self.addCleanup(self.client.delete, distribution['_href'])
 
         pulp_manifest = parse_pulp_manifest(
