@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from pulp_smash.constants import PULP_FIXTURES_BASE_URL
 from pulp_smash.pulp3.constants import (
     API_DOCS_PATH,
+    BASE_DISTRIBUTION_PATH,
     BASE_PUBLICATION_PATH,
     BASE_PUBLISHER_PATH,
     BASE_REMOTE_PATH,
@@ -16,6 +17,8 @@ API_SCHEMA_PATH = urljoin(API_DOCS_PATH, '.json?format=openapi')
 FILE_CONTENT_NAME = 'file.file'
 
 FILE_CONTENT_PATH = urljoin(CONTENT_PATH, 'file/files/')
+
+FILE_DISTRIBUTION_PATH = urljoin(BASE_DISTRIBUTION_PATH, 'file/file/')
 
 FILE_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'file/file/')
 

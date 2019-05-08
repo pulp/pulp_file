@@ -20,38 +20,40 @@ flake8 --config flake8.cfg || exit 1
 cd ..
 git clone https://github.com/pulp/ansible-pulp.git
 if [ -n "$PULP_ROLES_PR_NUMBER" ]; then
-  pushd ansible-pulp
+  cd ansible-pulp
   git fetch origin +refs/pull/$PULP_ROLES_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  popd
+  cd ..
 fi
 
 git clone https://github.com/pulp/pulpcore.git
 
 if [ -n "$PULP_PR_NUMBER" ]; then
-  pushd pulpcore
+  cd pulpcore
   git fetch origin +refs/pull/$PULP_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  popd
+  cd ..
 fi
 
 
 git clone https://github.com/pulp/pulpcore-plugin.git
 
 if [ -n "$PULP_PLUGIN_PR_NUMBER" ]; then
-  pushd pulpcore-plugin
+  cd pulpcore-plugin
   git fetch origin +refs/pull/$PULP_PLUGIN_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  popd
+  cd ..
 fi
 
 
 if [ -n "$PULP_SMASH_PR_NUMBER" ]; then
+  pip uninstall -y pulp-smash
   git clone https://github.com/PulpQE/pulp-smash.git
-  pushd pulp-smash
+  cd pulp-smash
   git fetch origin +refs/pull/$PULP_SMASH_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  popd
+  pip install -e .
+  cd ..
 fi
 
 if [ "$DB" = 'mariadb' ]; then

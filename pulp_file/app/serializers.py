@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from pulpcore.plugin.serializers import (
     DetailRelatedField,
+    DistributionSerializer,
     PublicationSerializer,
     PublisherSerializer,
     RemoteSerializer,
@@ -11,7 +12,7 @@ from pulpcore.plugin.serializers import (
     relative_path_validator,
 )
 
-from .models import FileContent, FileRemote, FilePublication, FilePublisher
+from .models import FileContent, FileDistribution, FileRemote, FilePublication, FilePublisher
 
 
 class FileContentSerializer(SingleArtifactContentSerializer):
@@ -89,3 +90,13 @@ class FilePublicationSerializer(PublicationSerializer):
     class Meta:
         fields = PublicationSerializer.Meta.fields + ('publisher',)
         model = FilePublication
+
+
+class FileDistributionSerializer(DistributionSerializer):
+    """
+    Serializer for File Distributions.
+    """
+
+    class Meta:
+        fields = DistributionSerializer.Meta.fields
+        model = FileDistribution
