@@ -9,9 +9,9 @@ from pulpcore.plugin.serializers import (
 )
 from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
+    BaseDistributionViewSet,
     ContentViewSet,
     ContentFilter,
-    DistributionViewSet,
     RemoteViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
@@ -141,7 +141,7 @@ class FilePublicationViewSet(PublicationViewSet):
         return OperationPostponedResponse(result, request)
 
 
-class FileDistributionViewSet(DistributionViewSet):
+class FileDistributionViewSet(BaseDistributionViewSet):
     """
     ViewSet for File Distributions.
     """
