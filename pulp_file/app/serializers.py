@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from pulpcore.plugin.serializers import (
     DetailRelatedField,
-    DistributionSerializer,
+    PublicationDistributionSerializer,
     PublicationSerializer,
     PublisherSerializer,
     RemoteSerializer,
@@ -81,6 +81,13 @@ class FilePublicationSerializer(PublicationSerializer):
     Serializer for File Publications.
     """
 
+    distributions = DetailRelatedField(
+        help_text=_('This publication is currently being served as '
+                    'defined by these distributions.'),
+        source="filedistribution_set",
+        many=True,
+        read_only=True,
+    )
     publisher = DetailRelatedField(
         help_text=_('The publisher that created this publication.'),
         queryset=FilePublisher.objects.all(),
@@ -88,15 +95,18 @@ class FilePublicationSerializer(PublicationSerializer):
     )
 
     class Meta:
-        fields = PublicationSerializer.Meta.fields + ('publisher',)
         model = FilePublication
+        fields = PublicationSerializer.Meta.fields + (
+            'distributions',
+            'publisher',
+        )
 
 
-class FileDistributionSerializer(DistributionSerializer):
+class FileDistributionSerializer(PublicationDistributionSerializer):
     """
     Serializer for File Distributions.
     """
 
     class Meta:
-        fields = DistributionSerializer.Meta.fields
+        fields = PublicationDistributionSerializer.Meta.fields
         model = FileDistribution
