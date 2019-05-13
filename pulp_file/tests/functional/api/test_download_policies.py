@@ -21,12 +21,10 @@ from pulp_file.tests.functional.constants import (
     FILE_CONTENT_PATH,
     FILE_FIXTURE_COUNT,
     FILE_FIXTURE_SUMMARY,
-    FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
     create_file_publication,
-    gen_file_publisher,
     gen_file_remote,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -123,10 +121,7 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo['_href'])
 
-        publisher = self.client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
-        self.addCleanup(self.client.delete, publisher['_href'])
-
-        publication = create_file_publication(self.cfg, repo, publisher=publisher)
+        publication = create_file_publication(self.cfg, repo)
         self.assertIsNotNone(publication['repository_version'], publication)
 
 

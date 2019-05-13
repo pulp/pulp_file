@@ -6,7 +6,6 @@ from unittest import SkipTest
 from pulp_smash import api, selectors, utils
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
-    gen_publisher,
     gen_remote,
     gen_repo,
     get_content,
@@ -36,14 +35,6 @@ def gen_file_remote(url=FILE_FIXTURE_MANIFEST_URL, **kwargs):
     :param url: The URL of an external content source.
     """
     return gen_remote(url, **kwargs)
-
-
-def gen_file_publisher(**kwargs):
-    """Return a semi-random dict for use in creating a file Publisher.
-
-    :param url: The URL of an external content source.
-    """
-    return gen_publisher(**kwargs)
 
 
 def get_file_content_paths(repo, version_href=None):
@@ -92,14 +83,13 @@ def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
     return client.get(FILE_CONTENT_PATH)['results']
 
 
-def create_file_publication(cfg, repo, version_href=None, publisher=None):
+def create_file_publication(cfg, repo, version_href=None):
     """Create a file publication.
 
     :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
         host.
     :param repo: A dict of information about the repository.
     :param version_href: A href for the repo version to be published.
-    :param publisher: A dict of publisher info to use to publish.
     :returns: A publication. A dict of information about the just created
         publication.
     """
@@ -107,9 +97,6 @@ def create_file_publication(cfg, repo, version_href=None, publisher=None):
         body = {"repository_version": version_href}
     else:
         body = {"repository": repo["_href"]}
-
-    if publisher:
-        body['publisher'] = publisher['_href']
 
     client = api.Client(cfg, api.json_handler)
     call_report = client.post(FILE_PUBLICATION_PATH, body)

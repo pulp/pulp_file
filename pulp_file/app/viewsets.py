@@ -15,17 +15,15 @@ from pulpcore.plugin.viewsets import (
     RemoteViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
-    PublisherViewSet,
 )
 
 from . import tasks
-from .models import FileContent, FileDistribution, FileRemote, FilePublication, FilePublisher
+from .models import FileContent, FileDistribution, FileRemote, FilePublication
 from .serializers import (
     FileContentSerializer,
     FileDistributionSerializer,
     FileRemoteSerializer,
     FilePublicationSerializer,
-    FilePublisherSerializer,
 )
 
 
@@ -90,16 +88,6 @@ class FileRemoteViewSet(RemoteViewSet):
         return OperationPostponedResponse(result, request)
 
 
-class FilePublisherViewSet(PublisherViewSet):
-    """
-    ViewSet for File Publishers.
-    """
-
-    endpoint_name = 'file'
-    queryset = FilePublisher.objects.all()
-    serializer_class = FilePublisherSerializer
-
-
 class FilePublicationViewSet(PublicationViewSet):
     """
     ViewSet for File Publications.
@@ -123,19 +111,14 @@ class FilePublicationViewSet(PublicationViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         repository_version = serializer.validated_data.get('repository_version')
-        publisher = serializer.validated_data.get('publisher')
-
-        if publisher:
-            publisher_pk = str(publisher.pk)
-        else:
-            publisher_pk = ''
+        manifest = serializer.validated_data.get('manifest')
 
         result = enqueue_with_reservation(
             tasks.publish,
-            [repository_version.repository, publisher_pk],
+            [repository_version.repository],
             kwargs={
-                'publisher_pk': publisher_pk,
-                'repository_version_pk': str(repository_version.pk)
+                'repository_version_pk': str(repository_version.pk),
+                'manifest': str(manifest)
             }
         )
         return OperationPostponedResponse(result, request)

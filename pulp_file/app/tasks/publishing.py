@@ -11,41 +11,32 @@ from pulpcore.plugin.models import (
     RemoteArtifact)
 from pulpcore.plugin.tasking import WorkingDirectory
 
-from pulp_file.app.models import FileContent, FilePublication, FilePublisher
+from pulp_file.app.models import FileContent, FilePublication
 from pulp_file.manifest import Entry, Manifest
 
 
 log = logging.getLogger(__name__)
 
 
-def publish(publisher_pk, repository_version_pk):
+def publish(manifest, repository_version_pk):
     """
-    Use provided publisher to create a Publication based on a RepositoryVersion.
+    Create a Publication based on a RepositoryVersion.
 
     Args:
-        publisher_pk (str): Use the publish settings provided by this publisher.
+        manifest (str): Filename to use for manifest file.
         repository_version_pk (str): Create a publication from this repository version.
 
     """
-    if publisher_pk:
-        publisher = FilePublisher.objects.get(pk=publisher_pk)
-        manifest = publisher.manifest
-        publisher_name = publisher.name
-    else:
-        publisher = None
-        manifest = 'PULP_MANIFEST'
-        publisher_name = ''
-
     repo_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
-    log.info(_('Publishing: repository={repo}, version={ver}, publisher={pub}').format(
+    log.info(_('Publishing: repository={repo}, version={ver}, manifest={manifest}').format(
         repo=repo_version.repository.name,
         ver=repo_version.number,
-        pub=publisher_name,
+        manifest=manifest,
     ))
 
     with WorkingDirectory():
-        with FilePublication.create(repo_version, publisher, pass_through=True) as publication:
+        with FilePublication.create(repo_version, pass_through=True) as publication:
             manifest = Manifest(manifest)
             manifest.write(populate(publication))
             metadata = PublishedMetadata(
