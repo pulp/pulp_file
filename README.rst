@@ -182,25 +182,10 @@ Add content to repository ``foo``
 ``$ http POST ':24817'$REPO_HREF'versions/' add_content_units:="[\"$CONTENT_HREF\"]"``
 
 
-Create a ``file`` Publisher
----------------------------
-
-``$ http POST http://localhost:24817/pulp/api/v3/publishers/file/file/ name=bar``
-
-.. code:: json
-
-    {
-        "_href": "/pulp/api/v3/publishers/file/file/9f2ae92a-c599-444b-a272-dc8e4d425f4a/",
-        ...
-    }
-
-``$ export PUBLISHER_HREF=$(http :24817/pulp/api/v3/publishers/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
-
-
 Create a Publication
 --------------------
 
-``$ http POST http://localhost:24817/pulp/api/v3/publications/file/file/ repository=$REPO_HREF publisher=$PUBLISHER_HREF``
+``$ http POST http://localhost:24817/pulp/api/v3/publications/file/file/ repository=$REPO_HREF``
 
 .. code:: json
 
@@ -208,7 +193,7 @@ Create a Publication
         "task": "/pulp/api/v3/tasks/fd4cbecd-6c6a-4197-9cbe-4e45b0516309/"
     }
 
-``$ export PUBLICATION_HREF=$(http :24817/pulp/api/v3/publications/file/file/ | jq -r --arg PUBLISHER_HREF "$PUBLISHER_HREF" '.results[] | select(.publisher==$PUBLISHER_HREF) | ._href')``
+``$ export PUBLICATION_HREF=$(http :24817/pulp/api/v3/publications/file/file/ | jq -r '.results[0] | ._href')``
 
 Create a Distribution for the Publication
 -----------------------------------------

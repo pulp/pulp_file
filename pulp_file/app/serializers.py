@@ -6,13 +6,12 @@ from pulpcore.plugin.serializers import (
     DetailRelatedField,
     PublicationDistributionSerializer,
     PublicationSerializer,
-    PublisherSerializer,
     RemoteSerializer,
     SingleArtifactContentSerializer,
     relative_path_validator,
 )
 
-from .models import FileContent, FileDistribution, FileRemote, FilePublication, FilePublisher
+from .models import FileContent, FileDistribution, FileRemote, FilePublication
 
 
 class FileContentSerializer(SingleArtifactContentSerializer):
@@ -60,22 +59,6 @@ class FileRemoteSerializer(RemoteSerializer):
         model = FileRemote
 
 
-class FilePublisherSerializer(PublisherSerializer):
-    """
-    Serializer for File Publishers.
-    """
-
-    manifest = serializers.CharField(
-        help_text='Name of the file manifest, the full path will be url/manifest',
-        required=False,
-        default='PULP_MANIFEST'
-    )
-
-    class Meta:
-        fields = PublisherSerializer.Meta.fields + ('manifest',)
-        model = FilePublisher
-
-
 class FilePublicationSerializer(PublicationSerializer):
     """
     Serializer for File Publications.
@@ -88,17 +71,18 @@ class FilePublicationSerializer(PublicationSerializer):
         many=True,
         read_only=True,
     )
-    publisher = DetailRelatedField(
-        help_text=_('The publisher that created this publication.'),
-        queryset=FilePublisher.objects.all(),
+    manifest = serializers.CharField(
+        help_text=_("Filename to use for manifest file. Default is 'PULP_MANIFEST'."),
+        write_only=True,
         required=False,
+        default='PULP_MANIFEST',
     )
 
     class Meta:
         model = FilePublication
         fields = PublicationSerializer.Meta.fields + (
             'distributions',
-            'publisher',
+            'manifest',
         )
 
 

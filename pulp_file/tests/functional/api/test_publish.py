@@ -17,12 +17,10 @@ from pulp_smash.pulp3.utils import (
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
     FILE_PUBLICATION_PATH,
-    FILE_PUBLISHER_PATH,
     FILE_REMOTE_PATH,
 )
 from pulp_file.tests.functional.utils import (
     create_file_publication,
-    gen_file_publisher,
     gen_file_remote,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -62,9 +60,6 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
 
         sync(cfg, remote, repo)
 
-        publisher = client.post(FILE_PUBLISHER_PATH, gen_file_publisher())
-        self.addCleanup(client.delete, publisher['_href'])
-
         # Step 1
         repo = client.get(repo['_href'])
         for file_content in get_content(repo)[FILE_CONTENT_NAME]:
@@ -76,13 +71,13 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
-        publication = create_file_publication(cfg, repo, publisher=publisher)
+        publication = create_file_publication(cfg, repo)
 
         # Step 3
         self.assertEqual(publication['repository_version'], version_hrefs[-1])
 
         # Step 4
-        publication = create_file_publication(cfg, repo, non_latest, publisher)
+        publication = create_file_publication(cfg, repo, non_latest)
 
         # Step 5
         self.assertEqual(publication['repository_version'], non_latest)
