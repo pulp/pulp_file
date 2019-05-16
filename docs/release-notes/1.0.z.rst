@@ -1,0 +1,6 @@
+=============================
+pulp-file 1.0 Release Notes
+=============================
+
+pulp-file 1.0 is currently a release candidate. Backwards incompatible changes may be made until
+the GA is released.
