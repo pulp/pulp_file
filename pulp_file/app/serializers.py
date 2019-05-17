@@ -20,7 +20,8 @@ class FileContentSerializer(SingleArtifactContentSerializer):
     """
 
     relative_path = serializers.CharField(
-        help_text=_("Relative location of the file within the repository"),
+        help_text=_("Relative location of the file within the repository. "
+                    "Example: `path/to/file.txt`"),
         validators=[relative_path_validator],
     )
 
@@ -65,14 +66,13 @@ class FilePublicationSerializer(PublicationSerializer):
     """
 
     distributions = DetailRelatedField(
-        help_text=_('This publication is currently being served as '
-                    'defined by these distributions.'),
+        help_text=_('This publication is currently hosted as defined by these distributions.'),
         source="filedistribution_set",
         many=True,
         read_only=True,
     )
     manifest = serializers.CharField(
-        help_text=_("Filename to use for manifest file. Default is 'PULP_MANIFEST'."),
+        help_text=_("Filename to use for manifest file containing metadata for all the files."),
         write_only=True,
         required=False,
         default='PULP_MANIFEST',
