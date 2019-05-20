@@ -7,9 +7,14 @@ django-admin runserver 24817 >> ~/django_runserver.log 2>&1 &
 sleep 5
 
 cd /home/travis/build/pulp/pulp_file/
-export REPORTED_VERSION=$(http :24817/pulp/api/v3/status/ | jq --arg plugin pulp_file -r '.versions[] | select(.component == $plugin) | .version')
-export EPOCH="$(date +%s)"
-export VERSION=${REPORTED_VERSION}.dev.${EPOCH}
+export REPORTED_VERSION=$(http :24817/pulp/api/v3/status/ | jq --arg plugin pulpcore -r '.versions[] | select(.component == $plugin) | .version')
+export DESCRIPTION="$(git describe --all --exact-match `git rev-parse HEAD`)"
+if [[ $DESCRIPTION == 'tags/'$REPORTED_VERSION ]]; then
+  export VERSION=${REPORTED_VERSION}
+else
+  export EPOCH="$(date +%s)"
+  export VERSION=${REPORTED_VERSION}.dev.${EPOCH}
+fi
 
 export response=$(curl --write-out %{http_code} --silent --output /dev/null https://rubygems.org/gems/pulp_file_client/versions/$VERSION)
 
