@@ -98,6 +98,21 @@ class CRUDRemotesTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             self.client.get(self.remote['_href'])
 
+    def test_negative_create_file_remote_with_invalid_parameter(self):
+        """Attempt to create file remote passing invalid parameter.
+
+        Assert response returns an error 400 including ["Unexpected field"].
+
+        This test targets the following issue:
+
+        * `Pulp Smash #1085 <https://github.com/PulpQE/pulp-smash/issues/1085>`_
+        """
+        response = api.Client(self.cfg, api.echo_handler).post(
+            FILE_REMOTE_PATH, gen_file_remote(foo='bar')
+        )
+        assert response.status_code == 400
+        assert response.json()['foo'] == ['Unexpected field']
+
 
 class CreateRemoteNoURLTestCase(unittest.TestCase):
     """Verify whether is possible to create a remote without a URL."""
