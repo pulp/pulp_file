@@ -46,17 +46,29 @@ jobs:
       on:
         tags: true
     if: tag IS present
-  - stage: publish-pulp-file-client-gem
+  - stage: publish-daily-pulp-file-client-gem
     script: bash .travis/publish_pulp_file_client_gem.sh
     env:
       - DB=postgres
       - TEST=bindings
     if: type = cron
-
-  - stage: publish-pulpcore-client-pypi
+  - stage: publish-daily-file-client-pypi
     script: bash .travis/publish_pulp_file_client_pypi.sh
     env:
       - DB=postgres
       - TEST=bindings
       - secure: "yXuO+vGRukhx4MXOx/Hcy9nJ/pDeg1va4kRt0nOxhCQtF7199SBdE0hKSwLEmWg7Dy1eMo6ofeCdH28QnvQHz941Pg9iO42g9raq2hzzJ3OnJz0+vkwTNAbfHOy03mf9rRiA1tbdhrMVRgMnJAUNLG0QOqU0uPJvRMVZdCdKWBmMJXOPX8oaa4KFqQuM5X+Vb2YBnCoeS65KW9CcoLT4tkNE0DlxyZh5v4EDS5s0vTtbAXtsqAzXBo5f30PYZKmVnTmnV1nVjISRo1+j/06sI7LknyqP+8kHCaDlBRbOVCf017EcA85dowAq5lCzv9kpB5y5ZaaD78nVdyh9yyttEOI6J7c0JRIMlLlgk8H1D0xZv9M3Jy4OZ/6aSxFZVU4whOtdx9qQjCruUH7vLDgJVy/q4Dpham3WQPm0JGKSmZAqA+4bL/M76qOHgaSxOZ//ezhwMwCsMQp8WqC73WmAEPty/X9lJHFMAKjF7A78X0lC6S3bNdWr1oHLBSkGufHUFs3gxJepefLMQajXHU70jn7uXbo4g3O2oFE3zdvNB2CNH3cv8gO/Jqrkc1kv69ADh2fb23MJ/aIL1yRzbJm8lwVsdo3ey1WE0QWKGVXGOZXZ69CiDcBf0t/ulWk/hyT1yC0POVN/D1oZfukY7vreBcaNNqd9zJc5rJwiRR0PAZ8="
     if: type = cron
+  - stage: publish-pulp-file-client-gem
+    script: bash .travis/publish_pulp_file_client_gem.sh
+    env:
+      - DB=postgres
+      - TEST=bindings
+    if: tag IS present
+  - stage: publish-pulp-file-client-pypi
+    script: bash .travis/publish_pulp_file_client_pypi.sh
+    env:
+      - DB=postgres
+      - TEST=bindings
+      - secure: "yXuO+vGRukhx4MXOx/Hcy9nJ/pDeg1va4kRt0nOxhCQtF7199SBdE0hKSwLEmWg7Dy1eMo6ofeCdH28QnvQHz941Pg9iO42g9raq2hzzJ3OnJz0+vkwTNAbfHOy03mf9rRiA1tbdhrMVRgMnJAUNLG0QOqU0uPJvRMVZdCdKWBmMJXOPX8oaa4KFqQuM5X+Vb2YBnCoeS65KW9CcoLT4tkNE0DlxyZh5v4EDS5s0vTtbAXtsqAzXBo5f30PYZKmVnTmnV1nVjISRo1+j/06sI7LknyqP+8kHCaDlBRbOVCf017EcA85dowAq5lCzv9kpB5y5ZaaD78nVdyh9yyttEOI6J7c0JRIMlLlgk8H1D0xZv9M3Jy4OZ/6aSxFZVU4whOtdx9qQjCruUH7vLDgJVy/q4Dpham3WQPm0JGKSmZAqA+4bL/M76qOHgaSxOZ//ezhwMwCsMQp8WqC73WmAEPty/X9lJHFMAKjF7A78X0lC6S3bNdWr1oHLBSkGufHUFs3gxJepefLMQajXHU70jn7uXbo4g3O2oFE3zdvNB2CNH3cv8gO/Jqrkc1kv69ADh2fb23MJ/aIL1yRzbJm8lwVsdo3ey1WE0QWKGVXGOZXZ69CiDcBf0t/ulWk/hyT1yC0POVN/D1oZfukY7vreBcaNNqd9zJc5rJwiRR0PAZ8="
+    if: tag IS present
