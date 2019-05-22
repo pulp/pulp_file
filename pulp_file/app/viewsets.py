@@ -48,7 +48,7 @@ class FileContentViewSet(ContentViewSet):
     """
 
     endpoint_name = 'files'
-    queryset = FileContent.objects.all()
+    queryset = FileContent.objects.prefetch_related("_artifacts")
     serializer_class = FileContentSerializer
     filterset_class = FileContentFilter
 

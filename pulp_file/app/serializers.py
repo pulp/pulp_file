@@ -3,6 +3,7 @@ from gettext import gettext as _
 from rest_framework import serializers
 
 from pulpcore.plugin.serializers import (
+    ContentChecksumSerializer,
     DetailRelatedField,
     PublicationDistributionSerializer,
     PublicationSerializer,
@@ -14,7 +15,7 @@ from pulpcore.plugin.serializers import (
 from .models import FileContent, FileDistribution, FileRemote, FilePublication
 
 
-class FileContentSerializer(SingleArtifactContentSerializer):
+class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSerializer):
     """
     Serializer for File Content.
     """
@@ -46,7 +47,7 @@ class FileContentSerializer(SingleArtifactContentSerializer):
     class Meta:
         fields = tuple(
             set(SingleArtifactContentSerializer.Meta.fields) - {'_relative_path'}
-        ) + ('relative_path',)
+        ) + ContentChecksumSerializer.Meta.fields + ('relative_path',)
         model = FileContent
 
 
