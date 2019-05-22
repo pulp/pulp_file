@@ -4,16 +4,20 @@ Synchronize a Repository
 Create a repository ``foo``
 ---------------------------
 
-``$ http POST http://localhost:24817/pulp/api/v3/repositories/ name=foo``
+.. literalinclude:: ../_scripts/repo.sh
+   :language: bash
 
-.. code:: json
+Repository GET Response::
 
     {
-        "_href": "/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/",
-        ...
+        "_created": "2019-05-16T19:23:55.224096Z",
+        "_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
+        "_latest_version_href": null,
+        "_versions_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/",
+        "description": "",
+        "name": "foo"
     }
 
-``$ export REPO_HREF=$(http :24817/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
 Reference (pulpcore): `Repository API Usage
 <https://docs.pulpproject.org/en/3.0/nightly/restapi.html#tag/repositories>`_
@@ -21,54 +25,62 @@ Reference (pulpcore): `Repository API Usage
 Create a new remote ``bar``
 ---------------------------
 
-``$ http POST http://localhost:24817/pulp/api/v3/remotes/file/file/ name='bar' url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'``
+.. literalinclude:: ../_scripts/remote.sh
+   :language: bash
 
-.. code:: json
+Remote GET Response::
 
     {
-        "_href": "/pulp/api/v3/remotes/file/file/8098cf53-df95-4889-bb3b-3c10e23063ce/",
-        ...
+        "_created": "2019-05-16T19:23:56.771326Z",
+        "_href": "/pulp/api/v3/remotes/file/file/e682efef-3974-4366-aece-a333bfaec9f3/",
+        "_last_updated": "2019-05-16T19:23:56.771341Z",
+        "_type": "file.file",
+        "download_concurrency": 20,
+        "name": "bar",
+        "policy": "immediate",
+        "proxy_url": "",
+        "ssl_ca_certificate": null,
+        "ssl_client_certificate": null,
+        "ssl_client_key": null,
+        "ssl_validation": true,
+        "url": "https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST",
+        "validate": true
     }
 
-``$ export REMOTE_HREF=$(http :24817/pulp/api/v3/remotes/file/file/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Reference: `File Remote Usage <../restapi.html#tag/remotes>`_
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
-``$ http POST ':24817'$REMOTE_HREF'sync/' repository=$REPO_HREF mirror=True``
+.. literalinclude:: ../_scripts/sync.sh
+   :language: bash
 
-Reference: `File Sync Usage <../restapi.html#operation/remotes_file_file_sync>`_
-
-Look at the new Repository Version created
-------------------------------------------
-
-``$ http GET ':24817'$REPO_HREF'versions/1/'``
-
-.. code:: json
+Repository Version GET Response (when complete)::
 
     {
-        "_created": "2019-05-05T13:41:47.434490Z",
-        "_href": "/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/versions/1/",
+        "_created": "2019-05-16T19:23:58.230896Z",
+        "_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/1/",
         "base_version": null,
         "content_summary": {
             "added": {
                 "file.file": {
                     "count": 3,
-                    "href": "/pulp/api/v3/content/file/files/?repository_version_added=/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/versions/1/"
+                    "href": "/pulp/api/v3/content/file/files/?repository_version_added=/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/1/"
                 }
             },
             "present": {
                 "file.file": {
                     "count": 3,
-                    "href": "/pulp/api/v3/content/file/files/?repository_version=/pulp/api/v3/repositories/696c8cf3-3ad6-4af9-a007-e6c43272df94/versions/1/"
+                    "href": "/pulp/api/v3/content/file/files/?repository_version=/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/1/"
                 }
             },
             "removed": {}
         },
         "number": 1
     }
+
+Reference: `File Sync Usage <../restapi.html#operation/remotes_file_file_sync>`_
 
 Reference (pulpcore): `Repository Version API Usage
 <https://docs.pulpproject.org/en/3.0/nightly/restapi.html#operation/repositories_versions_list>`_

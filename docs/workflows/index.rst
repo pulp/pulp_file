@@ -19,16 +19,11 @@ in the home directory. The ``.netrc`` should have the following configuration:
 
     machine localhost
     login admin
-    password admin
+    password password
 
 If you configured the ``admin`` user with a different password, adjust the configuration
 accordingly. If you prefer to specify the username and password with each request, please see
 ``httpie`` documentation on how to do that.
-
-To make these workflows copy/pastable, we make use of environment variables. The first variable to
-set is the hostname and port::
-
-   $ export BASE_ADDR=http://<hostname>:24817
 
 **jq**
 
@@ -42,6 +37,7 @@ library with:
 .. toctree::
    :maxdepth: 2
 
+   scripting
    sync
    upload
    publish-host
