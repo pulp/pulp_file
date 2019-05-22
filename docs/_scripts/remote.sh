@@ -1,5 +1,5 @@
 # Create a remote that points to an external source of files
-http POST http://localhost:24817/pulp/api/v3/remotes/file/file/ \
+http POST $BASE_ADDR/pulp/api/v3/remotes/file/file/ \
     name='bar' \
     url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST'
 
