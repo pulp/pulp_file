@@ -42,7 +42,9 @@ class FileContentFilter(ContentFilter):
 
 class FileContentViewSet(ContentViewSet):
     """
-    ViewSet for FileContent.
+    <!-- User-facing documentation, rendered as html-->
+    FileContent represents a single file and its metadata, which can be added and removed from
+    repositories.
     """
 
     endpoint_name = 'files'
@@ -53,7 +55,10 @@ class FileContentViewSet(ContentViewSet):
 
 class FileRemoteViewSet(RemoteViewSet):
     """
-    ViewSet for File Remotes.
+    <!-- User-facing documentation, rendered as html-->
+    FileRemote represents an external source of <a href="#operation/content_file_files_list">File
+    Content</a>.  The target url of a FileRemote must contain a file manifest, which contains the
+    metadata for all files at the source.
     """
 
     endpoint_name = 'file'
@@ -90,7 +95,12 @@ class FileRemoteViewSet(RemoteViewSet):
 
 class FilePublicationViewSet(PublicationViewSet):
     """
-    ViewSet for File Publications.
+    <!-- User-facing documentation, rendered as html-->
+    A FilePublication contains metadata about all the <a
+    href="#operation/content_file_files_list">File Content</a> in a particular <a
+    href="https://docs.pulpproject.org/en/3.0/nightly/restapi.html#operation/repositories_versions_list">Repository
+    Version.</a> Once a FilePublication has been created, it can be hosted using the <a
+    href="#operation/distributions_file_file_list">File Distribution API.</a>
     """
 
     endpoint_name = 'file'
@@ -126,7 +136,13 @@ class FilePublicationViewSet(PublicationViewSet):
 
 class FileDistributionViewSet(BaseDistributionViewSet):
     """
-    ViewSet for File Distributions.
+    <!-- User-facing documentation, rendered as html-->
+    FileDistributions host <a href="#operation/publications_file_file_list">File
+    Publications</a> which makes the metadata and the referenced <a
+    href="#operation/content_file_files_list">File Content</a> available to HTTP
+    clients. Additionally, a FileDistribution with an associated FilePublication can be the target
+    url of a <a href="#operation/remotes_file_file_list">File Remote</a> , allowing
+    another instance of Pulp to sync the content.
     """
 
     endpoint_name = 'file'
