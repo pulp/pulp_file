@@ -1,0 +1,9 @@
+coreapi
+django
+djangorestframework
+django-filter
+drf-nested-routers
+pyyaml
+sphinx<1.8.0
+sphinx-rtd-theme
+sphinxcontrib-openapi

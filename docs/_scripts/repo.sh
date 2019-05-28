@@ -1,10 +1,8 @@
-# Start by creating a new repository named "foo":
-http POST $BASE_ADDR/pulp/api/v3/repositories/ name=foo
+export REPO_NAME=$(head /dev/urandom | tr -dc a-z | head -c5)
 
-# If you want to copy/paste your way through the guide,
-# create an environment variable for the repository URI.
-export REPO_HREF=$(http $BASE_ADDR/pulp/api/v3/repositories/ | \
-  jq -r '.results[] | select(.name == "foo") | ._href')
+echo "Creating a new repository named $REPO_NAME."
+export REPO_HREF=$(http POST $BASE_ADDR/pulp/api/v3/repositories/ name=$REPO_NAME \
+  | jq -r '._href')
 
-# Lets inspect our newly created repository.
+echo "Inspecting repository."
 http $BASE_ADDR$REPO_HREF

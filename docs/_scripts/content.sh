@@ -1,10 +1,10 @@
-# Create File Content from the artifact
- http POST $BASE_ADDR/pulp/api/v3/content/file/files/ \
-     relative_path=test_upload.txt \
-    _artifact=$ARTIFACT_HREF
+export ARTIFACT_RELATIVE_PATH=$(head /dev/urandom | tr -dc a-z | head -c5)
 
-export CONTENT_HREF=$(http :24817/pulp/api/v3/content/file/files/ | \
-    jq -r '.results[] | select(.relative_path == "test_upload.txt") | ._href')
+echo 'Create File Content from the artifact and save as environment variable'
+export CONTENT_HREF=$(http POST $BASE_ADDR/pulp/api/v3/content/file/files/ \
+    relative_path=$ARTIFACT_RELATIVE_PATH \
+    _artifact=$ARTIFACT_HREF \
+    | jq -r .'_href')
 
-# Lets inspect our newly created file content
+echo "Inspecting new file content"
 http $BASE_ADDR$CONTENT_HREF

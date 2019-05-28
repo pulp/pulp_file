@@ -35,6 +35,20 @@ if [ "$TEST" = 'bindings' ]; then
   exit
 fi
 
+if [ "$TEST" = 'docs' ]; then
+  # Services are running, does not need django runserver
+  sleep 5
+  cd docs
+  # Build docs
+  make html
+
+  # Run documentation scripts
+  cd _scripts
+  source docs_check_upload_publish.sh
+  source docs_check_sync_publish.sh
+  exit
+fi
+
 # Run unit tests.
 django-admin test ./pulp_file/tests/unit/
 

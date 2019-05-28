@@ -12,6 +12,10 @@ export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ htt
 # dev_requirements should not be needed for testing; don't install them to make sure
 pip install -r test_requirements.txt
 
+if [ "$TEST" = 'docs' ]; then
+  pip3 install -r doc_requirements.txt
+fi
+
 # check the commit message
 ./.travis/check_commit.sh
 
