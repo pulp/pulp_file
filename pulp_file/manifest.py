@@ -126,3 +126,17 @@ class Manifest:
                 line = str(entry)
                 fp.write(line)
                 fp.write('\n')
+
+    def count(self):
+        """
+        Count the number entries in the manifest.
+        """
+        count = 0
+        with open(self.relative_path) as fp:
+            for line in fp:
+                if not line:
+                    continue
+                if line.startswith('#'):
+                    continue
+                count = count + 1
+        return count
