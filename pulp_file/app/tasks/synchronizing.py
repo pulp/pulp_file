@@ -70,8 +70,11 @@ class FileFirstStage(Stage):
             result = await downloader.run()
             pb.increment()
 
-        with ProgressBar(message='Parsing Metadata') as pb:
+        with ProgressBar(message='Parsing Metadata Lines') as pb:
             manifest = Manifest(result.path)
+            pb.total = manifest.count()
+            pb.save()
+
             for entry in manifest.read():
                 path = os.path.join(root_dir, entry.relative_path)
                 url = urlunparse(parsed_url._replace(path=path))
