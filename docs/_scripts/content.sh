@@ -3,7 +3,7 @@
      relative_path=test_upload.txt \
     _artifact=$ARTIFACT_HREF
 
-export CONTENT_HREF=$(http :24817/pulp/api/v3/content/file/files/ | \
+export CONTENT_HREF=$(http $BASE_ADDR/pulp/api/v3/content/file/files/ | \
     jq -r '.results[] | select(.relative_path == "test_upload.txt") | ._href')
 
 # Lets inspect our newly created file content
