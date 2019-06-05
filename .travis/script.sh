@@ -3,6 +3,8 @@
 
 set -mveuo pipefail
 
+export POST_SCRIPT=$TRAVIS_BUILD_DIR/.travis/post_script.sh
+
 # Needed for both starting the service and building the docs.
 # Gets set in .travis/settings.yml, but doesn't seem to inherited by
 # this script.
@@ -25,13 +27,32 @@ wait_for_pulp() {
   return 1
 }
 
+if [ "$TEST" = 'docs' ]; then
+  django-admin runserver 24817 >> ~/django_runserver.log 2>&1 &
+  sleep 5
+  cd docs
+  make html
+  exit
+fi
+
 if [ "$TEST" = 'bindings' ]; then
-  cd ../pulp-openapi-generator
-  sudo ./generate.sh pulpcore python
-  sudo ./generate.sh pulp_file python
+  COMMIT_MSG=$(git show HEAD^2 -s)
+  export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-swagger-codegen\/pull\/(\d+)' | awk -F'/' '{print $7}')
+
+  cd ..
+  git clone https://github.com/pulp/pulp-openapi-generator.git
+  cd pulp-openapi-generator
+
+  if [ -n "$PULP_BINDINGS_PR_NUMBER" ]; then
+    git fetch origin +refs/pull/$PULP_BINDINGS_PR_NUMBER/merge
+    git checkout FETCH_HEAD
+  fi
+
+  ./generate.sh pulpcore python
+  ./generate.sh pulp_file python
   pip install ./pulpcore-client
   pip install ./pulp_file-client
-  python test_bindings.py
+  python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
   exit
 fi
 
@@ -62,3 +83,7 @@ wait_for_pulp 20
 # Run functional tests
 pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional || show_logs_and_return_non_zero
 pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional || show_logs_and_return_non_zero
+
+if [ -x $POST_SCRIPT ]; then
+    $POST_SCRIPT
+fi

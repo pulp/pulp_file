@@ -1,6 +1,13 @@
 #!/usr/bin/env sh
 set -v
 
+export PRE_BEFORE_INSTALL=$TRAVIS_BUILD_DIR/.travis/pre_before_install.sh
+export POST_BEFORE_INSTALL=$TRAVIS_BUILD_DIR/.travis/post_before_install.sh
+
+if [ -x $PRE_BEFORE_INSTALL ]; then
+    $PRE_BEFORE_INSTALL
+fi
+
 COMMIT_MSG=$(git show HEAD^2 -s)
 export COMMIT_MSG
 export PULP_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulpcore\/pull\/(\d+)' | awk -F'/' '{print $7}')
@@ -21,51 +28,38 @@ flake8 --config flake8.cfg || exit 1
 cd ..
 git clone https://github.com/pulp/ansible-pulp.git
 if [ -n "$PULP_ROLES_PR_NUMBER" ]; then
-  cd ansible-pulp
+  pushd ansible-pulp
   git fetch origin +refs/pull/$PULP_ROLES_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  cd ..
+  popd
 fi
 
 git clone https://github.com/pulp/pulpcore.git
 
 if [ -n "$PULP_PR_NUMBER" ]; then
-  cd pulpcore
+  pushd pulpcore
   git fetch origin +refs/pull/$PULP_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  cd ..
+  popd
 fi
 
 
 git clone https://github.com/pulp/pulpcore-plugin.git
 
 if [ -n "$PULP_PLUGIN_PR_NUMBER" ]; then
-  cd pulpcore-plugin
+  pushd pulpcore-plugin
   git fetch origin +refs/pull/$PULP_PLUGIN_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  cd ..
+  popd
 fi
 
 
 if [ -n "$PULP_SMASH_PR_NUMBER" ]; then
-  pip uninstall -y pulp-smash
   git clone https://github.com/PulpQE/pulp-smash.git
-  cd pulp-smash
+  pushd pulp-smash
   git fetch origin +refs/pull/$PULP_SMASH_PR_NUMBER/merge
   git checkout FETCH_HEAD
-  pip install -e .
-  cd ..
-fi
-
-if [ "$TEST" = 'bindings' ]; then
-  git clone https://github.com/pulp/pulp-openapi-generator.git
-  cd pulp-openapi-generator
-
-  if [ -n "$PULP_BINDINGS_PR_NUMBER" ]; then
-    git fetch origin +refs/pull/$PULP_BINDINGS_PR_NUMBER/merge
-    git checkout FETCH_HEAD
-  fi
-  cd ..
+  popd
 fi
 
 if [ "$DB" = 'mariadb' ]; then
@@ -84,3 +78,7 @@ cp pulp_file/.travis/postgres.yml ansible-pulp/postgres.yml
 cp pulp_file/.travis/mariadb.yml ansible-pulp/mariadb.yml
 
 cd pulp_file
+
+if [ -x $POST_BEFORE_INSTALL ]; then
+    $POST_BEFORE_INSTALL
+fi
