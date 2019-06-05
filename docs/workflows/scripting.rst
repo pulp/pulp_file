@@ -12,21 +12,16 @@ The following scripts are used in conjunction with all the workflow scripts:
 .. literalinclude:: ../_scripts/base.sh
    :language: bash
 
-**Cleanup (Destructive)**
-
-.. literalinclude:: ../_scripts/clean.sh
-   :language: bash
-
 Correctness Check (Destructive)
 -------------------------------
 
 To check the correctness of the sync and publish workflow scripts, they can all be run together using:
 
-.. literalinclude:: ../_scripts/destructive_check_sync_publish.sh
+.. literalinclude:: ../_scripts/docs_check_sync_publish.sh
    :language: bash
 
 To check the correctness of the upload and publish workflow scripts, they can all be run together using:
 script.
 
-.. literalinclude:: ../_scripts/destructive_check_upload_publish.sh
+.. literalinclude:: ../_scripts/docs_check_upload_publish.sh
    :language: bash
