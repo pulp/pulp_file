@@ -4,6 +4,7 @@
 set -mveuo pipefail
 
 export POST_SCRIPT=$TRAVIS_BUILD_DIR/.travis/post_script.sh
+export POST_DOCS_TEST=$TRAVIS_BUILD_DIR/.travis/post_docs_test.sh
 
 # Needed for both starting the service and building the docs.
 # Gets set in .travis/settings.yml, but doesn't seem to inherited by
@@ -28,10 +29,14 @@ wait_for_pulp() {
 }
 
 if [ "$TEST" = 'docs' ]; then
-  django-admin runserver 24817 >> ~/django_runserver.log 2>&1 &
   sleep 5
   cd docs
   make html
+  cd ..
+
+    if [ -x $POST_DOCS_TEST ]; then
+        $POST_DOCS_TEST
+    fi
   exit
 fi
 
