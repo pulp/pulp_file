@@ -3,23 +3,29 @@ sudo: required
 dist: xenial
 language: python
 python:
-  - '3.6'
-  - '3.7'
+    # python versions used in el7 SCL & supported fedora
+    - "3.6"
+    - "3.7"
 env:
   matrix:
     - DB=postgres TEST=pulp
+    - DB=postgres TEST=docs
     - DB=mariadb TEST=pulp
     - DB=postgres TEST=bindings
+
 matrix:
   exclude:
     - python: '3.6'
       env: DB=mariadb TEST=pulp
     - python: '3.7'
       env: DB=postgres TEST=bindings
+    - python: '3.6'
+      env: DB=postgres TEST=docs
   fast_finish: true
 services:
-  - postgresql
-  - mariadb
+    - postgresql
+    - redis-server
+    - mariadb
 addons:
   apt:
     packages:
@@ -31,44 +37,37 @@ addons:
 before_install: .travis/before_install.sh
 install: .travis/install.sh
 before_script: .travis/before_script.sh
-script:
-  - .travis/script.sh
+script: .travis/script.sh
+after_failure:
+  - sh -c "cat ~/django_runserver.log"
+  - sh -c "cat ~/resource_manager.log"
+  - sh -c "cat ~/reserved_workers-1.log"
 jobs:
   include:
-  - stage: deploy
-    script: skip
-    deploy:
-      provider: pypi
-      distributions: sdist bdist_wheel
-      user: pulp
-      password:
-        secure: pQVElIk7hM0cyyGz8K+0R23OlcSBocYibi7yOPYUvQ/x8oTEuH/WFt18M5i3YK2tPg3Mypnm+uaUg1vxd+QlJRZTTTj+sSIiGflTkTMIWPpoQ9bm8/oo5MlOP630mK3/Lp117BLAqNJfUm6XW8dikhBFiWZ+IVge3bsuaIOTs+8TNmXT6F0aZZ66RQElcfdllfGSmYv39QzH95XL6d/AgSBh93he26mqlOpHf7gcsT/5UwggW8wDjyF53WYBBuYjg3A7umwHzoilLy98E3ortGF1RaMjlu0jSrlsT+pBdu1ZKwgxEfk3zqKaTYNr/0w9AudsRWMXY8F2oAOG1W5qUoabqiFiVc4AvrP2oZ6q3y1ikv1kLSjGpfmPdz524XY25xoXZOp2M5NIuVo36bZZ9tUhNtkGnE0pufzaRYDAAChWW5xvcOU1ngSDfFkogg4cUmWkVrARBhRwaUcbN2fU/lPDpdaPjg0UCLTCmO8VsGfdvX0NAGu8MUQjbOLvPqzAIR+pEDgKiRIqgW8UlByIAmjh7Z0W8NXLGcTNt2vP9qXnSJpjXP6YU7WlfFEQn9sFwIBQEiCiU2vUfV83iNoVDSaN+0zeeJCHmrY5g/FaqHvXw++vu0ZzK43ZLDy6TU58QP2qooZ6pie8/PGYWVr6U3avXtk/epC3hSHwo6tv1GA=
-      on:
-        tags: true
+  - stage: deploy-plugin-to-pypi
+    script:  bash .travis/publish_plugin_pypi.sh
     if: tag IS present
-  - stage: publish-daily-pulp-file-client-gem
-    script: bash .travis/publish_pulp_file_client_gem.sh
+  - stage: publish-daily-client-gem
+    script: bash .travis/publish_client_gem.sh
     env:
       - DB=postgres
       - TEST=bindings
     if: type = cron
-  - stage: publish-daily-file-client-pypi
-    script: bash .travis/publish_pulp_file_client_pypi.sh
+  - stage: publish-daily-client-pypi
+    script: bash .travis/publish_client_pypi.sh
     env:
       - DB=postgres
       - TEST=bindings
-      - secure: "yXuO+vGRukhx4MXOx/Hcy9nJ/pDeg1va4kRt0nOxhCQtF7199SBdE0hKSwLEmWg7Dy1eMo6ofeCdH28QnvQHz941Pg9iO42g9raq2hzzJ3OnJz0+vkwTNAbfHOy03mf9rRiA1tbdhrMVRgMnJAUNLG0QOqU0uPJvRMVZdCdKWBmMJXOPX8oaa4KFqQuM5X+Vb2YBnCoeS65KW9CcoLT4tkNE0DlxyZh5v4EDS5s0vTtbAXtsqAzXBo5f30PYZKmVnTmnV1nVjISRo1+j/06sI7LknyqP+8kHCaDlBRbOVCf017EcA85dowAq5lCzv9kpB5y5ZaaD78nVdyh9yyttEOI6J7c0JRIMlLlgk8H1D0xZv9M3Jy4OZ/6aSxFZVU4whOtdx9qQjCruUH7vLDgJVy/q4Dpham3WQPm0JGKSmZAqA+4bL/M76qOHgaSxOZ//ezhwMwCsMQp8WqC73WmAEPty/X9lJHFMAKjF7A78X0lC6S3bNdWr1oHLBSkGufHUFs3gxJepefLMQajXHU70jn7uXbo4g3O2oFE3zdvNB2CNH3cv8gO/Jqrkc1kv69ADh2fb23MJ/aIL1yRzbJm8lwVsdo3ey1WE0QWKGVXGOZXZ69CiDcBf0t/ulWk/hyT1yC0POVN/D1oZfukY7vreBcaNNqd9zJc5rJwiRR0PAZ8="
     if: type = cron
-  - stage: publish-pulp-file-client-gem
-    script: bash .travis/publish_pulp_file_client_gem.sh
+  - stage: publish-client-gem
+    script: bash .travis/publish_client_gem.sh
     env:
       - DB=postgres
       - TEST=bindings
     if: tag IS present
-  - stage: publish-pulp-file-client-pypi
-    script: bash .travis/publish_pulp_file_client_pypi.sh
+  - stage: publish-client-pypi
+    script: bash .travis/publish_client_pypi.sh
     env:
       - DB=postgres
       - TEST=bindings
-      - secure: "yXuO+vGRukhx4MXOx/Hcy9nJ/pDeg1va4kRt0nOxhCQtF7199SBdE0hKSwLEmWg7Dy1eMo6ofeCdH28QnvQHz941Pg9iO42g9raq2hzzJ3OnJz0+vkwTNAbfHOy03mf9rRiA1tbdhrMVRgMnJAUNLG0QOqU0uPJvRMVZdCdKWBmMJXOPX8oaa4KFqQuM5X+Vb2YBnCoeS65KW9CcoLT4tkNE0DlxyZh5v4EDS5s0vTtbAXtsqAzXBo5f30PYZKmVnTmnV1nVjISRo1+j/06sI7LknyqP+8kHCaDlBRbOVCf017EcA85dowAq5lCzv9kpB5y5ZaaD78nVdyh9yyttEOI6J7c0JRIMlLlgk8H1D0xZv9M3Jy4OZ/6aSxFZVU4whOtdx9qQjCruUH7vLDgJVy/q4Dpham3WQPm0JGKSmZAqA+4bL/M76qOHgaSxOZ//ezhwMwCsMQp8WqC73WmAEPty/X9lJHFMAKjF7A78X0lC6S3bNdWr1oHLBSkGufHUFs3gxJepefLMQajXHU70jn7uXbo4g3O2oFE3zdvNB2CNH3cv8gO/Jqrkc1kv69ADh2fb23MJ/aIL1yRzbJm8lwVsdo3ey1WE0QWKGVXGOZXZ69CiDcBf0t/ulWk/hyT1yC0POVN/D1oZfukY7vreBcaNNqd9zJc5rJwiRR0PAZ8="
     if: tag IS present
