@@ -67,6 +67,7 @@ if [ "$DB" = 'mariadb' ]; then
   mysql -u root -e "DROP USER IF EXISTS 'travis'@'%';"
   mysql -u root -e "CREATE USER 'travis'@'%';"
   mysql -u root -e "CREATE DATABASE pulp;"
+  mysql -u root -e "ALTER DATABASE pulp CHARACTER SET utf8;"
   mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'travis'@'%';";
 else
   psql -c 'CREATE DATABASE pulp OWNER travis;'
