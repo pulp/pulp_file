@@ -42,7 +42,7 @@ fi
 
 if [ "$TEST" = 'bindings' ]; then
   COMMIT_MSG=$(git show HEAD^2 -s)
-  export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-swagger-codegen\/pull\/(\d+)' | awk -F'/' '{print $7}')
+  export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
 
   cd ..
   git clone https://github.com/pulp/pulp-openapi-generator.git
@@ -54,9 +54,10 @@ if [ "$TEST" = 'bindings' ]; then
   fi
 
   ./generate.sh pulpcore python
-  ./generate.sh pulp_file python
   pip install ./pulpcore-client
+  ./generate.sh pulp_file python
   pip install ./pulp_file-client
+
   python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
   exit
 fi
