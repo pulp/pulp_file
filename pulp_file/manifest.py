@@ -10,7 +10,7 @@ class Entry:
     """
     Manifest entry.
 
-    Format: <relative_path>, <digest>, <size>.
+    Format: <relative_path>,<digest>,<size>.
     Lines beginning with `#` are ignored.
 
     Attributes:
@@ -52,7 +52,7 @@ class Entry:
         if len(part) != 3:
             raise ValueError(
                 _('Error: manifest line:{n}: '
-                  'must be: <relative_path>, <digest>, <size>').format(
+                  'must be: <relative_path>,<digest>,<size>').format(
                     n=line.number))
         return Entry(relative_path=part[0],
                      digest=part[1],
@@ -63,7 +63,7 @@ class Entry:
         Returns a string representation of the Manifest Entry.
 
         Returns:
-            str: format: "<relative_path>, <digest>, <size>"
+            str: format: "<relative_path>,<digest>,<size>"
 
         """
         fields = [
@@ -72,7 +72,7 @@ class Entry:
         ]
         if isinstance(self.size, int):
             fields.append(str(self.size))
-        return ', '.join(fields)
+        return ','.join(fields)
 
 
 class Manifest:
