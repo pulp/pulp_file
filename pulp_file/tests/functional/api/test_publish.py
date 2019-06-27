@@ -7,22 +7,14 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import REPO_PATH
-from pulp_smash.pulp3.utils import (
-    gen_repo,
-    get_content,
-    get_versions,
-    sync,
-)
+from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, sync
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
     FILE_PUBLICATION_PATH,
     FILE_REMOTE_PATH,
 )
-from pulp_file.tests.functional.utils import (
-    create_file_publication,
-    gen_file_remote,
-)
+from pulp_file.tests.functional.utils import create_file_publication, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -53,39 +45,33 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        self.addCleanup(client.delete, remote["_href"])
 
         repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        self.addCleanup(client.delete, repo["_href"])
 
         sync(cfg, remote, repo)
 
         # Step 1
-        repo = client.get(repo['_href'])
+        repo = client.get(repo["_href"])
         for file_content in get_content(repo)[FILE_CONTENT_NAME]:
-            client.post(
-                repo['_versions_href'],
-                {'add_content_units': [file_content['_href']]}
-            )
-        version_hrefs = tuple(ver['_href'] for ver in get_versions(repo))
+            client.post(repo["_versions_href"], {"add_content_units": [file_content["_href"]]})
+        version_hrefs = tuple(ver["_href"] for ver in get_versions(repo))
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
         publication = create_file_publication(cfg, repo)
 
         # Step 3
-        self.assertEqual(publication['repository_version'], version_hrefs[-1])
+        self.assertEqual(publication["repository_version"], version_hrefs[-1])
 
         # Step 4
         publication = create_file_publication(cfg, repo, non_latest)
 
         # Step 5
-        self.assertEqual(publication['repository_version'], non_latest)
+        self.assertEqual(publication["repository_version"], non_latest)
 
         # Step 6
         with self.assertRaises(HTTPError):
-            body = {
-                'repository': repo['_href'],
-                'repository_version': non_latest,
-            }
+            body = {"repository": repo["_href"], "repository_version": non_latest}
             client.post(FILE_PUBLICATION_PATH, body)

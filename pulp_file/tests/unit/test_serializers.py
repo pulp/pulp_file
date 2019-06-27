@@ -20,27 +20,33 @@ class TestFileContentSerializer(TestCase):
             sha384="53a8a0cebcb7780ed7624790c9d9a4d09ba74b47270d397f5ed7bc1c46777a0fbe362aaf2bbe7f0966a350a12d76e28d",  # noqa
             sha512="a94a65f19b864d184a2a5e07fa29766f08c6d49b6f624b3dd3a36a98267b9137d9c35040b3e105448a869c23c2aec04c9e064e3555295c1b8de6515eed4da27d",  # noqa
             size=1024,
-            file=SimpleUploadedFile('test_filename', b'test content')
+            file=SimpleUploadedFile("test_filename", b"test content"),
         )
 
     def test_valid_data(self):
         """Test that the FileContentSerializer accepts valid data."""
-        data = {"_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
-                "relative_path": "foo"}
+        data = {
+            "_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "relative_path": "foo",
+        }
         serializer = FileContentSerializer(data=data)
         self.assertTrue(serializer.is_valid())
 
     def test_absolute_path_data(self):
         """Test that the FileContentSerializer does not accept data."""
-        data = {"_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
-                "relative_path": "/foo"}
+        data = {
+            "_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "relative_path": "/foo",
+        }
         serializer = FileContentSerializer(data=data)
         self.assertFalse(serializer.is_valid())
 
     def test_duplicate_data(self):
         """Test that the FileContentSerializer does not accept data."""
         FileContent.objects.create(relative_path="foo", digest=self.artifact.sha256)
-        data = {"_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
-                "relative_path": "foo"}
+        data = {
+            "_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "relative_path": "foo",
+        }
         serializer = FileContentSerializer(data=data)
         self.assertFalse(serializer.is_valid())

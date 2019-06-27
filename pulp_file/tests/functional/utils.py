@@ -26,7 +26,7 @@ from pulp_file.tests.functional.constants import (
 def set_up_module():
     """Skip tests Pulp 3 isn't under test or if pulp-file isn't installed."""
     require_pulp_3(SkipTest)
-    require_pulp_plugins({'pulp_file'}, SkipTest)
+    require_pulp_plugins({"pulp_file"}, SkipTest)
 
 
 def gen_file_remote(url=FILE_FIXTURE_MANIFEST_URL, **kwargs):
@@ -46,7 +46,7 @@ def get_file_content_paths(repo, version_href=None):
     """
     # The "relative_path" is actually a file path and name
     return [
-        content_unit['relative_path']
+        content_unit["relative_path"]
         for content_unit in get_content(repo, version_href)[FILE_CONTENT_NAME]
     ]
 
@@ -57,7 +57,7 @@ def gen_file_content_attrs(artifact):
     :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    return {'_artifact': artifact['_href'], 'relative_path': utils.uuid4()}
+    return {"_artifact": artifact["_href"], "relative_path": utils.uuid4()}
 
 
 def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
@@ -77,10 +77,10 @@ def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
         sync(cfg, remote, repo)
     finally:
         if remote:
-            client.delete(remote['_href'])
+            client.delete(remote["_href"])
         if repo:
-            client.delete(repo['_href'])
-    return client.get(FILE_CONTENT_PATH)['results']
+            client.delete(repo["_href"])
+    return client.get(FILE_CONTENT_PATH)["results"]
 
 
 def create_file_publication(cfg, repo, version_href=None):

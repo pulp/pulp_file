@@ -3,7 +3,7 @@ from collections import namedtuple
 from gettext import gettext as _
 
 
-Line = namedtuple('Line', ('number', 'content'))
+Line = namedtuple("Line", ("number", "content"))
 
 
 class Entry:
@@ -48,15 +48,14 @@ class Entry:
             ValueError: on parsing error.
 
         """
-        part = [s.strip() for s in line.content.split(',')]
+        part = [s.strip() for s in line.content.split(",")]
         if len(part) != 3:
             raise ValueError(
-                _('Error: manifest line:{n}: '
-                  'must be: <relative_path>,<digest>,<size>').format(
-                    n=line.number))
-        return Entry(relative_path=part[0],
-                     digest=part[1],
-                     size=int(part[2]))
+                _("Error: manifest line:{n}: " "must be: <relative_path>,<digest>,<size>").format(
+                    n=line.number
+                )
+            )
+        return Entry(relative_path=part[0], digest=part[1], size=int(part[2]))
 
     def __str__(self):
         """
@@ -66,13 +65,10 @@ class Entry:
             str: format: "<relative_path>,<digest>,<size>"
 
         """
-        fields = [
-            self.relative_path,
-            self.digest,
-        ]
+        fields = [self.relative_path, self.digest]
         if isinstance(self.size, int):
             fields.append(str(self.size))
-        return ','.join(fields)
+        return ",".join(fields)
 
 
 class Manifest:
@@ -109,7 +105,7 @@ class Manifest:
                 line = line.strip()
                 if not line:
                     continue
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
                 yield Entry.parse(Line(number=n, content=line))
 
@@ -121,11 +117,11 @@ class Manifest:
             entries (iterable): The entries to be written.
 
         """
-        with open(self.relative_path, 'w+') as fp:
+        with open(self.relative_path, "w+") as fp:
             for entry in entries:
                 line = str(entry)
                 fp.write(line)
-                fp.write('\n')
+                fp.write("\n")
 
     def count(self):
         """
@@ -136,7 +132,7 @@ class Manifest:
             for line in fp:
                 if not line:
                     continue
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
                 count = count + 1
         return count

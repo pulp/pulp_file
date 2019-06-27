@@ -34,10 +34,7 @@ class FileContentFilter(ContentFilter):
 
     class Meta:
         model = FileContent
-        fields = [
-            'relative_path',
-            'digest',
-        ]
+        fields = ["relative_path", "digest"]
 
 
 class FileContentViewSet(ContentViewSet):
@@ -47,7 +44,7 @@ class FileContentViewSet(ContentViewSet):
     repositories.
     """
 
-    endpoint_name = 'files'
+    endpoint_name = "files"
     queryset = FileContent.objects.prefetch_related("_artifacts")
     serializer_class = FileContentSerializer
     filterset_class = FileContentFilter
@@ -61,15 +58,15 @@ class FileRemoteViewSet(RemoteViewSet):
     metadata for all files at the source.
     """
 
-    endpoint_name = 'file'
+    endpoint_name = "file"
     queryset = FileRemote.objects.all()
     serializer_class = FileRemoteSerializer
 
     @swagger_auto_schema(
         operation_description="Trigger an asynchronous task to sync file content.",
-        responses={202: AsyncOperationResponseSerializer}
+        responses={202: AsyncOperationResponseSerializer},
     )
-    @detail_route(methods=('post',), serializer_class=RepositorySyncURLSerializer)
+    @detail_route(methods=("post",), serializer_class=RepositorySyncURLSerializer)
     def sync(self, request, pk):
         """
         Synchronizes a repository.
@@ -77,18 +74,14 @@ class FileRemoteViewSet(RemoteViewSet):
         The ``repository`` field has to be provided.
         """
         remote = self.get_object()
-        serializer = RepositorySyncURLSerializer(data=request.data, context={'request': request})
+        serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        repository = serializer.validated_data.get('repository')
-        mirror = serializer.validated_data.get('mirror', False)
+        repository = serializer.validated_data.get("repository")
+        mirror = serializer.validated_data.get("mirror", False)
         result = enqueue_with_reservation(
             tasks.synchronize,
             [repository, remote],
-            kwargs={
-                'remote_pk': remote.pk,
-                'repository_pk': repository.pk,
-                'mirror': mirror
-            }
+            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
         )
         return OperationPostponedResponse(result, request)
 
@@ -103,13 +96,13 @@ class FilePublicationViewSet(PublicationViewSet):
     href="#operation/distributions_file_file_list">File Distribution API.</a>
     """
 
-    endpoint_name = 'file'
+    endpoint_name = "file"
     queryset = FilePublication.objects.exclude(complete=False)
     serializer_class = FilePublicationSerializer
 
     @swagger_auto_schema(
         operation_description="Trigger an asynchronous task to publish file content.",
-        responses={202: AsyncOperationResponseSerializer}
+        responses={202: AsyncOperationResponseSerializer},
     )
     def create(self, request):
         """
@@ -120,16 +113,13 @@ class FilePublicationViewSet(PublicationViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        repository_version = serializer.validated_data.get('repository_version')
-        manifest = serializer.validated_data.get('manifest')
+        repository_version = serializer.validated_data.get("repository_version")
+        manifest = serializer.validated_data.get("manifest")
 
         result = enqueue_with_reservation(
             tasks.publish,
             [repository_version.repository],
-            kwargs={
-                'repository_version_pk': str(repository_version.pk),
-                'manifest': str(manifest)
-            }
+            kwargs={"repository_version_pk": str(repository_version.pk), "manifest": str(manifest)},
         )
         return OperationPostponedResponse(result, request)
 
@@ -145,6 +135,6 @@ class FileDistributionViewSet(BaseDistributionViewSet):
     another instance of Pulp to sync the content.
     """
 
-    endpoint_name = 'file'
+    endpoint_name = "file"
     queryset = FileDistribution.objects.all()
     serializer_class = FileDistributionSerializer

@@ -30,13 +30,13 @@ class CRUDRemotesTestCase(unittest.TestCase):
         """Create a remote."""
         body = _gen_verbose_remote()
         type(self).remote = self.client.post(FILE_REMOTE_PATH, body)
-        for key in ('username', 'password'):
+        for key in ("username", "password"):
             del body[key]
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_02_create_same_name(self):
         """Try to create a second remote with an identical name.
 
@@ -44,59 +44,57 @@ class CRUDRemotesTestCase(unittest.TestCase):
         <https://github.com/PulpQE/pulp-smash/issues/1055>`_.
         """
         body = gen_file_remote()
-        body['name'] = self.remote['name']
+        body["name"] = self.remote["name"]
         with self.assertRaises(HTTPError):
             self.client.post(FILE_REMOTE_PATH, body)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_02_read_remote(self):
         """Read a remote by its href."""
-        remote = self.client.get(self.remote['_href'])
+        remote = self.client.get(self.remote["_href"])
         for key, val in self.remote.items():
             with self.subTest(key=key):
                 self.assertEqual(remote[key], val)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_02_read_remotes(self):
         """Read a remote by its name."""
-        page = self.client.get(FILE_REMOTE_PATH, params={
-            'name': self.remote['name']
-        })
-        self.assertEqual(len(page['results']), 1)
+        page = self.client.get(FILE_REMOTE_PATH, params={"name": self.remote["name"]})
+        self.assertEqual(len(page["results"]), 1)
         for key, val in self.remote.items():
             with self.subTest(key=key):
-                self.assertEqual(page['results'][0][key], val)
+                self.assertEqual(page["results"][0][key], val)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_03_partially_update(self):
         """Update a remote using HTTP PATCH."""
         body = _gen_verbose_remote()
-        self.client.patch(self.remote['_href'], body)
-        for key in ('username', 'password'):
+        self.client.patch(self.remote["_href"], body)
+        for key in ("username", "password"):
             del body[key]
-        type(self).remote = self.client.get(self.remote['_href'])
+        type(self).remote = self.client.get(self.remote["_href"])
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_04_fully_update(self):
         """Update a remote using HTTP PUT."""
         body = _gen_verbose_remote()
-        self.client.put(self.remote['_href'], body)
-        for key in ('username', 'password'):
+        self.client.put(self.remote["_href"], body)
+        for key in ("username", "password"):
             del body[key]
-        type(self).remote = self.client.get(self.remote['_href'])
+        type(self).remote = self.client.get(self.remote["_href"])
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_05_delete(self):
         """Delete a remote."""
-        self.client.delete(self.remote['_href'])
+        self.client.delete(self.remote["_href"])
         with self.assertRaises(HTTPError):
-            self.client.get(self.remote['_href'])
+            self.client.get(self.remote["_href"])
 
     def test_negative_create_file_remote_with_invalid_parameter(self):
         """Attempt to create file remote passing invalid parameter.
@@ -108,10 +106,10 @@ class CRUDRemotesTestCase(unittest.TestCase):
         * `Pulp Smash #1085 <https://github.com/PulpQE/pulp-smash/issues/1085>`_
         """
         response = api.Client(self.cfg, api.echo_handler).post(
-            FILE_REMOTE_PATH, gen_file_remote(foo='bar')
+            FILE_REMOTE_PATH, gen_file_remote(foo="bar")
         )
         assert response.status_code == 400
-        assert response.json()['foo'] == ['Unexpected field']
+        assert response.json()["foo"] == ["Unexpected field"]
 
 
 class CreateRemoteNoURLTestCase(unittest.TestCase):
@@ -126,7 +124,7 @@ class CreateRemoteNoURLTestCase(unittest.TestCase):
         * `Pulp Smash #984 <https://github.com/PulpQE/pulp-smash/issues/984>`_
         """
         body = gen_file_remote()
-        del body['url']
+        del body["url"]
         with self.assertRaises(HTTPError):
             api.Client(config.get_config()).post(FILE_REMOTE_PATH, body)
 
@@ -168,7 +166,7 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Clean class-wide variable."""
-        cls.client.delete(cls.remote['_href'])
+        cls.client.delete(cls.remote["_href"])
 
     def test_01_no_defined_policy(self):
         """Verify the default policy `immediate`.
@@ -176,11 +174,11 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
         When no policy is defined, the default policy of `immediate`
         is applied.
         """
-        del self.body['policy']
+        del self.body["policy"]
         self.remote.update(self.client.post(FILE_REMOTE_PATH, self.body))
-        self.assertEqual(self.remote['policy'], 'immediate', self.remote)
+        self.assertEqual(self.remote["policy"], "immediate", self.remote)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_02_change_policy(self):
         """Verify ability to change policy to value other than the default.
 
@@ -188,13 +186,13 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
         and verify the new set value.
         """
         changed_policy = choice(
-            [item for item in ON_DEMAND_DOWNLOAD_POLICIES if item != 'immediate']
+            [item for item in ON_DEMAND_DOWNLOAD_POLICIES if item != "immediate"]
         )
-        self.client.patch(self.remote['_href'], {'policy': changed_policy})
-        self.remote.update(self.client.get(self.remote['_href']))
-        self.assertEqual(self.remote['policy'], changed_policy, self.remote)
+        self.client.patch(self.remote["_href"], {"policy": changed_policy})
+        self.remote.update(self.client.get(self.remote["_href"]))
+        self.assertEqual(self.remote["policy"], changed_policy, self.remote)
 
-    @skip_if(bool, 'remote', False)
+    @skip_if(bool, "remote", False)
     def test_03_invalid_policy(self):
         """Verify an invalid policy does not update the remote policy.
 
@@ -202,11 +200,11 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
         Attempt to update the remote policy to an invalid value.
         Verify the policy remains the same.
         """
-        remote = self.client.get(self.remote['_href'])
+        remote = self.client.get(self.remote["_href"])
         with self.assertRaises(HTTPError):
-            self.client.patch(self.remote['_href'], {'policy': utils.uuid4()})
-        self.remote.update(self.client.get(self.remote['_href']))
-        self.assertEqual(remote['policy'], self.remote['policy'], self.remote)
+            self.client.patch(self.remote["_href"], {"policy": utils.uuid4()})
+        self.remote.update(self.client.get(self.remote["_href"]))
+        self.assertEqual(remote["policy"], self.remote["policy"], self.remote)
 
 
 def _gen_verbose_remote():
@@ -219,13 +217,12 @@ def _gen_verbose_remote():
 
     Note that 'username' and 'password' are write-only attributes.
     """
-    attrs = gen_file_remote(url=choice((
-        FILE_FIXTURE_MANIFEST_URL,
-        FILE2_FIXTURE_MANIFEST_URL
-    )))
-    attrs.update({
-        'password': utils.uuid4(),
-        'username': utils.uuid4(),
-        'policy': choice(ON_DEMAND_DOWNLOAD_POLICIES),
-    })
+    attrs = gen_file_remote(url=choice((FILE_FIXTURE_MANIFEST_URL, FILE2_FIXTURE_MANIFEST_URL)))
+    attrs.update(
+        {
+            "password": utils.uuid4(),
+            "username": utils.uuid4(),
+            "policy": choice(ON_DEMAND_DOWNLOAD_POLICIES),
+        }
+    )
     return attrs

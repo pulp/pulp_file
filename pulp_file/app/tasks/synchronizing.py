@@ -6,7 +6,10 @@ from urllib.parse import urlparse, urlunparse
 
 from pulpcore.plugin.models import Artifact, ProgressBar, Remote, Repository
 from pulpcore.plugin.stages import (
-    DeclarativeArtifact, DeclarativeContent, DeclarativeVersion, Stage
+    DeclarativeArtifact,
+    DeclarativeContent,
+    DeclarativeVersion,
+    Stage,
 )
 
 from pulp_file.app.models import FileContent, FileRemote
@@ -35,7 +38,7 @@ def synchronize(remote_pk, repository_pk, mirror):
     repository = Repository.objects.get(pk=repository_pk)
 
     if not remote.url:
-        raise ValueError(_('A remote must have a url specified to synchronize.'))
+        raise ValueError(_("A remote must have a url specified to synchronize."))
 
     first_stage = FileFirstStage(remote)
     dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
@@ -62,15 +65,15 @@ class FileFirstStage(Stage):
         """
         Build and emit `DeclarativeContent` from the Manifest data.
         """
-        deferred_download = (self.remote.policy != Remote.IMMEDIATE)  # Interpret download policy
-        with ProgressBar(message='Downloading Metadata') as pb:
+        deferred_download = self.remote.policy != Remote.IMMEDIATE  # Interpret download policy
+        with ProgressBar(message="Downloading Metadata") as pb:
             parsed_url = urlparse(self.remote.url)
             root_dir = os.path.dirname(parsed_url.path)
             downloader = self.remote.get_downloader(url=self.remote.url)
             result = await downloader.run()
             pb.increment()
 
-        with ProgressBar(message='Parsing Metadata Lines') as pb:
+        with ProgressBar(message="Parsing Metadata Lines") as pb:
             manifest = Manifest(result.path)
             pb.total = manifest.count()
             pb.save()

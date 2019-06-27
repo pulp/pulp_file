@@ -22,8 +22,9 @@ class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSeri
     """
 
     relative_path = serializers.CharField(
-        help_text=_("Relative location of the file within the repository. "
-                    "Example: `path/to/file.txt`"),
+        help_text=_(
+            "Relative location of the file within the repository. " "Example: `path/to/file.txt`"
+        ),
         validators=[relative_path_validator],
     )
 
@@ -31,24 +32,29 @@ class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSeri
         """Validate the FileContent data."""
         data = super().validate(data)
 
-        data['digest'] = data['_artifact'].sha256
-        data['_relative_path'] = data['relative_path']
+        data["digest"] = data["_artifact"].sha256
+        data["_relative_path"] = data["relative_path"]
 
-        content = FileContent.objects.filter(digest=data['digest'],
-                                             relative_path=data['relative_path'])
+        content = FileContent.objects.filter(
+            digest=data["digest"], relative_path=data["relative_path"]
+        )
 
         if content.exists():
-            raise serializers.ValidationError(_(
-                "There is already a file content with relative path '{path}' and artifact "
-                "'{artifact}'."
-            ).format(path=data["relative_path"], artifact=self.initial_data["_artifact"]))
+            raise serializers.ValidationError(
+                _(
+                    "There is already a file content with relative path '{path}' and artifact "
+                    "'{artifact}'."
+                ).format(path=data["relative_path"], artifact=self.initial_data["_artifact"])
+            )
 
         return data
 
     class Meta:
-        fields = tuple(
-            set(SingleArtifactContentSerializer.Meta.fields) - {'_relative_path'}
-        ) + ContentChecksumSerializer.Meta.fields + ('relative_path',)
+        fields = (
+            tuple(set(SingleArtifactContentSerializer.Meta.fields) - {"_relative_path"})
+            + ContentChecksumSerializer.Meta.fields
+            + ("relative_path",)
+        )
         model = FileContent
 
 
@@ -59,9 +65,9 @@ class FileRemoteSerializer(RemoteSerializer):
 
     policy = serializers.ChoiceField(
         help_text="The policy to use when downloading content. The possible values include: "
-                  "'immediate', 'on_demand', and 'streamed'. 'immediate' is the default.",
+        "'immediate', 'on_demand', and 'streamed'. 'immediate' is the default.",
         choices=models.Remote.POLICY_CHOICES,
-        default=models.Remote.IMMEDIATE
+        default=models.Remote.IMMEDIATE,
     )
 
     class Meta:
@@ -75,7 +81,7 @@ class FilePublicationSerializer(PublicationSerializer):
     """
 
     distributions = DetailRelatedField(
-        help_text=_('This publication is currently hosted as defined by these distributions.'),
+        help_text=_("This publication is currently hosted as defined by these distributions."),
         source="filedistribution_set",
         many=True,
         read_only=True,
@@ -84,15 +90,12 @@ class FilePublicationSerializer(PublicationSerializer):
         help_text=_("Filename to use for manifest file containing metadata for all the files."),
         write_only=True,
         required=False,
-        default='PULP_MANIFEST',
+        default="PULP_MANIFEST",
     )
 
     class Meta:
         model = FilePublication
-        fields = PublicationSerializer.Meta.fields + (
-            'distributions',
-            'manifest',
-        )
+        fields = PublicationSerializer.Meta.fields + ("distributions", "manifest")
 
 
 class FileDistributionSerializer(PublicationDistributionSerializer):
