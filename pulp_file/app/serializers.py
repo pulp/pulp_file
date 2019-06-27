@@ -2,6 +2,7 @@ from gettext import gettext as _
 
 from rest_framework import serializers
 
+from pulpcore.plugin import models
 from pulpcore.plugin.serializers import (
     ContentChecksumSerializer,
     DetailRelatedField,
@@ -55,6 +56,13 @@ class FileRemoteSerializer(RemoteSerializer):
     """
     Serializer for File Remotes.
     """
+
+    policy = serializers.ChoiceField(
+        help_text="The policy to use when downloading content. The possible values include: "
+                  "'immediate', 'on_demand', and 'streamed'. 'immediate' is the default.",
+        choices=models.Remote.POLICY_CHOICES,
+        default=models.Remote.IMMEDIATE
+    )
 
     class Meta:
         fields = RemoteSerializer.Meta.fields
