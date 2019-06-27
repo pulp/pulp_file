@@ -6,24 +6,15 @@ from functools import reduce
 from urllib.parse import urljoin
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.constants import (
-    REPO_PATH,
-)
-from pulp_smash.pulp3.utils import (
-    gen_distribution,
-    gen_repo,
-    sync,
-)
+from pulp_smash.pulp3.constants import REPO_PATH
+from pulp_smash.pulp3.utils import gen_distribution, gen_repo, sync
 
 from pulp_file.tests.functional.constants import (
     FILE_DISTRIBUTION_PATH,
     FILE_FIXTURE_COUNT,
     FILE_REMOTE_PATH,
 )
-from pulp_file.tests.functional.utils import (
-    create_file_publication,
-    gen_file_remote,
-)
+from pulp_file.tests.functional.utils import create_file_publication, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -44,25 +35,25 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
     def test_access_error(self):
         """HTTP error is not raised when accessing published data."""
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo['_href'])
+        self.addCleanup(self.client.delete, repo["_href"])
 
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote['_href'])
+        self.addCleanup(self.client.delete, remote["_href"])
 
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo['_href'])
+        repo = self.client.get(repo["_href"])
 
         publication = create_file_publication(self.cfg, repo)
-        self.addCleanup(self.client.delete, publication['_href'])
+        self.addCleanup(self.client.delete, publication["_href"])
 
         body = gen_distribution()
-        body['publication'] = publication['_href']
+        body["publication"] = publication["_href"]
 
         distribution = self.client.post(FILE_DISTRIBUTION_PATH, body)
-        self.addCleanup(self.client.delete, distribution['_href'])
+        self.addCleanup(self.client.delete, distribution["_href"])
 
         pulp_manifest = parse_pulp_manifest(
-            self.download_pulp_manifest(distribution, 'PULP_MANIFEST')
+            self.download_pulp_manifest(distribution, "PULP_MANIFEST")
         )
 
         self.assertEqual(len(pulp_manifest), FILE_FIXTURE_COUNT, pulp_manifest)
@@ -73,7 +64,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
             urljoin,
             (
                 self.cfg.get_content_host_base_url(),
-                '//' + distribution['base_url'] + '/',
+                "//" + distribution["base_url"] + "/",
                 unit_path,
             ),
         )
@@ -82,7 +73,4 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
 
 def parse_pulp_manifest(pulp_manifest):
     """Parse pulp manifest."""
-    return list(csv.DictReader(
-        pulp_manifest.text.splitlines(),
-        ('name', 'checksum', 'size'),
-    ))
+    return list(csv.DictReader(pulp_manifest.text.splitlines(), ("name", "checksum", "size")))

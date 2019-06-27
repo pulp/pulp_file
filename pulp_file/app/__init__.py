@@ -6,5 +6,5 @@ class PulpFilePluginAppConfig(PulpPluginAppConfig):
     Entry point for pulp_file plugin.
     """
 
-    name = 'pulp_file.app'
-    label = 'file'
+    name = "pulp_file.app"
+    label = "file"

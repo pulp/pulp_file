@@ -6,16 +6,8 @@ from random import choice
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import (
-    ON_DEMAND_DOWNLOAD_POLICIES,
-    REPO_PATH,
-)
-from pulp_smash.pulp3.utils import (
-    download_content_unit,
-    gen_distribution,
-    gen_repo,
-    sync,
-)
+from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES, REPO_PATH
+from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo, sync
 
 from pulp_file.tests.functional.constants import (
     FILE_DISTRIBUTION_PATH,
@@ -38,7 +30,7 @@ class DownloadContentTestCase(unittest.TestCase):
 
         See :meth:`do_test`.
         """
-        self.do_test('immediate')
+        self.do_test("immediate")
 
     def test_on_demand_download_policies(self):
         """Download content from Pulp. Content is synced with an On-Demand policy.
@@ -83,27 +75,24 @@ class DownloadContentTestCase(unittest.TestCase):
         client = api.Client(cfg, api.json_handler)
 
         repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        self.addCleanup(client.delete, repo["_href"])
 
         body = gen_file_remote(policy=policy)
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        self.addCleanup(client.delete, remote["_href"])
 
         sync(cfg, remote, repo)
-        repo = client.get(repo['_href'])
+        repo = client.get(repo["_href"])
 
         # Create a publication.
         publication = create_file_publication(cfg, repo)
-        self.addCleanup(client.delete, publication['_href'])
+        self.addCleanup(client.delete, publication["_href"])
 
         # Create a distribution.
         body = gen_distribution()
-        body['publication'] = publication['_href']
-        distribution = client.using_handler(api.task_handler).post(
-            FILE_DISTRIBUTION_PATH,
-            body
-        )
-        self.addCleanup(client.delete, distribution['_href'])
+        body["publication"] = publication["_href"]
+        distribution = client.using_handler(api.task_handler).post(FILE_DISTRIBUTION_PATH, body)
+        self.addCleanup(client.delete, distribution["_href"])
 
         # Pick a file, and download it from both Pulp Fixtures…
         unit_path = choice(get_file_content_paths(repo))

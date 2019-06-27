@@ -5,10 +5,7 @@ from gettext import gettext as _
 
 from django.core.files import File
 
-from pulpcore.plugin.models import (
-    RepositoryVersion,
-    PublishedMetadata,
-    RemoteArtifact)
+from pulpcore.plugin.models import RepositoryVersion, PublishedMetadata, RemoteArtifact
 from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_file.app.models import FileContent, FilePublication
@@ -29,11 +26,11 @@ def publish(manifest, repository_version_pk):
     """
     repo_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
-    log.info(_('Publishing: repository={repo}, version={ver}, manifest={manifest}').format(
-        repo=repo_version.repository.name,
-        ver=repo_version.number,
-        manifest=manifest,
-    ))
+    log.info(
+        _("Publishing: repository={repo}, version={ver}, manifest={manifest}").format(
+            repo=repo_version.repository.name, ver=repo_version.number, manifest=manifest
+        )
+    )
 
     with WorkingDirectory():
         with FilePublication.create(repo_version, pass_through=True) as publication:
@@ -42,10 +39,11 @@ def publish(manifest, repository_version_pk):
             metadata = PublishedMetadata(
                 relative_path=os.path.basename(manifest.relative_path),
                 publication=publication,
-                file=File(open(manifest.relative_path, 'rb')))
+                file=File(open(manifest.relative_path, "rb")),
+            )
             metadata.save()
 
-    log.info(_('Publication: {publication} created').format(publication=publication.pk))
+    log.info(_("Publication: {publication} created").format(publication=publication.pk))
 
 
 def populate(publication):
@@ -61,14 +59,17 @@ def populate(publication):
         Entry: Each manifest entry.
 
     """
+
     def find_artifact():
         _artifact = content_artifact.artifact
         if not _artifact:
             _artifact = RemoteArtifact.objects.filter(content_artifact=content_artifact).first()
         return _artifact
+
     paths = set()
     for content in FileContent.objects.filter(
-            pk__in=publication.repository_version.content).order_by('-_created'):
+        pk__in=publication.repository_version.content
+    ).order_by("-_created"):
         if content.relative_path in paths:
             continue
         paths.add(content.relative_path)
@@ -77,5 +78,6 @@ def populate(publication):
             entry = Entry(
                 relative_path=content_artifact.relative_path,
                 digest=artifact.sha256,
-                size=artifact.size)
+                size=artifact.size,
+            )
             yield entry

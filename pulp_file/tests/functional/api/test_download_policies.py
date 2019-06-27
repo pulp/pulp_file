@@ -4,11 +4,7 @@ from random import choice
 import unittest
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.constants import (
-    ARTIFACTS_PATH,
-    ON_DEMAND_DOWNLOAD_POLICIES,
-    REPO_PATH,
-)
+from pulp_smash.pulp3.constants import ARTIFACTS_PATH, ON_DEMAND_DOWNLOAD_POLICIES, REPO_PATH
 from pulp_smash.pulp3.utils import (
     delete_orphans,
     gen_repo,
@@ -23,10 +19,7 @@ from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_SUMMARY,
     FILE_REMOTE_PATH,
 )
-from pulp_file.tests.functional.utils import (
-    create_file_publication,
-    gen_file_remote,
-)
+from pulp_file.tests.functional.utils import create_file_publication, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -51,8 +44,8 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
         See :meth:`do_sync`.
         See :meth:`do_publish`.
         """
-        self.do_sync('on_demand')
-        self.do_publish('on_demand')
+        self.do_sync("on_demand")
+        self.do_publish("on_demand")
 
     def test_streamed(self):
         """Sync and publish with ``streamend`` download policy.
@@ -60,8 +53,8 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
         See :meth:`do_sync`.
         See :meth:`do_publish`.
         """
-        self.do_sync('streamed')
-        self.do_publish('streamed')
+        self.do_sync("streamed")
+        self.do_publish("streamed")
 
     def do_sync(self, download_policy):
         """Sync repositories with the different ``download_policy``.
@@ -82,47 +75,44 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
            was synced again.
         """
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo['_href'])
+        self.addCleanup(self.client.delete, repo["_href"])
 
         body = gen_file_remote(policy=download_policy)
         remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote['_href'])
+        self.addCleanup(self.client.delete, remote["_href"])
 
         # Sync the repository.
-        self.assertIsNone(repo['_latest_version_href'])
+        self.assertIsNone(repo["_latest_version_href"])
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo['_href'])
+        repo = self.client.get(repo["_href"])
 
-        self.assertIsNotNone(repo['_latest_version_href'])
+        self.assertIsNotNone(repo["_latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
-        self.assertDictEqual(
-            get_added_content_summary(repo),
-            FILE_FIXTURE_SUMMARY
-        )
+        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
 
         # Sync the repository again.
-        latest_version_href = repo['_latest_version_href']
+        latest_version_href = repo["_latest_version_href"]
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo['_href'])
+        repo = self.client.get(repo["_href"])
 
-        self.assertNotEqual(latest_version_href, repo['_latest_version_href'])
+        self.assertNotEqual(latest_version_href, repo["_latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
         self.assertDictEqual(get_added_content_summary(repo), {})
 
     def do_publish(self, download_policy):
         """Publish repository synced with lazy download policy."""
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo['_href'])
+        self.addCleanup(self.client.delete, repo["_href"])
 
         body = gen_file_remote(policy=download_policy)
         remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote['_href'])
+        self.addCleanup(self.client.delete, remote["_href"])
 
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo['_href'])
+        repo = self.client.get(repo["_href"])
 
         publication = create_file_publication(self.cfg, repo)
-        self.assertIsNotNone(publication['repository_version'], publication)
+        self.assertIsNotNone(publication["repository_version"], publication)
 
 
 class LazySyncedContentAccessTestCase(unittest.TestCase):
@@ -145,26 +135,26 @@ class LazySyncedContentAccessTestCase(unittest.TestCase):
 
     def test_on_demand(self):
         """Test ``on_demand``. See :meth:`do_test`."""
-        self.do_test('on_demand')
+        self.do_test("on_demand")
 
     def test_streamed(self):
         """Test ``streamed``. See :meth:`do_test`."""
-        self.do_test('streamed')
+        self.do_test("streamed")
 
     def do_test(self, policy):
         """Access lazy synced content on using content endpoint."""
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo['_href'])
+        self.addCleanup(self.client.delete, repo["_href"])
 
         body = gen_file_remote(policy=policy)
         remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote['_href'])
+        self.addCleanup(self.client.delete, remote["_href"])
 
         # Sync the repository.
-        self.assertIsNone(repo['_latest_version_href'])
+        self.assertIsNone(repo["_latest_version_href"])
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo['_href'])
-        self.assertIsNotNone(repo['_latest_version_href'])
+        repo = self.client.get(repo["_href"])
+        self.assertIsNotNone(repo["_latest_version_href"])
 
         # Assert that no HTTP error was raised.
         # Assert that the number of units present is according to the synced
@@ -193,11 +183,11 @@ class SwitchDownloadPolicyTestCase(unittest.TestCase):
         client = api.Client(cfg, api.page_handler)
 
         repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        self.addCleanup(client.delete, repo["_href"])
 
         body = gen_file_remote(policy=choice(ON_DEMAND_DOWNLOAD_POLICIES))
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        self.addCleanup(client.delete, remote["_href"])
 
         # Sync the repository using a lazy download policy
         sync(cfg, remote, repo)
@@ -205,9 +195,9 @@ class SwitchDownloadPolicyTestCase(unittest.TestCase):
         self.assertEqual(len(artifacts), 0, artifacts)
 
         # Update the policy to immediate
-        client.patch(remote['_href'], {'policy': 'immediate'})
-        remote = client.get(remote['_href'])
-        self.assertEqual(remote['policy'], 'immediate')
+        client.patch(remote["_href"], {"policy": "immediate"})
+        remote = client.get(remote["_href"])
+        self.assertEqual(remote["policy"], "immediate")
 
         # Sync using immediate download policy
         sync(cfg, remote, repo)

@@ -20,16 +20,13 @@ class FileContent(Content):
         digest (str): The SHA256 HEX digest.
     """
 
-    TYPE = 'file'
+    TYPE = "file"
 
     relative_path = models.CharField(max_length=255, null=False)
     digest = models.CharField(max_length=64, null=False)
 
     class Meta:
-        unique_together = (
-            'relative_path',
-            'digest'
-        )
+        unique_together = ("relative_path", "digest")
 
 
 class FileRemote(Remote):
@@ -37,7 +34,7 @@ class FileRemote(Remote):
     Remote for "file" content.
     """
 
-    TYPE = 'file'
+    TYPE = "file"
 
 
 class FilePublication(Publication):
@@ -45,7 +42,7 @@ class FilePublication(Publication):
     Publication for 'file' content.
     """
 
-    TYPE = 'file'
+    TYPE = "file"
 
 
 class FileDistribution(PublicationDistribution):
@@ -53,4 +50,4 @@ class FileDistribution(PublicationDistribution):
     Distribution for 'file' content.
     """
 
-    TYPE = 'file'
+    TYPE = "file"
