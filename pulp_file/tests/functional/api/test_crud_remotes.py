@@ -6,7 +6,7 @@ import unittest
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import DOWNLOAD_POLICIES
+from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_MANIFEST_URL,
@@ -188,7 +188,7 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
         and verify the new set value.
         """
         changed_policy = choice(
-            [item for item in DOWNLOAD_POLICIES if item != 'immediate']
+            [item for item in ON_DEMAND_DOWNLOAD_POLICIES if item != 'immediate']
         )
         self.client.patch(self.remote['_href'], {'policy': changed_policy})
         self.remote.update(self.client.get(self.remote['_href']))
@@ -226,6 +226,6 @@ def _gen_verbose_remote():
     attrs.update({
         'password': utils.uuid4(),
         'username': utils.uuid4(),
-        'policy': choice(DOWNLOAD_POLICIES),
+        'policy': choice(ON_DEMAND_DOWNLOAD_POLICIES),
     })
     return attrs
