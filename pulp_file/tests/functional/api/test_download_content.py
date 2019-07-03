@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import (
-    LAZY_DOWNLOAD_POLICIES,
+    ON_DEMAND_DOWNLOAD_POLICIES,
     REPO_PATH,
 )
 from pulp_smash.pulp3.utils import (
@@ -40,8 +40,8 @@ class DownloadContentTestCase(unittest.TestCase):
         """
         self.do_test('immediate')
 
-    def test_lazy_download_policies(self):
-        """Download content from Pulp. Content is synced with lazy policy.
+    def test_on_demand_download_policies(self):
+        """Download content from Pulp. Content is synced with an On-Demand policy.
 
         See :meth:`do_test`.
 
@@ -49,7 +49,7 @@ class DownloadContentTestCase(unittest.TestCase):
 
         `Pulp #4496 <https://pulp.plan.io/issues/4496>`_
         """
-        for policy in LAZY_DOWNLOAD_POLICIES:
+        for policy in ON_DEMAND_DOWNLOAD_POLICIES:
             with self.subTest(policy):
                 self.do_test(policy)
 

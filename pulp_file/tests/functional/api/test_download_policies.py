@@ -6,7 +6,7 @@ import unittest
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import (
     ARTIFACTS_PATH,
-    LAZY_DOWNLOAD_POLICIES,
+    ON_DEMAND_DOWNLOAD_POLICIES,
     REPO_PATH,
 )
 from pulp_smash.pulp3.utils import (
@@ -195,7 +195,7 @@ class SwitchDownloadPolicyTestCase(unittest.TestCase):
         repo = client.post(REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo['_href'])
 
-        body = gen_file_remote(policy=choice(LAZY_DOWNLOAD_POLICIES))
+        body = gen_file_remote(policy=choice(ON_DEMAND_DOWNLOAD_POLICIES))
         remote = client.post(FILE_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote['_href'])
 
