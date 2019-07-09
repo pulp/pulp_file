@@ -13,3 +13,21 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0b1 (2019-07-09)
+====================
+
+
+Features
+--------
+
+- Override the Remote's serializer to allow policy='on_demand' and policy='streamed'.
+  `#4990 <https://pulp.plan.io/issues/4990>`_
+
+
+Improved Documentation
+----------------------
+
+- Switch to using `towncrier <https://github.com/hawkowl/towncrier>`_ for better release notes.
+  `#4875 <https://pulp.plan.io/issues/4875>`_
+
+
