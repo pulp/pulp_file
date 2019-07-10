@@ -19,7 +19,7 @@ Artifact GET Response::
         "sha256": "97144ab16c9aa0e6072d471d6aebe7c21083e21359137e676445bfeb4051ba25",
         "sha384": "4cd006bfac7f2e41baa8c411536579b134daeb3ad666310d21463f384a7020360703fc5538b4eca724033498d514e144",
         "sha512": "e1aae6bbc6fd24cf890b82ffa824629518e6e93935935a0b7c008fbd9fa59f08aa32a7d8580b31a65b21caa0f48e737d8e555eaa777912bea5772799f64a2dd4",
-        "size": 24
+        "size": 11
     }
 
 Reference (pulpcore): `Artifact API Usage
@@ -28,7 +28,7 @@ Reference (pulpcore): `Artifact API Usage
 Create ``file`` content from an Artifact
 -----------------------------------------
 
-.. literalinclude:: ../_scripts/artifact.sh
+.. literalinclude:: ../_scripts/content.sh
    :language: bash
 
 Content GET Response::
