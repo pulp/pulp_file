@@ -38,7 +38,13 @@ Content GET Response::
         "_created": "2019-05-16T20:07:48.929374Z",
         "_href": "/pulp/api/v3/content/file/files/c23def43-44bc-45f4-8a6f-0310285f5339/",
         "_type": "file.file",
-        "relative_path": "test_upload.txt"
+        "md5": "3b4fd267e71a1a8e8746893fcc91e5b5",
+        "relative_path": "test_upload.txt",
+        "sha1": "6fd76062f3680be44de9ed6a4b80bdce512dd620",
+        "sha224": "3b518d0e428c4e5996ec6861960a7640770bc8bbbe16775b1dfc1e81",
+        "sha256": "b671500c402128babf4f4e51afc552584df3db501bb1a0bd3ee96dc121228a9c",
+        "sha384": "7f90e3b612defd1d85d51c3a0efca932fb1a6cdee4a11dd532edd8302dfe7860d3ce4d50b2ed73d984a83e6c6265e54b",
+        "sha512": "91c823e2d547e4073d4c47f73f36122acf60a722100d6e592a68aae0b6ba8ee12cd40dbed75cade7ad1a1f7e197a06ed2ad184da8c0055b5473bcf07aaf7e44c"
     }
 
 Reference: `File Content API Usage <../restapi.html#tag/content>`_
@@ -56,7 +62,7 @@ Repository GET Response::
         "_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
         "_latest_version_href": null,
         "_versions_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/",
-        "description": "",
+        "description": null,
         "name": "foo"
     }
 
