@@ -1,0 +1,35 @@
+# This config represents the latest values used when running the plugin-template. Any settings that
+# were not present before running plugin-template have been added with their default values.
+
+all: False
+bootstrap: False
+docs: False
+plugin_camel: PulpFile
+plugin_camel_short: File
+plugin_caps: PULP_FILE
+plugin_caps_short: FILE
+plugin_dash: pulp-file
+plugin_dash_short: file
+plugin_name: file
+plugin_snake: pulp_file
+plugin_snake_short: file
+pypi_username: pulp
+test: False
+black: True
+check_commit_message: True
+coverage: False
+deploy_client_to_pypi: True
+deploy_client_to_rubygems: True
+deploy_daily_client_to_pypi: True
+deploy_daily_client_to_rubygems: True
+deploy_to_pypi: True
+docs_test: True
+pydocstyle: True
+test_bindings: True
+plugin_app_label: file
+travis_notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#pulp-build"
+    on_success: change
+    on_failure: always
