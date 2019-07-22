@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 echo "Creating a dummy file at path FILE_CONTENT to upload."
 export FILE_CONTENT=$(head /dev/urandom | tr -dc a-z | head -c10)

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 echo "Kick off a task to add content to a repository, storing TASK_URL env variable"
 export TASK_URL=$(http POST $BASE_ADDR$REPO_HREF'versions/' \
