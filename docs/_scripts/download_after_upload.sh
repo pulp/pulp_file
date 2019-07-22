@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # The distribution will return a url that can be used by http clients
 echo "Setting DISTRIBUTION_BASE_URL, which is used to retrieve content from the content app."

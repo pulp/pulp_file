@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 echo "Creating a remote that points to an external source of files."
 http POST $BASE_ADDR/pulp/api/v3/remotes/file/file/ \
     name='bar' \

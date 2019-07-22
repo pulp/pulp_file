@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 set -e
 
 echo "Setting ennvironment variables for default hostname/port for the API and the Content app"

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 export DIST_NAME=$(head /dev/urandom | tr -dc a-z | head -c5)
 export DIST_BASE_PATH=$(head /dev/urandom | tr -dc a-z | head -c5)

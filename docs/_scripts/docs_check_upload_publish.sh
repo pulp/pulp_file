@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # This script will execute the component scripts and ensure that the documented examples
 # work as expected.
