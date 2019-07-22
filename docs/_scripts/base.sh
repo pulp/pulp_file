@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Setting ennvironment variables for default hostname/port for the API and the Content app"
-export BASE_ADDR=http://localhost:24817
-export CONTENT_ADDR=http://localhost:24816
+echo "Setting environment variables for default hostname/port for the API and the Content app"
+export BASE_ADDR=${BASE_ADDR:-http://localhost:24817}
+export CONTENT_ADDR=${CONTENT_ADDR:-http://localhost:24816}
 
 # Necessary for `django-admin`
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
