@@ -27,7 +27,7 @@ Reference: `File Publication Usage <../restapi.html#tag/publications>`_
 Create a Distribution for the Publication
 -----------------------------------------
 
-.. literalinclude:: ../_scripts/publication.sh
+.. literalinclude:: ../_scripts/distribution.sh
    :language: bash
 
 Distribution GET Response (after task is complete)::
