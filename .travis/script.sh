@@ -42,7 +42,7 @@ if [ "$TEST" = 'docs' ]; then
   make html
   cd ..
 
-  if [ -x $POST_DOCS_TEST ]; then
+  if [ -f $POST_DOCS_TEST ]; then
       $POST_DOCS_TEST
   fi
   exit
@@ -67,6 +67,30 @@ if [ "$TEST" = 'bindings' ]; then
   pip install ./pulp_file-client
 
   python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
+
+  if [ ! -f $TRAVIS_BUILD_DIR/.travis/test_bindings.rb ]
+  then
+    exit
+  fi
+
+  rm -rf ./pulpcore-client
+
+  ./generate.sh pulpcore ruby
+  cd pulpcore-client
+  gem build pulpcore_client
+  gem install --both ./pulpcore_client-0.gem
+  cd ..
+
+  rm -rf ./pulp_file-client
+
+  ./generate.sh pulp_file ruby
+
+  cd pulp_file-client
+  gem build pulp_file_client
+  gem install --both ./pulp_file_client-0.gem
+  cd ..
+
+  ruby $TRAVIS_BUILD_DIR/.travis/test_bindings.rb
   exit
 fi
 
@@ -82,7 +106,6 @@ show_logs_and_return_non_zero() {
     cat ~/reserved_worker-1.log
     return "${rc}"
 }
-export -f show_logs_and_return_non_zero
 
 # Stop services started by ansible roles
 sudo systemctl stop pulp-worker* pulp-resource-manager pulp-content-app pulp-api
@@ -96,13 +119,13 @@ coverage run $(which django-admin) runserver 24817 --noreload >> ~/django_runser
 wait_for_pulp 20
 
 # Run functional tests
-if [ -x $FUNC_TEST_SCRIPT ]; then
+if [ -f $FUNC_TEST_SCRIPT ]; then
     $FUNC_TEST_SCRIPT
 else
     pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional || show_logs_and_return_non_zero
 fi
 
 
-if [ -x $POST_SCRIPT ]; then
+if [ -f $POST_SCRIPT ]; then
     $POST_SCRIPT
 fi
