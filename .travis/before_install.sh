@@ -15,7 +15,7 @@ export POST_BEFORE_INSTALL=$TRAVIS_BUILD_DIR/.travis/post_before_install.sh
 COMMIT_MSG=$(git log --format=%B --no-merges -1)
 export COMMIT_MSG
 
-if [ -x $PRE_BEFORE_INSTALL ]; then
+if [ -f $PRE_BEFORE_INSTALL ]; then
     $PRE_BEFORE_INSTALL
 fi
 
@@ -82,6 +82,6 @@ cp pulp_file/.travis/postgres.yml ansible-pulp/postgres.yml
 
 cd pulp_file
 
-if [ -x $POST_BEFORE_INSTALL ]; then
+if [ -f $POST_BEFORE_INSTALL ]; then
     $POST_BEFORE_INSTALL
 fi

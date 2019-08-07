@@ -74,9 +74,12 @@ jobs:
       - DB=postgres
       - TEST=bindings
     if: tag IS present
+
 notifications:
   irc:
-    channels: [chat.freenode.net#pulp-build]
+    channels:
+    - chat.freenode.net#pulp-build
     on_failure: always
     on_success: change
+
 
