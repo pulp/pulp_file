@@ -26,6 +26,7 @@ class FileContent(Content):
     digest = models.CharField(max_length=64, null=False)
 
     class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
         unique_together = ("relative_path", "digest")
 
 
@@ -36,6 +37,9 @@ class FileRemote(Remote):
 
     TYPE = "file"
 
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
 
 class FilePublication(Publication):
     """
@@ -44,6 +48,9 @@ class FilePublication(Publication):
 
     TYPE = "file"
 
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
 
 class FileDistribution(PublicationDistribution):
     """
@@ -51,3 +58,6 @@ class FileDistribution(PublicationDistribution):
     """
 
     TYPE = "file"
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
