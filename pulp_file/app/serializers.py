@@ -82,7 +82,7 @@ class FilePublicationSerializer(PublicationSerializer):
 
     distributions = DetailRelatedField(
         help_text=_("This publication is currently hosted as defined by these distributions."),
-        source="filedistribution_set",
+        source="file_filedistribution",
         many=True,
         read_only=True,
     )

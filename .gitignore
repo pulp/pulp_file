@@ -8,6 +8,7 @@
 *.swo
 build
 dist
+pip-wheel-metadata/
 *.egg-info
 .settings
 *.wpr
@@ -28,6 +29,9 @@ tags
 
 # Sublime
 .codeintel
+
+#VScode
+.vscode/
 
 # Rope
 .ropeproject
