@@ -74,6 +74,9 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
            second sync no extra units should be shown, since the same remote
            was synced again.
         """
+        # delete orphans to assure that no content units are present on the
+        # file system
+        delete_orphans(self.cfg)
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["_href"])
 
@@ -143,6 +146,9 @@ class LazySyncedContentAccessTestCase(unittest.TestCase):
 
     def do_test(self, policy):
         """Access lazy synced content on using content endpoint."""
+        # delete orphans to assure that no content units are present on the
+        # file system
+        delete_orphans(self.cfg)
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["_href"])
 
