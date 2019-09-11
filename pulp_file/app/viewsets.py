@@ -10,11 +10,11 @@ from pulpcore.plugin.serializers import (
 from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     BaseDistributionViewSet,
-    ContentViewSet,
     ContentFilter,
     RemoteViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
+    SingleArtifactContentUploadViewSet,
 )
 
 from . import tasks
@@ -37,7 +37,7 @@ class FileContentFilter(ContentFilter):
         fields = ["relative_path", "digest"]
 
 
-class FileContentViewSet(ContentViewSet):
+class FileContentViewSet(SingleArtifactContentUploadViewSet):
     """
     <!-- User-facing documentation, rendered as html-->
     FileContent represents a single file and its metadata, which can be added and removed from
