@@ -13,6 +13,26 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0b2 (2019-09-11)
+====================
+
+
+Improved Documentation
+----------------------
+
+- Fix the code snippet provided in the example for creating a file content
+  `#5094 <https://pulp.plan.io/issues/5094>`_
+
+
+Misc
+----
+
+- `#4681 <https://pulp.plan.io/issues/4681>`_
+
+
+----
+
+
 0.1.0b1 (2019-07-09)
 ====================
 
