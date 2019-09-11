@@ -10,7 +10,6 @@ from pulpcore.plugin.serializers import (
     PublicationSerializer,
     RemoteSerializer,
     SingleArtifactContentSerializer,
-    relative_path_validator,
 )
 
 from .models import FileContent, FileDistribution, FileRemote, FilePublication
@@ -21,19 +20,11 @@ class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSeri
     Serializer for File Content.
     """
 
-    relative_path = serializers.CharField(
-        help_text=_(
-            "Relative location of the file within the repository. " "Example: `path/to/file.txt`"
-        ),
-        validators=[relative_path_validator],
-    )
-
     def validate(self, data):
         """Validate the FileContent data."""
         data = super().validate(data)
 
-        data["digest"] = data["_artifact"].sha256
-        data["_relative_path"] = data["relative_path"]
+        data["digest"] = data["artifact"].sha256
 
         content = FileContent.objects.filter(
             digest=data["digest"], relative_path=data["relative_path"]
@@ -44,17 +35,13 @@ class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSeri
                 _(
                     "There is already a file content with relative path '{path}' and artifact "
                     "'{artifact}'."
-                ).format(path=data["relative_path"], artifact=self.initial_data["_artifact"])
+                ).format(path=data["relative_path"], artifact=self.initial_data["artifact"])
             )
 
         return data
 
     class Meta:
-        fields = (
-            tuple(set(SingleArtifactContentSerializer.Meta.fields) - {"_relative_path"})
-            + ContentChecksumSerializer.Meta.fields
-            + ("relative_path",)
-        )
+        fields = SingleArtifactContentSerializer.Meta.fields + ContentChecksumSerializer.Meta.fields
         model = FileContent
 
 

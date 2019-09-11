@@ -57,7 +57,7 @@ def gen_file_content_attrs(artifact):
     :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    return {"_artifact": artifact["_href"], "relative_path": utils.uuid4()}
+    return {"artifact": artifact["_href"], "relative_path": utils.uuid4()}
 
 
 def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
