@@ -26,7 +26,7 @@ class TestFileContentSerializer(TestCase):
     def test_valid_data(self):
         """Test that the FileContentSerializer accepts valid data."""
         data = {
-            "_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
             "relative_path": "foo",
         }
         serializer = FileContentSerializer(data=data)
@@ -35,7 +35,7 @@ class TestFileContentSerializer(TestCase):
     def test_absolute_path_data(self):
         """Test that the FileContentSerializer does not accept data."""
         data = {
-            "_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
             "relative_path": "/foo",
         }
         serializer = FileContentSerializer(data=data)
@@ -45,7 +45,7 @@ class TestFileContentSerializer(TestCase):
         """Test that the FileContentSerializer does not accept data."""
         FileContent.objects.create(relative_path="foo", digest=self.artifact.sha256)
         data = {
-            "_artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
             "relative_path": "foo",
         }
         serializer = FileContentSerializer(data=data)
