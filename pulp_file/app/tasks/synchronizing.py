@@ -4,7 +4,7 @@ import os
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressBar, Remote, Repository
+from pulpcore.plugin.models import Artifact, ProgressReport, Remote, Repository
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
     DeclarativeContent,
@@ -66,14 +66,14 @@ class FileFirstStage(Stage):
         Build and emit `DeclarativeContent` from the Manifest data.
         """
         deferred_download = self.remote.policy != Remote.IMMEDIATE  # Interpret download policy
-        with ProgressBar(message="Downloading Metadata", code="downloading.metadata") as pb:
+        with ProgressReport(message="Downloading Metadata", code="downloading.metadata") as pb:
             parsed_url = urlparse(self.remote.url)
             root_dir = os.path.dirname(parsed_url.path)
             downloader = self.remote.get_downloader(url=self.remote.url)
             result = await downloader.run()
             pb.increment()
 
-        with ProgressBar(message="Parsing Metadata Lines", code="parsing.metadata") as pb:
+        with ProgressReport(message="Parsing Metadata Lines", code="parsing.metadata") as pb:
             manifest = Manifest(result.path)
             pb.total = manifest.count()
             pb.save()
