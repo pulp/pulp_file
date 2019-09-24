@@ -28,6 +28,7 @@ class Entry:
             relative_path (str): A relative path.
             digest (str): The file sha256 hex digest.
             size (int): The file size in bytes.
+
         """
         self.relative_path = relative_path
         self.digest = digest
