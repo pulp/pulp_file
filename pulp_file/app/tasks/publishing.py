@@ -1,5 +1,4 @@
 import logging
-import os
 
 from gettext import gettext as _
 
@@ -36,12 +35,9 @@ def publish(manifest, repository_version_pk):
         with FilePublication.create(repo_version, pass_through=True) as publication:
             manifest = Manifest(manifest)
             manifest.write(populate(publication))
-            metadata = PublishedMetadata(
-                relative_path=os.path.basename(manifest.relative_path),
-                publication=publication,
-                file=File(open(manifest.relative_path, "rb")),
+            PublishedMetadata.create_from_file(
+                file=File(open(manifest.relative_path, "rb")), publication=publication
             )
-            metadata.save()
 
     log.info(_("Publication: {publication} created").format(publication=publication.pk))
 
