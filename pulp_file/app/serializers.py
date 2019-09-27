@@ -9,20 +9,20 @@ from pulpcore.plugin.serializers import (
     PublicationDistributionSerializer,
     PublicationSerializer,
     RemoteSerializer,
-    SingleArtifactContentSerializer,
+    SingleArtifactContentUploadSerializer,
 )
 
 from .models import FileContent, FileDistribution, FileRemote, FilePublication
 
 
-class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSerializer):
+class FileContentSerializer(SingleArtifactContentUploadSerializer, ContentChecksumSerializer):
     """
     Serializer for File Content.
     """
 
-    def validate(self, data):
+    def deferred_validate(self, data):
         """Validate the FileContent data."""
-        data = super().validate(data)
+        data = super().deferred_validate(data)
 
         data["digest"] = data["artifact"].sha256
 
@@ -33,15 +33,18 @@ class FileContentSerializer(SingleArtifactContentSerializer, ContentChecksumSeri
         if content.exists():
             raise serializers.ValidationError(
                 _(
-                    "There is already a file content with relative path '{path}' and artifact "
-                    "'{artifact}'."
-                ).format(path=data["relative_path"], artifact=self.initial_data["artifact"])
+                    "There is already a file content with relative path '{path}' and digest "
+                    "'{digest}'."
+                ).format(path=data["relative_path"], digest=data["digest"])
             )
 
         return data
 
     class Meta:
-        fields = SingleArtifactContentSerializer.Meta.fields + ContentChecksumSerializer.Meta.fields
+        fields = (
+            SingleArtifactContentUploadSerializer.Meta.fields
+            + ContentChecksumSerializer.Meta.fields
+        )
         model = FileContent
 
 

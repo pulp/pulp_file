@@ -5,11 +5,16 @@ import unittest
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, utils
+from pulp_smash.exceptions import TaskReportError
 from pulp_smash.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.pulp3.utils import delete_orphans
 
 from pulp_file.tests.functional.constants import FILE_CONTENT_PATH, FILE_URL
-from pulp_file.tests.functional.utils import gen_file_content_attrs, skip_if
+from pulp_file.tests.functional.utils import (
+    gen_file_content_attrs,
+    gen_file_content_upload_attrs,
+    skip_if,
+)
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -41,7 +46,9 @@ class ContentUnitTestCase(unittest.TestCase):
     def test_01_create_content_unit(self):
         """Create content unit."""
         attrs = gen_file_content_attrs(self.artifact)
-        self.content_unit.update(self.client.post(FILE_CONTENT_PATH, attrs))
+        call_report = self.client.post(FILE_CONTENT_PATH, data=attrs)
+        created_resources = next(api.poll_spawned_tasks(self.cfg, call_report))["created_resources"]
+        self.content_unit.update(self.client.get(created_resources[0]))
         for key, val in attrs.items():
             with self.subTest(key=key):
                 self.assertEqual(self.content_unit[key], val)
@@ -98,6 +105,74 @@ class ContentUnitTestCase(unittest.TestCase):
         self.assertEqual(exc.exception.response.status_code, 405)
 
 
+class ContentUnitUploadTestCase(unittest.TestCase):
+    """CRUD content unit with upload feature.
+
+    This test targets the following issue:
+
+    `Pulp #5403 <https://pulp.plan.io/issues/5403>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variable."""
+        cls.cfg = config.get_config()
+        delete_orphans(cls.cfg)
+        cls.content_unit = {}
+        cls.client = api.Client(cls.cfg, api.smart_handler)
+        cls.files = {"file": utils.http_get(FILE_URL)}
+        cls.attrs = gen_file_content_upload_attrs()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean class-wide variable."""
+        delete_orphans(cls.cfg)
+
+    def test_01_create_content_unit(self):
+        """Create content unit."""
+        content_unit = self.client.post(FILE_CONTENT_PATH, data=self.attrs, files=self.files)
+        self.content_unit.update(content_unit)
+        for key, val in self.attrs.items():
+            with self.subTest(key=key):
+                self.assertEqual(self.content_unit[key], val)
+
+    @skip_if(bool, "content_unit", False)
+    def test_02_read_content_unit(self):
+        """Read a content unit by its href."""
+        content_unit = self.client.get(self.content_unit["_href"])
+        for key, val in self.content_unit.items():
+            with self.subTest(key=key):
+                self.assertEqual(content_unit[key], val)
+
+    @skip_if(bool, "content_unit", False)
+    def test_02_read_content_units(self):
+        """Read a content unit by its relative_path."""
+        page = self.client.using_handler(api.json_handler).get(
+            FILE_CONTENT_PATH, params={"relative_path": self.content_unit["relative_path"]}
+        )
+        self.assertEqual(len(page["results"]), 1)
+        for key, val in self.content_unit.items():
+            with self.subTest(key=key):
+                self.assertEqual(page["results"][0][key], val)
+
+    @skip_if(bool, "content_unit", False)
+    def test_03_fail_duplicate_content_unit(self):
+        """Create content unit."""
+        with self.assertRaises(TaskReportError) as exc:
+            self.client.post(FILE_CONTENT_PATH, data=self.attrs, files=self.files)
+        self.assertEqual(exc.exception.task["state"], "failed")
+        error = exc.exception.task["error"]
+        for key in ("already", "relative", "path", "digest"):
+            self.assertIn(key, error["description"].lower(), error)
+
+    @skip_if(bool, "content_unit", False)
+    def test_03_duplicate_content_unit(self):
+        """Create content unit."""
+        attrs = self.attrs.copy()
+        attrs["relative_path"] = utils.uuid4()
+        self.client.post(FILE_CONTENT_PATH, data=attrs, files=self.files)
+
+
 class DuplicateContentUnit(unittest.TestCase):
     """Attempt to create a duplicate content unit.
 
@@ -134,11 +209,12 @@ class DuplicateContentUnit(unittest.TestCase):
         self.client.post(FILE_CONTENT_PATH, attrs)
 
         # using the same attrs used to create the first content unit.
-        response = api.Client(self.cfg, api.echo_handler).post(FILE_CONTENT_PATH, attrs)
-        with self.assertRaises(HTTPError):
-            response.raise_for_status()
-        for key in ("already", "content", "relative", "path", "artifact"):
-            self.assertIn(key, response.json()["non_field_errors"][0].lower(), response.json())
+        with self.assertRaises(TaskReportError) as exc:
+            self.client.post(FILE_CONTENT_PATH, attrs)
+        self.assertEqual(exc.exception.task["state"], "failed")
+        error = exc.exception.task["error"]
+        for key in ("already", "relative", "path", "digest"):
+            self.assertIn(key, error["description"].lower(), error)
 
     def test_non_error(self):
         """Create a duplicate content unit with different relative_path.
