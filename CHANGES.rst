@@ -13,6 +13,35 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0b3 (2019-09-30)
+====================
+
+
+Features
+--------
+
+- Setting `code` on `ProgressBar`.
+  `#5184 <https://pulp.plan.io/issues/5184>`_
+- Add upload functionality to the file content endpoint.
+  `#5403 <https://pulp.plan.io/issues/5403>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- Adjust FileContentSerializer to upstream change.
+  `#5428 <https://pulp.plan.io/issues/5428>`_
+
+
+Misc
+----
+
+- `#5304 <https://pulp.plan.io/issues/5304>`_, `#5444 <https://pulp.plan.io/issues/5444>`_
+
+
+----
+
+
 0.1.0b2 (2019-09-11)
 ====================
 
