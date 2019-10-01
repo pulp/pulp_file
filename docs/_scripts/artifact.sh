@@ -7,7 +7,7 @@ echo $FILE_CONTENT > test_upload.txt
 echo "Uploading the file to Pulp, creating an artifact, storing ARTIFACT_HREF."
 export ARTIFACT_HREF=$(http --form POST $BASE_ADDR/pulp/api/v3/artifacts/ \
     file@./test_upload.txt \
-    | jq -r '._href')
+    | jq -r '.pulp_href')
 
 echo "Inspecting new artifact."
 http $BASE_ADDR$ARTIFACT_HREF

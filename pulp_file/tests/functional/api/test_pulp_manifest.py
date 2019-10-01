@@ -35,22 +35,22 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
     def test_access_error(self):
         """HTTP error is not raised when accessing published data."""
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["_href"])
+        self.addCleanup(self.client.delete, repo["pulp_href"])
 
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["_href"])
+        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["_href"])
+        repo = self.client.get(repo["pulp_href"])
 
         publication = create_file_publication(self.cfg, repo)
-        self.addCleanup(self.client.delete, publication["_href"])
+        self.addCleanup(self.client.delete, publication["pulp_href"])
 
         body = gen_distribution()
-        body["publication"] = publication["_href"]
+        body["publication"] = publication["pulp_href"]
 
         distribution = self.client.post(FILE_DISTRIBUTION_PATH, body)
-        self.addCleanup(self.client.delete, distribution["_href"])
+        self.addCleanup(self.client.delete, distribution["pulp_href"])
 
         pulp_manifest = parse_pulp_manifest(
             self.download_pulp_manifest(distribution, "PULP_MANIFEST")

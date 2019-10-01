@@ -13,8 +13,8 @@ Create a Publication
 Publication GET Response (after task is complete)::
 
     {
-        "_created": "2019-05-16T19:28:42.971611Z",
-        "_href": "/pulp/api/v3/publications/file/file/7d5440f6-202c-4e71-ace2-14c534f6df9e/",
+        "pulp_created": "2019-05-16T19:28:42.971611Z",
+        "pulp_href": "/pulp/api/v3/publications/file/file/7d5440f6-202c-4e71-ace2-14c534f6df9e/",
         "_type": "file.file",
         "distributions": [],
         "publisher": null,
@@ -33,8 +33,8 @@ Create a Distribution for the Publication
 Distribution GET Response (after task is complete)::
 
     {
-        "_created": "2019-05-16T19:28:45.135868Z",
-        "_href": "/pulp/api/v3/distributions/file/file/9e9e07cb-b30f-41c5-a98b-583185f907e2/",
+        "pulp_created": "2019-05-16T19:28:45.135868Z",
+        "pulp_href": "/pulp/api/v3/distributions/file/file/9e9e07cb-b30f-41c5-a98b-583185f907e2/",
         "base_path": "foo",
         "base_url": "localhost:24816/pulp/content/foo",
         "content_guard": null,

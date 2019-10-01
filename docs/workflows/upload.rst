@@ -10,8 +10,8 @@ Upload a file to Pulp (Create an Artifact)
 Artifact GET Response::
 
     {
-        "_created": "2019-05-16T20:07:48.066089Z",
-        "_href": "/pulp/api/v3/artifacts/cff8078a-826f-4f7e-930d-422c2f134a07/",
+        "pulp_created": "2019-05-16T20:07:48.066089Z",
+        "pulp_href": "/pulp/api/v3/artifacts/cff8078a-826f-4f7e-930d-422c2f134a07/",
         "file": "artifact/97/144ab16c9aa0e6072d471d6aebe7c21083e21359137e676445bfeb4051ba25",
         "md5": "5148c996f375ed5aab94ef6993df90a0",
         "sha1": "a7bd2bcaf1d68505f3e8b2cfe3505d01b31db306",
@@ -35,8 +35,8 @@ Content GET Response::
 
     {
         "_artifact": "/pulp/api/v3/artifacts/cff8078a-826f-4f7e-930d-422c2f134a07/",
-        "_created": "2019-05-16T20:07:48.929374Z",
-        "_href": "/pulp/api/v3/content/file/files/c23def43-44bc-45f4-8a6f-0310285f5339/",
+        "pulp_created": "2019-05-16T20:07:48.929374Z",
+        "pulp_href": "/pulp/api/v3/content/file/files/c23def43-44bc-45f4-8a6f-0310285f5339/",
         "_type": "file.file",
         "md5": "3b4fd267e71a1a8e8746893fcc91e5b5",
         "relative_path": "test_upload.txt",
@@ -58,8 +58,8 @@ Create a repository ``foo``
 Repository GET Response::
 
     {
-        "_created": "2019-05-16T19:23:55.224096Z",
-        "_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
+        "pulp_created": "2019-05-16T19:23:55.224096Z",
+        "pulp_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
         "_latest_version_href": null,
         "_versions_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/",
         "description": null,
@@ -79,8 +79,8 @@ Add content to repository ``foo``
 Repository Version GET Response::
 
     {
-        "_created": "2019-05-16T20:07:50.363735Z",
-        "_href": "/pulp/api/v3/repositories/0d908664-e300-4223-869b-fc5d2cef285f/versions/1/",
+        "pulp_created": "2019-05-16T20:07:50.363735Z",
+        "pulp_href": "/pulp/api/v3/repositories/0d908664-e300-4223-869b-fc5d2cef285f/versions/1/",
         "base_version": null,
         "content_summary": {
             "added": {

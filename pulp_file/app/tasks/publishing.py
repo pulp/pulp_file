@@ -64,7 +64,7 @@ def populate(publication):
 
     for content in FileContent.objects.filter(
         pk__in=publication.repository_version.content
-    ).order_by("-_created"):
+    ).order_by("-pulp_created"):
         for content_artifact in content.contentartifact_set.all():
             artifact = find_artifact()
             entry = Entry(
