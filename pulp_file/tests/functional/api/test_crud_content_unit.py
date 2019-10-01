@@ -56,7 +56,7 @@ class ContentUnitTestCase(unittest.TestCase):
     @skip_if(bool, "content_unit", False)
     def test_02_read_content_unit(self):
         """Read a content unit by its href."""
-        content_unit = self.client.get(self.content_unit["_href"])
+        content_unit = self.client.get(self.content_unit["pulp_href"])
         for key, val in self.content_unit.items():
             with self.subTest(key=key):
                 self.assertEqual(content_unit[key], val)
@@ -80,7 +80,7 @@ class ContentUnitTestCase(unittest.TestCase):
         """
         attrs = gen_file_content_attrs(self.artifact)
         with self.assertRaises(HTTPError) as exc:
-            self.client.patch(self.content_unit["_href"], attrs)
+            self.client.patch(self.content_unit["pulp_href"], attrs)
         self.assertEqual(exc.exception.response.status_code, 405)
 
     @skip_if(bool, "content_unit", False)
@@ -91,7 +91,7 @@ class ContentUnitTestCase(unittest.TestCase):
         """
         attrs = gen_file_content_attrs(self.artifact)
         with self.assertRaises(HTTPError) as exc:
-            self.client.put(self.content_unit["_href"], attrs)
+            self.client.put(self.content_unit["pulp_href"], attrs)
         self.assertEqual(exc.exception.response.status_code, 405)
 
     @skip_if(bool, "content_unit", False)
@@ -101,7 +101,7 @@ class ContentUnitTestCase(unittest.TestCase):
         This HTTP method is not supported and a HTTP exception is expected.
         """
         with self.assertRaises(HTTPError) as exc:
-            self.client.delete(self.content_unit["_href"])
+            self.client.delete(self.content_unit["pulp_href"])
         self.assertEqual(exc.exception.response.status_code, 405)
 
 
@@ -139,7 +139,7 @@ class ContentUnitUploadTestCase(unittest.TestCase):
     @skip_if(bool, "content_unit", False)
     def test_02_read_content_unit(self):
         """Read a content unit by its href."""
-        content_unit = self.client.get(self.content_unit["_href"])
+        content_unit = self.client.get(self.content_unit["pulp_href"])
         for key, val in self.content_unit.items():
             with self.subTest(key=key):
                 self.assertEqual(content_unit[key], val)
@@ -262,14 +262,14 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
         delete_orphans(self.cfg)
 
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["_href"])
+        self.addCleanup(self.client.delete, repo["pulp_href"])
 
         files = {"file": utils.http_get(FILE_URL)}
         artifact = self.client.post(ARTIFACTS_PATH, files=files)
 
         # create first content unit.
         content_attrs = gen_file_content_attrs(artifact)
-        content_attrs["repository"] = repo["_href"]
+        content_attrs["repository"] = repo["pulp_href"]
         self.client.post(FILE_CONTENT_PATH, content_attrs)
 
         files = {"file": utils.http_get(FILE_URL2)}
@@ -277,13 +277,13 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
 
         # create second content unit.
         second_content_attrs = gen_file_content_attrs(artifact)
-        second_content_attrs["repository"] = repo["_href"]
+        second_content_attrs["repository"] = repo["pulp_href"]
         second_content_attrs["relative_path"] = content_attrs["relative_path"]
 
         self.client.post(FILE_CONTENT_PATH, second_content_attrs)
 
         repo_latest_version = self.client.get(
-            self.client.get(repo["_href"])["_latest_version_href"]
+            self.client.get(repo["pulp_href"])["_latest_version_href"]
         )
 
         self.assertEqual(repo_latest_version["content_summary"]["present"]["file.file"]["count"], 1)

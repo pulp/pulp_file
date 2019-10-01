@@ -10,8 +10,8 @@ Create a repository ``foo``
 Repository GET Response::
 
     {
-        "_created": "2019-05-16T19:23:55.224096Z",
-        "_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
+        "pulp_created": "2019-05-16T19:23:55.224096Z",
+        "pulp_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
         "_latest_version_href": null,
         "_versions_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/",
         "description": "",
@@ -31,9 +31,9 @@ Create a new remote ``bar``
 Remote GET Response::
 
     {
-        "_created": "2019-05-16T19:23:56.771326Z",
-        "_href": "/pulp/api/v3/remotes/file/file/e682efef-3974-4366-aece-a333bfaec9f3/",
-        "_last_updated": "2019-05-16T19:23:56.771341Z",
+        "pulp_created": "2019-05-16T19:23:56.771326Z",
+        "pulp_href": "/pulp/api/v3/remotes/file/file/e682efef-3974-4366-aece-a333bfaec9f3/",
+        "pulp_last_updated": "2019-05-16T19:23:56.771341Z",
         "_type": "file.file",
         "download_concurrency": 20,
         "name": "bar",
@@ -59,8 +59,8 @@ Sync repository ``foo`` using remote ``bar``
 Repository Version GET Response (when complete)::
 
     {
-        "_created": "2019-05-16T19:23:58.230896Z",
-        "_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/1/",
+        "pulp_created": "2019-05-16T19:23:58.230896Z",
+        "pulp_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/1/",
         "base_version": null,
         "content_summary": {
             "added": {

@@ -57,7 +57,7 @@ def gen_file_content_attrs(artifact):
     :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    return {"artifact": artifact["_href"], "relative_path": utils.uuid4()}
+    return {"artifact": artifact["pulp_href"], "relative_path": utils.uuid4()}
 
 
 def gen_file_content_upload_attrs():
@@ -86,9 +86,9 @@ def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
         sync(cfg, remote, repo)
     finally:
         if remote:
-            client.delete(remote["_href"])
+            client.delete(remote["pulp_href"])
         if repo:
-            client.delete(repo["_href"])
+            client.delete(repo["pulp_href"])
     return client.get(FILE_CONTENT_PATH)["results"]
 
 
@@ -105,7 +105,7 @@ def create_file_publication(cfg, repo, version_href=None):
     if version_href:
         body = {"repository_version": version_href}
     else:
-        body = {"repository": repo["_href"]}
+        body = {"repository": repo["pulp_href"]}
 
     client = api.Client(cfg, api.json_handler)
     call_report = client.post(FILE_PUBLICATION_PATH, body)

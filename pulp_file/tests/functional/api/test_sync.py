@@ -47,16 +47,16 @@ class BasicFileSyncTestCase(unittest.TestCase):
            added.
         """
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["_href"])
+        self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_file_remote()
         remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote["_href"])
+        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         # Sync the repository.
         self.assertIsNone(repo["_latest_version_href"])
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["_href"])
+        repo = self.client.get(repo["pulp_href"])
 
         self.assertIsNotNone(repo["_latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
@@ -65,7 +65,7 @@ class BasicFileSyncTestCase(unittest.TestCase):
         # Sync the repository again.
         latest_version_href = repo["_latest_version_href"]
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["_href"])
+        repo = self.client.get(repo["pulp_href"])
 
         self.assertNotEqual(latest_version_href, repo["_latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
@@ -93,10 +93,10 @@ class BasicFileSyncTestCase(unittest.TestCase):
             raise unittest.SkipTest("lsof package is not present")
 
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["_href"])
+        self.addCleanup(self.client.delete, repo["pulp_href"])
 
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["_href"])
+        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         sync(self.cfg, remote, repo)
 
@@ -135,11 +135,11 @@ class SyncInvalidTestCase(unittest.TestCase):
     def do_test(self, url):
         """Sync a repository given ``url`` on the remote."""
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["_href"])
+        self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_file_remote(url=url)
         remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote["_href"])
+        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         with self.assertRaises(TaskReportError) as context:
             sync(self.cfg, remote, repo)
@@ -170,20 +170,20 @@ class SyncDuplicateFileRepoTestCase(unittest.TestCase):
         """
         # Step 1
         repo = self.client.post(REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["_href"])
+        self.addCleanup(self.client.delete, repo["pulp_href"])
 
         # Step 2
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["_href"])
+        self.addCleanup(self.client.delete, remote["pulp_href"])
         remote2 = self.client.post(
             FILE_REMOTE_PATH, gen_file_remote(url=FILE2_FIXTURE_MANIFEST_URL)
         )
-        self.addCleanup(self.client.delete, remote2["_href"])
+        self.addCleanup(self.client.delete, remote2["pulp_href"])
         sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["_href"])
+        repo = self.client.get(repo["pulp_href"])
         self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
         self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
 
         sync(self.cfg, remote2, repo)
-        repo = self.client.get(repo["_href"])
+        repo = self.client.get(repo["pulp_href"])
         self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)

@@ -51,7 +51,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
     @skip_if(bool, "remote", False)
     def test_02_read_remote(self):
         """Read a remote by its href."""
-        remote = self.client.get(self.remote["_href"])
+        remote = self.client.get(self.remote["pulp_href"])
         for key, val in self.remote.items():
             with self.subTest(key=key):
                 self.assertEqual(remote[key], val)
@@ -69,10 +69,10 @@ class CRUDRemotesTestCase(unittest.TestCase):
     def test_03_partially_update(self):
         """Update a remote using HTTP PATCH."""
         body = _gen_verbose_remote()
-        self.client.patch(self.remote["_href"], body)
+        self.client.patch(self.remote["pulp_href"], body)
         for key in ("username", "password"):
             del body[key]
-        type(self).remote = self.client.get(self.remote["_href"])
+        type(self).remote = self.client.get(self.remote["pulp_href"])
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
@@ -81,10 +81,10 @@ class CRUDRemotesTestCase(unittest.TestCase):
     def test_04_fully_update(self):
         """Update a remote using HTTP PUT."""
         body = _gen_verbose_remote()
-        self.client.put(self.remote["_href"], body)
+        self.client.put(self.remote["pulp_href"], body)
         for key in ("username", "password"):
             del body[key]
-        type(self).remote = self.client.get(self.remote["_href"])
+        type(self).remote = self.client.get(self.remote["pulp_href"])
         for key, val in body.items():
             with self.subTest(key=key):
                 self.assertEqual(self.remote[key], val)
@@ -92,9 +92,9 @@ class CRUDRemotesTestCase(unittest.TestCase):
     @skip_if(bool, "remote", False)
     def test_05_delete(self):
         """Delete a remote."""
-        self.client.delete(self.remote["_href"])
+        self.client.delete(self.remote["pulp_href"])
         with self.assertRaises(HTTPError):
-            self.client.get(self.remote["_href"])
+            self.client.get(self.remote["pulp_href"])
 
     def test_negative_create_file_remote_with_invalid_parameter(self):
         """Attempt to create file remote passing invalid parameter.
@@ -166,7 +166,7 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Clean class-wide variable."""
-        cls.client.delete(cls.remote["_href"])
+        cls.client.delete(cls.remote["pulp_href"])
 
     def test_01_no_defined_policy(self):
         """Verify the default policy `immediate`.
@@ -188,8 +188,8 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
         changed_policy = choice(
             [item for item in ON_DEMAND_DOWNLOAD_POLICIES if item != "immediate"]
         )
-        self.client.patch(self.remote["_href"], {"policy": changed_policy})
-        self.remote.update(self.client.get(self.remote["_href"]))
+        self.client.patch(self.remote["pulp_href"], {"policy": changed_policy})
+        self.remote.update(self.client.get(self.remote["pulp_href"]))
         self.assertEqual(self.remote["policy"], changed_policy, self.remote)
 
     @skip_if(bool, "remote", False)
@@ -200,10 +200,10 @@ class RemoteDownloadPolicyTestCase(unittest.TestCase):
         Attempt to update the remote policy to an invalid value.
         Verify the policy remains the same.
         """
-        remote = self.client.get(self.remote["_href"])
+        remote = self.client.get(self.remote["pulp_href"])
         with self.assertRaises(HTTPError):
-            self.client.patch(self.remote["_href"], {"policy": utils.uuid4()})
-        self.remote.update(self.client.get(self.remote["_href"]))
+            self.client.patch(self.remote["pulp_href"], {"policy": utils.uuid4()})
+        self.remote.update(self.client.get(self.remote["pulp_href"]))
         self.assertEqual(remote["policy"], self.remote["policy"], self.remote)
 
 
