@@ -25,7 +25,7 @@ class Entry:
         Create a new Entry.
 
         Args:
-            relative_path (str): A relative path.
+            relative_path (str): The relative path.
             digest (str): The file sha256 hex digest.
             size (int): The file size in bytes.
         """
