@@ -1,6 +1,8 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
+additional_plugins:
+  - pulp-certguard
 all: False
 bootstrap: False
 docs: False
@@ -26,6 +28,7 @@ deploy_to_pypi: True
 docs_test: True
 pydocstyle: True
 test_bindings: True
+test_performance: True
 plugin_app_label: file
 travis_notifications:
   irc:
