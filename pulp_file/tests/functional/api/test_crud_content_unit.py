@@ -283,7 +283,7 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
         self.client.post(FILE_CONTENT_PATH, second_content_attrs)
 
         repo_latest_version = self.client.get(
-            self.client.get(repo["pulp_href"])["_latest_version_href"]
+            self.client.get(repo["pulp_href"])["latest_version_href"]
         )
 
         self.assertEqual(repo_latest_version["content_summary"]["present"]["file.file"]["count"], 1)
