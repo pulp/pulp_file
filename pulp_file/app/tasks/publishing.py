@@ -62,13 +62,9 @@ def populate(publication):
             _artifact = RemoteArtifact.objects.filter(content_artifact=content_artifact).first()
         return _artifact
 
-    paths = set()
     for content in FileContent.objects.filter(
         pk__in=publication.repository_version.content
     ).order_by("-_created"):
-        if content.relative_path in paths:
-            continue
-        paths.add(content.relative_path)
         for content_artifact in content.contentartifact_set.all():
             artifact = find_artifact()
             entry = Entry(

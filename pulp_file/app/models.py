@@ -21,6 +21,7 @@ class FileContent(Content):
     """
 
     TYPE = "file"
+    repo_key = ("relative_path",)
 
     relative_path = models.CharField(max_length=255, null=False)
     digest = models.CharField(max_length=64, null=False)
