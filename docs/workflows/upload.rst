@@ -59,8 +59,8 @@ Repository GET Response::
     {
         "pulp_created": "2019-05-16T19:23:55.224096Z",
         "pulp_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/",
-        "_latest_version_href": null,
-        "_versions_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/",
+        "latest_version_href": null,
+        "versions_href": "/pulp/api/v3/repositories/680f18e7-0513-461f-b067-436b03285e4c/versions/",
         "description": null,
         "name": "foo"
     }
