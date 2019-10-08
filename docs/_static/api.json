@@ -921,12 +921,6 @@
                     "format": "date-time",
                     "readOnly": true
                 },
-                "_type": {
-                    "title": " type",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
-                },
                 "artifact": {
                     "title": "Artifact",
                     "description": "Artifact file representing the physical content",
@@ -1082,12 +1076,6 @@
                     "format": "date-time",
                     "readOnly": true
                 },
-                "_type": {
-                    "title": " type",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
-                },
                 "publisher": {
                     "title": "Publisher",
                     "type": "string",
@@ -1144,12 +1132,6 @@
                     "type": "string",
                     "format": "date-time",
                     "readOnly": true
-                },
-                "_type": {
-                    "title": " type",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
                 },
                 "name": {
                     "title": "Name",

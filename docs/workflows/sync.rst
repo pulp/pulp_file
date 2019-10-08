@@ -34,7 +34,6 @@ Remote GET Response::
         "pulp_created": "2019-05-16T19:23:56.771326Z",
         "pulp_href": "/pulp/api/v3/remotes/file/file/e682efef-3974-4366-aece-a333bfaec9f3/",
         "pulp_last_updated": "2019-05-16T19:23:56.771341Z",
-        "_type": "file.file",
         "download_concurrency": 20,
         "name": "bar",
         "policy": "immediate",

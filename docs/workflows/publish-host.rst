@@ -15,7 +15,6 @@ Publication GET Response (after task is complete)::
     {
         "pulp_created": "2019-05-16T19:28:42.971611Z",
         "pulp_href": "/pulp/api/v3/publications/file/file/7d5440f6-202c-4e71-ace2-14c534f6df9e/",
-        "_type": "file.file",
         "distributions": [],
         "publisher": null,
         "repository": "http://localhost:24817/pulp/api/v3/repositories/%3CRepository:%20foo%3E/",

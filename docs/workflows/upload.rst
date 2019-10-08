@@ -37,7 +37,6 @@ Content GET Response::
         "_artifact": "/pulp/api/v3/artifacts/cff8078a-826f-4f7e-930d-422c2f134a07/",
         "pulp_created": "2019-05-16T20:07:48.929374Z",
         "pulp_href": "/pulp/api/v3/content/file/files/c23def43-44bc-45f4-8a6f-0310285f5339/",
-        "_type": "file.file",
         "md5": "3b4fd267e71a1a8e8746893fcc91e5b5",
         "relative_path": "test_upload.txt",
         "sha1": "6fd76062f3680be44de9ed6a4b80bdce512dd620",
