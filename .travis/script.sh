@@ -86,8 +86,7 @@ export CMD_STDIN_PREFIX="sudo kubectl exec -i $PULP_API_POD --"
 #alias pytest="$CMD_PREFIX pytest"
 
 # Run unit tests.
-$CMD_PREFIX bash -c "sed \"s/'USER': 'pulp'/'USER': 'postgres'/g\" /etc/pulp/settings.py > unit-test.py"
-$CMD_PREFIX bash -c "PULP_SETTINGS=/unit-test.py django-admin test  --noinput /usr/local/lib/python${TRAVIS_PYTHON_VERSION}/site-packages/pulp_file/tests/unit/"
+$CMD_PREFIX bash -c "PULP_DATABASES__default__USER=postgres django-admin test --noinput /usr/local/lib/python${TRAVIS_PYTHON_VERSION}/site-packages/pulp_file/tests/unit/"
 
 # Note: This function is in the process of being merged into after_failure
 show_logs_and_return_non_zero() {
