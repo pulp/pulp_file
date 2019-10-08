@@ -6,10 +6,10 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, utils
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.constants import ARTIFACTS_PATH
-from pulp_smash.pulp3.utils import delete_orphans
+from pulp_smash.pulp3.constants import ARTIFACTS_PATH, REPO_PATH
+from pulp_smash.pulp3.utils import delete_orphans, gen_repo
 
-from pulp_file.tests.functional.constants import FILE_CONTENT_PATH, FILE_URL
+from pulp_file.tests.functional.constants import FILE_CONTENT_PATH, FILE_URL, FILE_URL2
 from pulp_file.tests.functional.utils import (
     gen_file_content_attrs,
     gen_file_content_upload_attrs,
@@ -233,3 +233,57 @@ class DuplicateContentUnit(unittest.TestCase):
 
         # create second content unit.
         self.client.post(FILE_CONTENT_PATH, gen_file_content_attrs(artifact))
+
+
+class DuplicateRelativePathsInRepo(unittest.TestCase):
+    """Associate different Content units with the same ``relative_path`` in one RepositoryVersion.
+
+    This test targets the following issues:
+
+    *  `Pulp #4028 <https://pulp.plan.io/issue/4028>`_
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Clean created resources."""
+        delete_orphans(cls.cfg)
+
+    def test_second_unit_replaces_the_first(self):
+        """Create a duplicate content unit with different ``artifacts`` and same ``relative_path``.
+
+        Artifacts are unique by ``relative_path`` and ``file``.
+        """
+        delete_orphans(self.cfg)
+
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo["_href"])
+
+        files = {"file": utils.http_get(FILE_URL)}
+        artifact = self.client.post(ARTIFACTS_PATH, files=files)
+
+        # create first content unit.
+        content_attrs = gen_file_content_attrs(artifact)
+        content_attrs["repository"] = repo["_href"]
+        self.client.post(FILE_CONTENT_PATH, content_attrs)
+
+        files = {"file": utils.http_get(FILE_URL2)}
+        artifact = self.client.post(ARTIFACTS_PATH, files=files)
+
+        # create second content unit.
+        second_content_attrs = gen_file_content_attrs(artifact)
+        second_content_attrs["repository"] = repo["_href"]
+        second_content_attrs["relative_path"] = content_attrs["relative_path"]
+
+        self.client.post(FILE_CONTENT_PATH, second_content_attrs)
+
+        repo_latest_version = self.client.get(
+            self.client.get(repo["_href"])["_latest_version_href"]
+        )
+
+        self.assertEqual(repo_latest_version["content_summary"]["present"]["file.file"]["count"], 1)

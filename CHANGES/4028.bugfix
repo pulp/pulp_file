@@ -1,0 +1,2 @@
+New RepositoryVersions will remove an existing unit at the same `relative_path`. This is true for
+both `sync` and `upload`, and is per Repository.
