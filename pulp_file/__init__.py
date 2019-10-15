@@ -1,3 +1,3 @@
-__version__ = "0.1.0b4"
+__version__ = "0.1.0b5.dev"
 
 default_app_config = "pulp_file.app.PulpFilePluginAppConfig"
