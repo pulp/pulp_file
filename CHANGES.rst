@@ -13,6 +13,39 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0b4 (2019-10-15)
+====================
+
+
+Bugfixes
+--------
+
+- New RepositoryVersions will remove an existing unit at the same `relative_path`. This is true for
+  both `sync` and `upload`, and is per Repository.
+  `#4028 <https://pulp.plan.io/issues/4028>`_
+
+
+Improved Documentation
+----------------------
+
+- Change the prefix of Pulp services from pulp-* to pulpcore-*
+  `#4554 <https://pulp.plan.io/issues/4554>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- Change `_id`, `_created`, `_last_updated`, `_href` to `pulp_id`, `pulp_created`, `pulp_last_updated`, `pulp_href`
+  `#5457 <https://pulp.plan.io/issues/5457>`_
+- Remove "_" from `_versions_href`, `_latest_version_href`
+  `#5548 <https://pulp.plan.io/issues/5548>`_
+- Removing base field: `_type` .
+  `#5550 <https://pulp.plan.io/issues/5550>`_
+
+
+----
+
+
 0.1.0b3 (2019-09-30)
 ====================
 
