@@ -17,8 +17,8 @@ Publication GET Response (after task is complete)::
         "pulp_href": "/pulp/api/v3/publications/file/file/7d5440f6-202c-4e71-ace2-14c534f6df9e/",
         "distributions": [],
         "publisher": null,
-        "repository": "http://localhost:24817/pulp/api/v3/repositories/%3CRepository:%20foo%3E/",
-        "repository_version": "/pulp/api/v3/repositories/e242c556-bf46-4330-9c81-0be5432e55ba/versions/1/"
+        "repository": "/pulp/api/v3/repositories/e242c556-bf46-4330-9c81-0be5432e55ba/file/file/",
+        "repository_version": "/pulp/api/v3/repositories/e242c556-bf46-4330-9c81-0be5432e55ba/file/file/versions/1/"
     }
 
 Reference: `File Publication Usage <../restapi.html#tag/publications>`_

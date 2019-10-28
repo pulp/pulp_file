@@ -243,7 +243,7 @@ class ManifestCleaner:
 
 def create_repo(name):
     """Create repository"""
-    return interact.post("/pulp/api/v3/repositories/", data={"name": name})["pulp_href"]
+    return interact.post("/pulp/api/v3/repositories/file/file/", data={"name": name})["pulp_href"]
 
 
 def create_remote(name, url):
@@ -255,7 +255,7 @@ def create_remote(name, url):
 
 def start_sync(repo, remote):
     """Start sync of the remote into the repository, return task"""
-    return interact.post(remote + "sync/", data={"repository": repo, "mirror": False})["task"]
+    return interact.post(repo + "sync/", data={"remote": remote, "mirror": False})["task"]
 
 
 def create_publication(repo):
@@ -285,9 +285,9 @@ def inspect_content(href):
 
 def create_repo_version_base_version(repo, ver):
     """Create repository version based on different existing version"""
-    return interact.post(repo + "versions/", data={"base_version": ver})["task"]
+    return interact.post(repo + "modify/", data={"base_version": ver})["task"]
 
 
 def create_repo_version_add_content_units(repo, hrefs):
     """Create repository version based on list of hrefs"""
-    return interact.post(repo + "versions/", data={"add_content_units": hrefs})["task"]
+    return interact.post(repo + "modify/", data={"add_content_units": hrefs})["task"]

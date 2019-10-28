@@ -10,14 +10,16 @@ from pulpcore.plugin.serializers import (
     PublicationDistributionSerializer,
     PublicationSerializer,
     RemoteSerializer,
+    RepositorySerializer,
     SingleArtifactContentUploadSerializer,
 )
 
-from .models import (
+from pulp_file.app.models import (
     FileContent,
     FileDistribution,
     FileFileSystemExporter,
     FileRemote,
+    FileRepository,
     FilePublication,
 )
 
@@ -53,6 +55,16 @@ class FileContentSerializer(SingleArtifactContentUploadSerializer, ContentChecks
             + ContentChecksumSerializer.Meta.fields
         )
         model = FileContent
+
+
+class FileRepositorySerializer(RepositorySerializer):
+    """
+    Serializer for File Repositories.
+    """
+
+    class Meta:
+        fields = RepositorySerializer.Meta.fields
+        model = FileRepository
 
 
 class FileRemoteSerializer(RemoteSerializer):

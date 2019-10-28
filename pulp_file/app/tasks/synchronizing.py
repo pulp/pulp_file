@@ -4,7 +4,7 @@ import os
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressReport, Remote, Repository
+from pulpcore.plugin.models import Artifact, ProgressReport, Remote
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
     DeclarativeContent,
@@ -12,7 +12,7 @@ from pulpcore.plugin.stages import (
     Stage,
 )
 
-from pulp_file.app.models import FileContent, FileRemote
+from pulp_file.app.models import FileContent, FileRemote, FileRepository
 from pulp_file.manifest import Manifest
 
 
@@ -35,7 +35,7 @@ def synchronize(remote_pk, repository_pk, mirror):
 
     """
     remote = FileRemote.objects.get(pk=remote_pk)
-    repository = Repository.objects.get(pk=repository_pk)
+    repository = FileRepository.objects.get(pk=repository_pk)
 
     if not remote.url:
         raise ValueError(_("A remote must have a url specified to synchronize."))

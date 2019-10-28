@@ -8,6 +8,7 @@ from pulpcore.plugin.models import (
     Publication,
     PublicationDistribution,
     Remote,
+    Repository,
 )
 
 
@@ -35,6 +36,18 @@ class FileContent(Content):
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
         unique_together = ("relative_path", "digest")
+
+
+class FileRepository(Repository):
+    """
+    The "file" repository type.
+    """
+
+    TYPE = "file"
+    CONTENT_TYPES = [FileContent]
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
 
 
 class FileRemote(Remote):
