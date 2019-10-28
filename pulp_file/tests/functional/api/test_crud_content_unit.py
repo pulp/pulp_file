@@ -6,10 +6,16 @@ from requests.exceptions import HTTPError
 
 from pulp_smash import api, config, utils
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.constants import ARTIFACTS_PATH, REPO_PATH
+from pulp_smash.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.pulp3.utils import delete_orphans, gen_repo
 
-from pulp_file.tests.functional.constants import FILE_CONTENT_PATH, FILE_URL, FILE_URL2
+from pulp_file.tests.functional.constants import (
+    FILE_REPO_PATH,
+    FILE_CONTENT_PATH,
+    FILE_URL,
+    FILE_URL2,
+)
+
 from pulp_file.tests.functional.utils import (
     gen_file_content_attrs,
     gen_file_content_upload_attrs,
@@ -261,7 +267,7 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
         """
         delete_orphans(self.cfg)
 
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         files = {"file": utils.http_get(FILE_URL)}

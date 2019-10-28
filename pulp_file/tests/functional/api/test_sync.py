@@ -4,7 +4,7 @@ import unittest
 
 from pulp_smash import api, cli, config
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.constants import MEDIA_PATH, REPO_PATH
+from pulp_smash.pulp3.constants import MEDIA_PATH
 from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary, sync
 
 from pulp_file.tests.functional.constants import (
@@ -12,6 +12,7 @@ from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_SUMMARY,
     FILE_INVALID_MANIFEST_URL,
     FILE_REMOTE_PATH,
+    FILE_REPO_PATH,
 )
 from pulp_file.tests.functional.utils import gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -46,7 +47,7 @@ class BasicFileSyncTestCase(unittest.TestCase):
         8. Assert that the same number of are present and that no units were
            added.
         """
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_file_remote()
@@ -92,7 +93,7 @@ class BasicFileSyncTestCase(unittest.TestCase):
         if cli_client.run(("which", "lsof")).returncode != 0:
             raise unittest.SkipTest("lsof package is not present")
 
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
@@ -134,7 +135,7 @@ class SyncInvalidTestCase(unittest.TestCase):
 
     def do_test(self, url):
         """Sync a repository given ``url`` on the remote."""
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_file_remote(url=url)
@@ -169,7 +170,7 @@ class SyncDuplicateFileRepoTestCase(unittest.TestCase):
         `Pulp #4738 <https://pulp.plan.io/issues/4738>`_
         """
         # Step 1
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         # Step 2

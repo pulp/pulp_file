@@ -5,13 +5,13 @@ import unittest
 from urllib.parse import urljoin
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import gen_distribution, gen_repo, sync
 
 from pulp_file.tests.functional.constants import (
     FILE_DISTRIBUTION_PATH,
     FILE_FIXTURE_COUNT,
     FILE_REMOTE_PATH,
+    FILE_REPO_PATH,
 )
 from pulp_file.tests.functional.utils import create_file_publication, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -33,7 +33,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
 
     def test_access_error(self):
         """HTTP error is not raised when accessing published data."""
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
