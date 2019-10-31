@@ -2,7 +2,6 @@
 """Tests whether Pulp handles PULP_MANIFEST information."""
 import csv
 import unittest
-from functools import reduce
 from urllib.parse import urljoin
 
 from pulp_smash import api, config
@@ -60,14 +59,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
 
     def download_pulp_manifest(self, distribution, unit_path):
         """Download pulp manifest."""
-        unit_url = reduce(
-            urljoin,
-            (
-                self.cfg.get_content_host_base_url(),
-                "//" + distribution["base_url"] + "/",
-                unit_path,
-            ),
-        )
+        unit_url = urljoin(distribution["base_url"] + "/", unit_path)
         return self.client.using_handler(api.safe_handler).get(unit_url)
 
 

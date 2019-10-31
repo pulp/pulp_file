@@ -26,7 +26,7 @@ plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
 pulp_settings:
-  content_host: $(hostname):24816
+  content_origin: http://$(hostname):24816
 pydocstyle: true
 pypi_username: pulp
 test: false
