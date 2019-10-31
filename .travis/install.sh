@@ -104,8 +104,7 @@ spec:
     username: pulp
     password: pulp
     admin_password: pulp
-  pulp_settings:
-     content_host: $(hostname):24816
+
 CRYAML
 
 # Install k3s, lightweight Kubernetes
