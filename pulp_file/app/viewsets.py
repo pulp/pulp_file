@@ -5,12 +5,14 @@ from rest_framework.decorators import action
 
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
+    PublicationExportSerializer,
     RepositorySyncURLSerializer,
 )
 from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     BaseDistributionViewSet,
     ContentFilter,
+    FileSystemExporterViewSet,
     RemoteViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
@@ -18,10 +20,17 @@ from pulpcore.plugin.viewsets import (
 )
 
 from . import tasks
-from .models import FileContent, FileDistribution, FileRemote, FilePublication
+from .models import (
+    FileContent,
+    FileDistribution,
+    FileFileSystemExporter,
+    FileRemote,
+    FilePublication,
+)
 from .serializers import (
     FileContentSerializer,
     FileDistributionSerializer,
+    FileFileSystemExporterSerializer,
     FileRemoteSerializer,
     FilePublicationSerializer,
 )
@@ -138,3 +147,35 @@ class FileDistributionViewSet(BaseDistributionViewSet):
     endpoint_name = "file"
     queryset = FileDistribution.objects.all()
     serializer_class = FileDistributionSerializer
+
+
+class FileFileSystemExporterViewSet(FileSystemExporterViewSet):
+    """
+    FileSystemExporters export content from a publication to a path on the file system.
+    """
+
+    endpoint_name = "file"
+    queryset = FileFileSystemExporter.objects.all()
+    serializer_class = FileFileSystemExporterSerializer
+
+    @swagger_auto_schema(
+        operation_description="Trigger an asynchronous task to export a file publication.",
+        responses={202: AsyncOperationResponseSerializer},
+    )
+    @action(detail=True, methods=["post"], serializer_class=PublicationExportSerializer)
+    def export(self, request, pk):
+        """
+        Export a publication to the file system.
+
+        The ``repository`` field has to be provided.
+        """
+        exporter = self.get_object()
+        serializer = PublicationExportSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        publication = serializer.validated_data.get("publication")
+        result = enqueue_with_reservation(
+            tasks.file_export,
+            [publication, exporter],
+            kwargs={"exporter_pk": exporter.pk, "publication_pk": publication.pk},
+        )
+        return OperationPostponedResponse(result, request)
