@@ -10,6 +10,7 @@ from pulpcore.plugin.models import (
     Remote,
     Repository,
 )
+from pulpcore.plugin.repo_version_utils import remove_duplicates
 
 
 log = getLogger(__name__)
@@ -28,7 +29,7 @@ class FileContent(Content):
     """
 
     TYPE = "file"
-    repo_key = ("relative_path",)
+    repo_key_fields = ("relative_path",)
 
     relative_path = models.TextField(null=False)
     digest = models.CharField(max_length=64, null=False)
@@ -47,6 +48,17 @@ class FileRepository(Repository):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+
+    def finalize_new_version(self, new_version):
+        """
+        Ensure no added content contains the same `relative_path` as other content.
+
+        Args:
+            new_version (pulpcore.app.models.RepositoryVersion): The incomplete RepositoryVersion to
+                finalize.
+
+        """
+        remove_duplicates(new_version)
 
 
 class FileRemote(Remote):

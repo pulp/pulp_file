@@ -1,8 +1,7 @@
-from gettext import gettext as _  # noqa
-
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
+from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     PublicationExportSerializer,
@@ -63,7 +62,7 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
     filterset_class = FileContentFilter
 
 
-class FileRepositoryViewSet(RepositoryViewSet):
+class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     """
     <!-- User-facing documentation, rendered as html-->
     FileRepository represents a single file repository, to which content can be synced, added,
