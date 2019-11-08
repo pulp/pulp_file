@@ -6,7 +6,6 @@ import time
 from .utils import measureit, urljoin
 
 BASE_ADDR = "http://localhost:24817"
-CONTENT_ADDR = "http://localhost:24816"
 
 
 def get(url, params={}):
@@ -45,7 +44,7 @@ def post(url, data):
 def download(base_url, file_name, file_size):
     """Downlad file with expected size and drop it."""
     with tempfile.TemporaryFile() as downloaded_file:
-        full_url = urljoin(CONTENT_ADDR, base_url, file_name)
+        full_url = urljoin(base_url, file_name)
         duration, response = measureit(requests.get, full_url)
         response.raise_for_status()
         downloaded_file.write(response.content)
