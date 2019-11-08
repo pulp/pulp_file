@@ -17,6 +17,7 @@ from pulpcore.plugin.viewsets import (
     PublicationViewSet,
     RemoteViewSet,
     RepositoryViewSet,
+    RepositoryVersionViewSet,
     SingleArtifactContentUploadViewSet,
 )
 
@@ -97,6 +98,15 @@ class FileRepositoryViewSet(RepositoryViewSet):
             kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
         )
         return OperationPostponedResponse(result, request)
+
+
+class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
+    """
+    <!-- User-facing documentation, rendered as html-->
+    FileRepositoryVersion represents a single file repository version.
+    """
+
+    parent_viewset = FileRepositoryViewSet
 
 
 class FileRemoteViewSet(RemoteViewSet):
