@@ -13,9 +13,11 @@ from pulpcore.plugin.viewsets import (
     BaseDistributionViewSet,
     ContentFilter,
     FileSystemExporterViewSet,
-    RemoteViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
+    RemoteViewSet,
+    RepositoryViewSet,
+    RepositoryVersionViewSet,
     SingleArtifactContentUploadViewSet,
 )
 
@@ -25,6 +27,7 @@ from .models import (
     FileDistribution,
     FileFileSystemExporter,
     FileRemote,
+    FileRepository,
     FilePublication,
 )
 from .serializers import (
@@ -32,6 +35,7 @@ from .serializers import (
     FileDistributionSerializer,
     FileFileSystemExporterSerializer,
     FileRemoteSerializer,
+    FileRepositorySerializer,
     FilePublicationSerializer,
 )
 
@@ -59,17 +63,16 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
     filterset_class = FileContentFilter
 
 
-class FileRemoteViewSet(RemoteViewSet):
+class FileRepositoryViewSet(RepositoryViewSet):
     """
     <!-- User-facing documentation, rendered as html-->
-    FileRemote represents an external source of <a href="#operation/content_file_files_list">File
-    Content</a>.  The target url of a FileRemote must contain a file manifest, which contains the
-    metadata for all files at the source.
+    FileRepository represents a single file repository, to which content can be synced, added,
+    or removed.
     """
 
     endpoint_name = "file"
-    queryset = FileRemote.objects.all()
-    serializer_class = FileRemoteSerializer
+    queryset = FileRepository.objects.all()
+    serializer_class = FileRepositorySerializer
 
     @swagger_auto_schema(
         operation_description="Trigger an asynchronous task to sync file content.",
@@ -82,10 +85,12 @@ class FileRemoteViewSet(RemoteViewSet):
 
         The ``repository`` field has to be provided.
         """
-        remote = self.get_object()
         serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        repository = serializer.validated_data.get("repository")
+
+        repository = self.get_object()
+        remote = serializer.validated_data.get("remote")
+
         mirror = serializer.validated_data.get("mirror", False)
         result = enqueue_with_reservation(
             tasks.synchronize,
@@ -95,14 +100,36 @@ class FileRemoteViewSet(RemoteViewSet):
         return OperationPostponedResponse(result, request)
 
 
+class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
+    """
+    <!-- User-facing documentation, rendered as html-->
+    FileRepositoryVersion represents a single file repository version.
+    """
+
+    parent_viewset = FileRepositoryViewSet
+
+
+class FileRemoteViewSet(RemoteViewSet):
+    """
+    <!-- User-facing documentation, rendered as html-->
+    FileRemote represents an external source of <a href="#operation/content_file_files_list">File
+    Content</a>.  The target url of a FileRemote must contain a file manifest, which contains the
+    metadata for all files at the source.
+    """
+
+    endpoint_name = "file"
+    queryset = FileRemote.objects.all()
+    serializer_class = FileRemoteSerializer
+
+
 class FilePublicationViewSet(PublicationViewSet):
     """
     <!-- User-facing documentation, rendered as html-->
     A FilePublication contains metadata about all the <a
     href="#operation/content_file_files_list">File Content</a> in a particular <a
-    href="https://docs.pulpproject.org/en/3.0/nightly/restapi.html#operation/repositories_versions_list">Repository
-    Version.</a> Once a FilePublication has been created, it can be hosted using the <a
-    href="#operation/distributions_file_file_list">File Distribution API.</a>
+    href="href="#tag/repositories:-file-versions">File Repository Version.</a>
+    Once a FilePublication has been created, it can be hosted using the
+    <a href="#operation/distributions_file_file_list">File Distribution API.</a>
     """
 
     endpoint_name = "file"
