@@ -43,7 +43,7 @@ class BasicFileSyncTestCase(unittest.TestCase):
         5. Assert that the correct number of units were added and are present
            in the repo.
         6. Sync the remote one more time.
-        7. Assert that repository version is different from the previous one.
+        7. Assert that repository version is the same as the previous one.
         8. Assert that the same number of are present and that no units were
            added.
         """
@@ -68,9 +68,8 @@ class BasicFileSyncTestCase(unittest.TestCase):
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo["pulp_href"])
 
-        self.assertNotEqual(latest_version_href, repo["latest_version_href"])
+        self.assertEqual(latest_version_href, repo["latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
-        self.assertDictEqual(get_added_content_summary(repo), {})
 
     def test_file_decriptors(self):
         """Test whether file descriptors are closed properly.
