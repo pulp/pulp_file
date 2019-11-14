@@ -13,6 +13,40 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0rc1 (2019-11-14)
+=====================
+
+
+Features
+--------
+
+- Sync, Upload, and Modify now have added content with the same `relative_path` as existing content
+  will remove the existing content.
+  `#3541 <https://pulp.plan.io/issues/3541>`_
+- Change `relative_path` from `CharField` to `TextField`
+  `#4544 <https://pulp.plan.io/issues/4544>`_
+- Added support for exporting file publications to the filesystem.
+  `#5086 <https://pulp.plan.io/issues/5086>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- Sync is no longer available at the {remote_href}/sync/ repository={repo_href} endpoint. Instead, use POST {repo_href}/sync/ remote={remote_href}.
+
+  Creating / listing / editing / deleting file repositories is now performed on /pulp/api/v3/file/file/ instead of /pulp/api/v3/repositories/. Only file content can be present in a file repository, and only a file repository can hold file content.
+  `#5625 <https://pulp.plan.io/issues/5625>`_
+
+
+Misc
+----
+
+- `#3308 <https://pulp.plan.io/issues/3308>`_, `#5458 <https://pulp.plan.io/issues/5458>`_, `#5580 <https://pulp.plan.io/issues/5580>`_, `#5629 <https://pulp.plan.io/issues/5629>`_
+
+
+----
+
+
 0.1.0b4 (2019-10-15)
 ====================
 
