@@ -15,7 +15,7 @@ setup(
     license="GPLv2+",
     author="Pulp Project Developers",
     author_email="pulp-dev@redhat.com",
-    url="http://www.pulpproject.org/",
+    url="https://pulpproject.org/",
     python_requires=">=3.6",
     install_requires=requirements,
     include_package_data=True,
