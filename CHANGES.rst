@@ -13,6 +13,26 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0rc2 (2019-12-03)
+=====================
+
+
+Features
+--------
+
+- Add checking for path overlapping for RepositoryVersions and Publications.
+  `#5559 <https://pulp.plan.io/issues/5559>`_
+
+
+Misc
+----
+
+- `#5757 <https://pulp.plan.io/issues/5757>`_
+
+
+----
+
+
 0.1.0rc1 (2019-11-14)
 =====================
 
