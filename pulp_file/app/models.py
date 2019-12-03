@@ -10,7 +10,8 @@ from pulpcore.plugin.models import (
     Remote,
     Repository,
 )
-from pulpcore.plugin.repo_version_utils import remove_duplicates
+from pulpcore.plugin.publication_utils import validate_publication_paths
+from pulpcore.plugin.repo_version_utils import remove_duplicates, validate_version_paths
 
 
 log = getLogger(__name__)
@@ -51,7 +52,10 @@ class FileRepository(Repository):
 
     def finalize_new_version(self, new_version):
         """
-        Ensure no added content contains the same `relative_path` as other content.
+        Finalize and validate the new repository version.
+
+        Ensure no added content contains the same `relative_path` as other content and relative
+        paths don't overlap.
 
         Args:
             new_version (pulpcore.app.models.RepositoryVersion): The incomplete RepositoryVersion to
@@ -59,6 +63,7 @@ class FileRepository(Repository):
 
         """
         remove_duplicates(new_version)
+        validate_version_paths(new_version)
 
 
 class FileRemote(Remote):
@@ -81,6 +86,12 @@ class FilePublication(Publication):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+
+    def finalize_new_publication(self):
+        """
+        Validate that artifact paths don't overlap.
+        """
+        validate_publication_paths(self)
 
 
 class FileDistribution(PublicationDistribution):
