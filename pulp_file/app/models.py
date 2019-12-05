@@ -46,6 +46,7 @@ class FileRepository(Repository):
     """
 
     TYPE = "file"
+    CONTENT_TYPES = [FileContent]
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
