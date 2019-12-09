@@ -19,6 +19,17 @@ from pulp_file.manifest import Manifest
 log = logging.getLogger(__name__)
 
 
+def grouper(iterable, n):
+    """
+    Generic batcher over iterators.
+
+    Works over all iterators, not just querysets.
+
+    """
+    for i in range(0, len(iterable), n):
+        yield iterable[i : i + n]
+
+
 def synchronize(remote_pk, repository_pk, mirror):
     """
     Sync content from the remote repository.
@@ -78,18 +89,20 @@ class FileFirstStage(Stage):
             pb.total = manifest.count()
             pb.save()
 
-            for entry in manifest.read():
-                path = os.path.join(root_dir, entry.relative_path)
-                url = urlunparse(parsed_url._replace(path=path))
-                file = FileContent(relative_path=entry.relative_path, digest=entry.digest)
-                artifact = Artifact(size=entry.size, sha256=entry.digest)
-                da = DeclarativeArtifact(
-                    artifact=artifact,
-                    url=url,
-                    relative_path=entry.relative_path,
-                    remote=self.remote,
-                    deferred_download=deferred_download,
-                )
-                dc = DeclarativeContent(content=file, d_artifacts=[da])
-                pb.increment()
-                await self.put(dc)
+            for batch in grouper(manifest.read(), 100):
+                pb.increase_by(len(batch))
+
+                for entry in batch:
+                    path = os.path.join(root_dir, entry.relative_path)
+                    url = urlunparse(parsed_url._replace(path=path))
+                    file = FileContent(relative_path=entry.relative_path, digest=entry.digest)
+                    artifact = Artifact(size=entry.size, sha256=entry.digest)
+                    da = DeclarativeArtifact(
+                        artifact=artifact,
+                        url=url,
+                        relative_path=entry.relative_path,
+                        remote=self.remote,
+                        deferred_download=deferred_download,
+                    )
+                    dc = DeclarativeContent(content=file, d_artifacts=[da])
+                    await self.put(dc)
