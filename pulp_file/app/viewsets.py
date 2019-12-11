@@ -178,6 +178,9 @@ class FileDistributionViewSet(BaseDistributionViewSet):
 class FileFileSystemExporterViewSet(FileSystemExporterViewSet):
     """
     FileSystemExporters export content from a publication to a path on the file system.
+
+    WARNING: This feature is provided as a tech preview and may change in the future. Backwards
+    compatibility is not guaranteed.
     """
 
     endpoint_name = "file"
