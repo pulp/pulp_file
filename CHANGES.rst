@@ -13,6 +13,26 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.0 (2019-12-12)
+==================
+
+
+Improved Documentation
+----------------------
+
+- Labeling Exporters as tech preview.
+  `#5563 <https://pulp.plan.io/issues/5563>`_
+
+
+Misc
+----
+
+- `#5701 <https://pulp.plan.io/issues/5701>`_
+
+
+----
+
+
 0.1.0rc2 (2019-12-03)
 =====================
 
