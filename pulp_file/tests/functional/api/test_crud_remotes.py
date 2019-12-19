@@ -41,7 +41,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
         """Try to create a second remote with an identical name.
 
         See: `Pulp Smash #1055
-        <https://github.com/PulpQE/pulp-smash/issues/1055>`_.
+        <https://github.com/pulp/pulp-smash/issues/1055>`_.
         """
         body = gen_file_remote()
         body["name"] = self.remote["name"]
@@ -103,7 +103,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
 
         This test targets the following issue:
 
-        * `Pulp Smash #1085 <https://github.com/PulpQE/pulp-smash/issues/1085>`_
+        * `Pulp Smash #1085 <https://github.com/pulp/pulp-smash/issues/1085>`_
         """
         response = api.Client(self.cfg, api.echo_handler).post(
             FILE_REMOTE_PATH, gen_file_remote(foo="bar")
@@ -121,7 +121,7 @@ class CreateRemoteNoURLTestCase(unittest.TestCase):
         This test targets the following issues:
 
         * `Pulp #3395 <https://pulp.plan.io/issues/3395>`_
-        * `Pulp Smash #984 <https://github.com/PulpQE/pulp-smash/issues/984>`_
+        * `Pulp Smash #984 <https://github.com/pulp/pulp-smash/issues/984>`_
         """
         body = gen_file_remote()
         del body["url"]
