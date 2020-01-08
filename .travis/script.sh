@@ -106,7 +106,7 @@ set -u
 
 if [[ "$TEST" == "performance" ]]; then
   echo "--- Performance Tests ---"
-  if [[ -z "$PERFORMANCE_TEST" ]]; then
+  if [[ -z ${PERFORMANCE_TEST+x} ]]; then
     pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance || show_logs_and_return_non_zero
   else
     pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance.test_$PERFORMANCE_TEST || show_logs_and_return_non_zero
