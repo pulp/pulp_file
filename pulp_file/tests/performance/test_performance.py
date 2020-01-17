@@ -7,7 +7,7 @@ import datetime
 import multiprocessing
 
 from collections import namedtuple
-from django.test import TestCase
+from unittest import TestCase
 
 from .pulpperf import interact
 from .pulpperf import utils
