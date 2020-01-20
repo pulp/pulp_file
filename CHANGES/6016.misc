@@ -1,0 +1,1 @@
+Fixtures for performance tests are now served by an NGINX server running in a separate container
