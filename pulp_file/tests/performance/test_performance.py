@@ -1,22 +1,14 @@
-import os
-import glob
-import errno
-import csv
-import hashlib
 import datetime
 import multiprocessing
 
 from collections import namedtuple
 from unittest import TestCase
 
+from pulp_file.tests.functional.constants import FILE_PERFORMANCE_FIXTURE_URL
+
 from .pulpperf import interact
 from .pulpperf import utils
 from .pulpperf import reporting
-
-DIRECTORY = "/usr/local/lib/pulp/lib/python3.7/site-packages/rest_framework/static/fixtures/"
-FILES_COUNT = 100000
-FILE_PREFIX = "a"
-FILE_SIZE = 50
 
 Args = namedtuple("Arguments", "limit processes repositories")
 
@@ -32,20 +24,9 @@ class PerformanceTestCase(TestCase):
     def setUpClass(cls):
         """Create class-wide variables."""
         super().setUpClass()
-        manifests_dumper = ManifestsDumper(DIRECTORY, FILES_COUNT, FILE_PREFIX, FILE_SIZE)
-        manifests_dumper.generate_manifests()
 
-        cls.args = Args(
-            limit=100, processes=1, repositories=["http://localhost:80/static/fixtures/"]
-        )
+        cls.args = Args(limit=100, processes=1, repositories=[FILE_PERFORMANCE_FIXTURE_URL])
         cls.data = []
-
-    @classmethod
-    def tearDownClass(cls):
-        """Clean-up generated manifests."""
-        super().tearDownClass()
-        manifests_cleaner = ManifestCleaner(DIRECTORY)
-        manifests_cleaner.clean_manifests()
 
     def test_01_sync_repository(self):
         """Measure time of synchronization."""
@@ -176,69 +157,6 @@ class PerformanceTestCase(TestCase):
 
         results = interact.wait_for_tasks(tasks)
         reporting.report_tasks_stats("Version clone with add_content_units tasks", results)
-
-
-class ManifestsDumper:
-    """A handler which generates manifests in a current file system."""
-
-    def __init__(self, directory, files_count, file_prefix, file_size):
-        """Initialize all variables necessary for dumping manifest files."""
-        self._directory = directory
-        self._files_count = files_count
-        self._file_prefix = file_prefix
-        self._file_size = file_size
-
-    def generate_manifests(self):
-        """Generate manifests within specified directory."""
-        pulp_manifests = []
-        for i in range(FILES_COUNT):
-            pulp_manifests.append(self._create_file(i))
-        self._dump_manifest(pulp_manifests)
-
-    def _create_file(self, file_id, file_suffix=".iso"):
-        """Create a file with defined size and return info needed for PULP_MANIFEST."""
-        file_name = self._file_prefix + str(file_id) + file_suffix
-        file_path = os.path.join(self._directory, file_name)
-        file_content = self._file_prefix + str(file_id).zfill(
-            self._file_size - len(self._file_prefix)
-        )
-        file_content = file_content.encode()
-
-        assert len(file_content) == self._file_size
-
-        try:
-            os.makedirs(os.path.dirname(file_path))
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-
-        with open(file_path, "wb") as fp:
-            fp.write(file_content)
-        file_checksum = hashlib.sha256(file_content).hexdigest()
-
-        return file_name, file_checksum, self._file_size
-
-    def _dump_manifest(self, content):
-        """Dump a PULP_MANIFEST file into a specified directory."""
-        manifest_path = os.path.join(self._directory, "PULP_MANIFEST")
-        with open(manifest_path, mode="w") as fp:
-            writer = csv.writer(fp, delimiter=",", quoting=csv.QUOTE_NONE)
-            for row in content:
-                writer.writerow(row)
-
-
-class ManifestCleaner:
-    """A class responsible for cleaning all generated resources within the file system."""
-
-    def __init__(self, directory):
-        """Store a path to a directory which is going to be cleaned."""
-        self._directory = directory
-
-    def clean_manifests(self):
-        """Remove all manifests within the directory."""
-        files_pathname = os.path.join(self._directory, "*")
-        for file_path in glob.glob(files_pathname):
-            os.remove(file_path)
 
 
 def create_repo(name):

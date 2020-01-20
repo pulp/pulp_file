@@ -67,3 +67,6 @@ FILE_LARGE_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "file-large/")
 
 FILE_LARGE_FIXTURE_MANIFEST_URL = urljoin(FILE_LARGE_FIXTURE_URL, "PULP_MANIFEST")
 """The URL to a file repository manifest."""
+
+FILE_PERFORMANCE_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "file-perf/")
+"""The URL to a file repository used for performance tests."""

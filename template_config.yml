@@ -33,7 +33,7 @@ pypi_username: pulp
 stable_branch: '0.1'
 test: false
 test_bindings: true
-test_performance: false
+test_performance: true
 travis_notifications:
   irc:
     channels:
