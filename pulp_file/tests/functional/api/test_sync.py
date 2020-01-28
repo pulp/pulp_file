@@ -2,30 +2,37 @@
 """Tests that sync file plugin repositories."""
 import unittest
 
-from pulp_smash import api, cli, config
-from pulp_smash.exceptions import TaskReportError
+from pulp_smash import cli, config
 from pulp_smash.pulp3.constants import MEDIA_PATH
-from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary, sync
+from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary
 
 from pulp_file.tests.functional.constants import (
     FILE2_FIXTURE_MANIFEST_URL,
     FILE_FIXTURE_SUMMARY,
     FILE_INVALID_MANIFEST_URL,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
 )
-from pulp_file.tests.functional.utils import gen_file_remote
+from pulp_file.tests.functional.utils import (
+    gen_file_client,
+    gen_file_remote,
+    monitor_task,
+)
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
+from pulpcore.client.pulp_file import (
+    RepositoriesFileApi,
+    RepositorySyncURL,
+    RemotesFileApi,
+)
 
-class BasicFileSyncTestCase(unittest.TestCase):
+
+class BasicSyncTestCase(unittest.TestCase):
     """Sync a repository with the file plugin."""
 
     @classmethod
     def setUpClass(cls):
         """Create class-wide variables."""
         cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.client = gen_file_client()
 
     def test_sync(self):
         """Sync repositories with the file plugin.
@@ -43,33 +50,40 @@ class BasicFileSyncTestCase(unittest.TestCase):
         5. Assert that the correct number of units were added and are present
            in the repo.
         6. Sync the remote one more time.
-        7. Assert that repository version is the same as the previous one.
+        7. Assert that repository version is different from the previous one.
         8. Assert that the same number of are present and that no units were
            added.
         """
-        repo = self.client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
+        repo_api = RepositoriesFileApi(self.client)
+        remote_api = RemotesFileApi(self.client)
+
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
         body = gen_file_remote()
-        remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote["pulp_href"])
+        remote = remote_api.create(body)
+        self.addCleanup(remote_api.delete, remote.pulp_href)
 
         # Sync the repository.
-        self.assertEqual(repo["latest_version_href"], f"{repo['pulp_href']}versions/0/")
-        sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["pulp_href"])
+        self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+        repo = repo_api.read(repo.pulp_href)
 
-        self.assertIsNotNone(repo["latest_version_href"])
-        self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
-        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        self.assertIsNotNone(repo.latest_version_href)
+        self.assertDictEqual(get_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)
+        self.assertDictEqual(get_added_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)
 
         # Sync the repository again.
-        latest_version_href = repo["latest_version_href"]
-        sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["pulp_href"])
+        latest_version_href = repo.latest_version_href
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+        repo = repo_api.read(repo.pulp_href)
 
-        self.assertEqual(latest_version_href, repo["latest_version_href"])
-        self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        self.assertEqual(latest_version_href, repo.latest_version_href)
+        self.assertDictEqual(get_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)
 
     def test_file_decriptors(self):
         """Test whether file descriptors are closed properly.
@@ -92,13 +106,17 @@ class BasicFileSyncTestCase(unittest.TestCase):
         if cli_client.run(("which", "lsof")).returncode != 0:
             raise unittest.SkipTest("lsof package is not present")
 
-        repo = self.client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
+        repo_api = RepositoriesFileApi(self.client)
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
-        remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
+        remote_api = RemotesFileApi(self.client)
+        remote = remote_api.create(gen_file_remote())
+        self.addCleanup(remote_api.delete, remote.pulp_href)
 
-        sync(self.cfg, remote, repo)
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
 
         cmd = "lsof -t +D {}".format(MEDIA_PATH).split()
         response = cli_client.run(cmd).stdout
@@ -111,16 +129,15 @@ class SyncInvalidTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.client = gen_file_client()
 
     def test_invalid_url(self):
         """Sync a repository using a remote url that does not exist.
 
         Test that we get a task failure. See :meth:`do_test`.
         """
-        context = self.do_test("http://i-am-an-invalid-url.com/invalid/")
-        self.assertIsNotNone(context.exception.task["error"]["description"])
+        task = self.do_test("http://i-am-an-invalid-url.com/invalid/")
+        self.assertIsNotNone(task["error"]["description"])
 
     def test_invalid_file(self):
         """Sync a repository using an invalid file repository.
@@ -128,22 +145,25 @@ class SyncInvalidTestCase(unittest.TestCase):
         Assert that an exception is raised, and that error message has
         keywords related to the reason of the failure. See :meth:`do_test`.
         """
-        context = self.do_test(FILE_INVALID_MANIFEST_URL)
+        task = self.do_test(FILE_INVALID_MANIFEST_URL)
         for key in ("checksum", "failed"):
-            self.assertIn(key, context.exception.task["error"]["description"])
+            self.assertIn(key, task["error"]["description"])
 
     def do_test(self, url):
         """Sync a repository given ``url`` on the remote."""
-        repo = self.client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
+        repo_api = RepositoriesFileApi(self.client)
+        remote_api = RemotesFileApi(self.client)
+
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
         body = gen_file_remote(url=url)
-        remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote["pulp_href"])
+        remote = remote_api.create(body)
+        self.addCleanup(remote_api.delete, remote.pulp_href)
 
-        with self.assertRaises(TaskReportError) as context:
-            sync(self.cfg, remote, repo)
-        return context
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        return monitor_task(sync_response.task)
 
 
 class SyncDuplicateFileRepoTestCase(unittest.TestCase):
@@ -152,8 +172,7 @@ class SyncDuplicateFileRepoTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.json_handler)
+        cls.client = gen_file_client()
 
     def test_duplicate_file_sync(self):
         """Sync a repository with remotes containing same file names.
@@ -168,22 +187,28 @@ class SyncDuplicateFileRepoTestCase(unittest.TestCase):
 
         `Pulp #4738 <https://pulp.plan.io/issues/4738>`_
         """
+        repo_api = RepositoriesFileApi(self.client)
+        remote_api = RemotesFileApi(self.client)
+
         # Step 1
-        repo = self.client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
         # Step 2
-        remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
-        remote2 = self.client.post(
-            FILE_REMOTE_PATH, gen_file_remote(url=FILE2_FIXTURE_MANIFEST_URL)
-        )
-        self.addCleanup(self.client.delete, remote2["pulp_href"])
-        sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["pulp_href"])
-        self.assertDictEqual(get_content_summary(repo), FILE_FIXTURE_SUMMARY)
-        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        remote = remote_api.create(gen_file_remote())
+        self.addCleanup(remote_api.delete, remote.pulp_href)
+        remote2 = remote_api.create(gen_file_remote(url=FILE2_FIXTURE_MANIFEST_URL))
 
-        sync(self.cfg, remote2, repo)
-        repo = self.client.get(repo["pulp_href"])
-        self.assertDictEqual(get_added_content_summary(repo), FILE_FIXTURE_SUMMARY)
+        self.addCleanup(remote_api.delete, remote2.pulp_href)
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+        repo = repo_api.read(repo.pulp_href)
+        self.assertDictEqual(get_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)
+        self.assertDictEqual(get_added_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)
+
+        repository_sync_data = RepositorySyncURL(remote=remote2.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+        repo = repo_api.read(repo.pulp_href)
+        self.assertDictEqual(get_added_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)

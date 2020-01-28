@@ -5,22 +5,27 @@ import unittest
 from random import choice
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, utils
+from pulp_smash import config, utils
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
-from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo, sync
+from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo
 
-from pulp_file.tests.functional.constants import (
-    FILE_DISTRIBUTION_PATH,
-    FILE_FIXTURE_URL,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-)
+from pulp_file.tests.functional.constants import FILE_FIXTURE_URL
 from pulp_file.tests.functional.utils import (
-    create_file_publication,
-    gen_file_remote,
+    gen_file_client,
     get_file_content_paths,
+    gen_file_remote,
+    monitor_task,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
+
+from pulpcore.client.pulp_file import (
+    DistributionsFileApi,
+    PublicationsFileApi,
+    RepositoriesFileApi,
+    RepositorySyncURL,
+    RemotesFileApi,
+    FileFilePublication,
+)
 
 
 class DownloadContentTestCase(unittest.TestCase):
@@ -73,36 +78,48 @@ class DownloadContentTestCase(unittest.TestCase):
         * `Pulp Smash #872 <https://github.com/pulp/pulp-smash/issues/872>`_
         """
         cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+        client = gen_file_client()
+        repo_api = RepositoriesFileApi(client)
+        remote_api = RemotesFileApi(client)
+        publications = PublicationsFileApi(client)
+        distributions = DistributionsFileApi(client)
 
-        repo = client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo["pulp_href"])
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
-        body = gen_file_remote(policy=policy)
-        remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
+        body = gen_file_remote()
+        remote = remote_api.create(body)
+        self.addCleanup(remote_api.delete, remote.pulp_href)
 
-        sync(cfg, remote, repo)
-        repo = client.get(repo["pulp_href"])
+        # Sync a Repository
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+        repo = repo_api.read(repo.pulp_href)
 
         # Create a publication.
-        publication = create_file_publication(cfg, repo)
-        self.addCleanup(client.delete, publication["pulp_href"])
+        publish_data = FileFilePublication(repository=repo.pulp_href)
+        publish_response = publications.create(publish_data)
+        created_resources = monitor_task(publish_response.task)
+        publication_href = created_resources[0]
+        self.addCleanup(publications.delete, publication_href)
 
         # Create a distribution.
         body = gen_distribution()
-        body["publication"] = publication["pulp_href"]
-        distribution = client.using_handler(api.task_handler).post(FILE_DISTRIBUTION_PATH, body)
-        self.addCleanup(client.delete, distribution["pulp_href"])
+        body["publication"] = publication_href
+        distribution_response = distributions.create(body)
+        created_resources = monitor_task(distribution_response.task)
+        distribution = distributions.read(created_resources[0])
+        self.addCleanup(distributions.delete, distribution.pulp_href)
 
         # Pick a file, and download it from both Pulp Fixtures…
-        unit_path = choice(get_file_content_paths(repo))
+        unit_path = choice(get_file_content_paths(repo.to_dict()))
         fixtures_hash = hashlib.sha256(
             utils.http_get(urljoin(FILE_FIXTURE_URL, unit_path))
         ).hexdigest()
 
         # …and Pulp.
-        content = download_content_unit(cfg, distribution, unit_path)
+        content = download_content_unit(cfg, distribution.to_dict(), unit_path)
         pulp_hash = hashlib.sha256(content).hexdigest()
 
         self.assertEqual(fixtures_hash, pulp_hash)
