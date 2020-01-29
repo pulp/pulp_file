@@ -3,19 +3,25 @@
 import unittest
 from random import choice
 
-from requests.exceptions import HTTPError
+from pulp_smash import config
+from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, modify_repo
 
-from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, sync, modify_repo
-
-from pulp_file.tests.functional.constants import (
-    FILE_CONTENT_NAME,
-    FILE_PUBLICATION_PATH,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
+from pulp_file.tests.functional.constants import FILE_CONTENT_NAME
+from pulp_file.tests.functional.utils import (
+    gen_file_client,
+    gen_file_remote,
+    monitor_task,
 )
-from pulp_file.tests.functional.utils import create_file_publication, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
+
+from pulpcore.client.pulp_file import (
+    PublicationsFileApi,
+    RepositoriesFileApi,
+    RepositorySyncURL,
+    RemotesFileApi,
+    FileFilePublication,
+)
+from pulpcore.client.pulp_file.exceptions import ApiException
 
 
 class PublishAnyRepoVersionTestCase(unittest.TestCase):
@@ -41,37 +47,51 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
            repository versions to be published at same time.
         """
         cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+        client = gen_file_client()
+        repo_api = RepositoriesFileApi(client)
+        remote_api = RemotesFileApi(client)
+        publications = PublicationsFileApi(client)
 
         body = gen_file_remote()
-        remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
+        remote = remote_api.create(body)
+        self.addCleanup(remote_api.delete, remote.pulp_href)
 
-        repo = client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo["pulp_href"])
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
-        sync(cfg, remote, repo)
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
 
         # Step 1
-        repo = client.get(repo["pulp_href"])
-        for file_content in get_content(repo)[FILE_CONTENT_NAME]:
-            modify_repo(cfg, repo, remove_units=[file_content])
-        version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo))
+        repo = repo_api.read(repo.pulp_href)
+        for file_content in get_content(repo.to_dict())[FILE_CONTENT_NAME]:
+            modify_repo(cfg, repo.to_dict(), remove_units=[file_content])
+        version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo.to_dict()))
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
-        publication = create_file_publication(cfg, repo)
+        publish_data = FileFilePublication(repository=repo.pulp_href)
+        publish_response = publications.create(publish_data)
+        created_resources = monitor_task(publish_response.task)
+        publication_href = created_resources[0]
+        self.addCleanup(publications.delete, publication_href)
+        publication = publications.read(publication_href)
 
         # Step 3
-        self.assertEqual(publication["repository_version"], version_hrefs[-1])
+        self.assertEqual(publication.repository_version, version_hrefs[-1])
 
         # Step 4
-        publication = create_file_publication(cfg, repo, non_latest)
+        publish_data = FileFilePublication(repository_version=non_latest)
+        publish_response = publications.create(publish_data)
+        created_resources = monitor_task(publish_response.task)
+        publication_href = created_resources[0]
+        publication = publications.read(publication_href)
 
         # Step 5
-        self.assertEqual(publication["repository_version"], non_latest)
+        self.assertEqual(publication.repository_version, non_latest)
 
         # Step 6
-        with self.assertRaises(HTTPError):
-            body = {"repository": repo["pulp_href"], "repository_version": non_latest}
-            client.post(FILE_PUBLICATION_PATH, body)
+        with self.assertRaises(ApiException):
+            body = {"repository": repo.pulp_href, "repository_version": non_latest}
+            publications.create(body)

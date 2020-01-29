@@ -1,20 +1,28 @@
 # coding=utf-8
 """Tests whether Pulp handles PULP_MANIFEST information."""
 import csv
+import requests
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_distribution, gen_repo, sync
+from pulp_smash.pulp3.utils import gen_distribution, gen_repo
 
-from pulp_file.tests.functional.constants import (
-    FILE_DISTRIBUTION_PATH,
-    FILE_FIXTURE_COUNT,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
+from pulp_file.tests.functional.constants import FILE_FIXTURE_COUNT
+from pulp_file.tests.functional.utils import (
+    gen_file_client,
+    gen_file_remote,
+    monitor_task,
 )
-from pulp_file.tests.functional.utils import create_file_publication, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
+
+from pulpcore.client.pulp_file import (
+    DistributionsFileApi,
+    PublicationsFileApi,
+    RepositoriesFileApi,
+    RepositorySyncURL,
+    RemotesFileApi,
+    FileFilePublication,
+)
 
 
 class AccessingPublishedDataTestCase(unittest.TestCase):
@@ -28,31 +36,42 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Define class-wide variable."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg)
+        cls.client = gen_file_client()
 
     def test_access_error(self):
         """HTTP error is not raised when accessing published data."""
-        repo = self.client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
+        repo_api = RepositoriesFileApi(self.client)
+        remote_api = RemotesFileApi(self.client)
+        publications = PublicationsFileApi(self.client)
+        distributions = DistributionsFileApi(self.client)
 
-        remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
 
-        sync(self.cfg, remote, repo)
-        repo = self.client.get(repo["pulp_href"])
+        remote = remote_api.create(gen_file_remote())
+        self.addCleanup(remote_api.delete, remote.pulp_href)
 
-        publication = create_file_publication(self.cfg, repo)
-        self.addCleanup(self.client.delete, publication["pulp_href"])
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+        repo = repo_api.read(repo.pulp_href)
+
+        publish_data = FileFilePublication(repository=repo.pulp_href)
+        publish_response = publications.create(publish_data)
+        created_resources = monitor_task(publish_response.task)
+        publication_href = created_resources[0]
+        self.addCleanup(publications.delete, publication_href)
 
         body = gen_distribution()
-        body["publication"] = publication["pulp_href"]
+        body["publication"] = publication_href
 
-        distribution = self.client.post(FILE_DISTRIBUTION_PATH, body)
-        self.addCleanup(self.client.delete, distribution["pulp_href"])
+        distribution_response = distributions.create(body)
+        created_resources = monitor_task(distribution_response.task)
+        distribution = distributions.read(created_resources[0])
+        self.addCleanup(distributions.delete, distribution.pulp_href)
 
         pulp_manifest = parse_pulp_manifest(
-            self.download_pulp_manifest(distribution, "PULP_MANIFEST")
+            self.download_pulp_manifest(distribution.to_dict(), "PULP_MANIFEST")
         )
 
         self.assertEqual(len(pulp_manifest), FILE_FIXTURE_COUNT, pulp_manifest)
@@ -60,7 +79,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
     def download_pulp_manifest(self, distribution, unit_path):
         """Download pulp manifest."""
         unit_url = urljoin(distribution["base_url"] + "/", unit_path)
-        return self.client.using_handler(api.safe_handler).get(unit_url)
+        return requests.get(unit_url)
 
 
 def parse_pulp_manifest(pulp_manifest):
