@@ -2,14 +2,14 @@
 
 from setuptools import setup, find_packages
 
-requirements = ["pulpcore>=3.0.0,<3.1"]
+requirements = ["pulpcore>=3.0,<3.2"]
 
 with open("README.rst") as f:
     long_description = f.read()
 
 setup(
     name="pulp-file",
-    version="0.1.1.dev",
+    version="0.1.1",
     description="File plugin for the Pulp Project",
     long_description=long_description,
     license="GPLv2+",
@@ -23,7 +23,7 @@ setup(
     classifiers=(
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: POSIX :: Linux",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Framework :: Django",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",

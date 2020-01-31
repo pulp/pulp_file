@@ -32,26 +32,25 @@ if [ "$TEST" = 'docs' ]; then
   exit
 fi
 
-if [ "$TEST" = 'bindings' ]; then
-  COMMIT_MSG=$(git log --format=%B --no-merges -1)
-  export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
+cd ../pulp-openapi-generator
+COMMIT_MSG=$(git log --format=%B --no-merges -1)
+export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
 
-  cd ..
-  git clone https://github.com/pulp/pulp-openapi-generator.git
-  cd pulp-openapi-generator
+if [ -n "$PULP_BINDINGS_PR_NUMBER" ]; then
+  git fetch origin pull/$PULP_BINDINGS_PR_NUMBER/head:$PULP_BINDINGS_PR_NUMBER
+  git checkout $PULP_BINDINGS_PR_NUMBER
+fi
 
-  if [ -n "$PULP_BINDINGS_PR_NUMBER" ]; then
-    git fetch origin +refs/pull/$PULP_BINDINGS_PR_NUMBER/merge
-    git checkout FETCH_HEAD
-  fi
-
-  ./generate.sh pulpcore python
-  pip install ./pulpcore-client
+./generate.sh pulpcore python
+pip install ./pulpcore-client
   ./generate.sh pulp_file python
   pip install ./pulp_file-client
 
-  python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
+cd $TRAVIS_BUILD_DIR
 
+if [ "$TEST" = 'bindings' ]; then
+  python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
+  cd ../pulp-openapi-generator
   if [ ! -f $TRAVIS_BUILD_DIR/.travis/test_bindings.rb ]
   then
     exit
@@ -109,7 +108,11 @@ set -u
 
 if [[ "$TEST" == "performance" ]]; then
   echo "--- Performance Tests ---"
-  pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance || show_logs_and_return_non_zero
+  if [[ -z ${PERFORMANCE_TEST+x} ]]; then
+    pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance || show_logs_and_return_non_zero
+  else
+    pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance.test_$PERFORMANCE_TEST || show_logs_and_return_non_zero
+  fi
   exit
 fi
 

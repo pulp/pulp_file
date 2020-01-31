@@ -2,7 +2,7 @@
 """Constants for Pulp File plugin tests."""
 from urllib.parse import urljoin
 
-from pulp_smash.constants import PULP_FIXTURES_BASE_URL
+from pulp_smash import config
 from pulp_smash.pulp3.constants import (
     API_DOCS_PATH,
     BASE_DISTRIBUTION_PATH,
@@ -11,6 +11,9 @@ from pulp_smash.pulp3.constants import (
     BASE_CONTENT_PATH,
     BASE_REPO_PATH,
 )
+
+
+PULP_FIXTURES_BASE_URL = config.get_config().get_fixtures_url()
 
 API_SCHEMA_PATH = urljoin(API_DOCS_PATH, ".json?format=openapi")
 
@@ -64,3 +67,6 @@ FILE_LARGE_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "file-large/")
 
 FILE_LARGE_FIXTURE_MANIFEST_URL = urljoin(FILE_LARGE_FIXTURE_URL, "PULP_MANIFEST")
 """The URL to a file repository manifest."""
+
+FILE_PERFORMANCE_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "file-perf/")
+"""The URL to a file repository used for performance tests."""

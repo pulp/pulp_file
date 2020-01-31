@@ -1,7 +1,10 @@
 # coding=utf-8
 """Utilities for tests for the file plugin."""
 from functools import partial
+import requests
 from unittest import SkipTest
+from time import sleep
+from tempfile import NamedTemporaryFile
 
 from pulp_smash import api, selectors, utils
 from pulp_smash.pulp3.utils import (
@@ -20,13 +23,33 @@ from pulp_file.tests.functional.constants import (
     FILE_PUBLICATION_PATH,
     FILE_REMOTE_PATH,
     FILE_REPO_PATH,
+    FILE_URL,
 )
+
+from pulpcore.client.pulpcore import (
+    ApiClient as CoreApiClient,
+    ArtifactsApi,
+    Configuration,
+    TasksApi,
+)
+from pulpcore.client.pulp_file import ApiClient as FileApiClient
+
+
+configuration = Configuration()
+configuration.username = "admin"
+configuration.password = "password"
+configuration.safe_chars_for_path_param = "/"
 
 
 def set_up_module():
     """Skip tests Pulp 3 isn't under test or if pulp-file isn't installed."""
     require_pulp_3(SkipTest)
     require_pulp_plugins({"pulp_file"}, SkipTest)
+
+
+def gen_file_client():
+    """Return an OBJECT for file client."""
+    return FileApiClient(configuration)
 
 
 def gen_file_remote(url=FILE_FIXTURE_MANIFEST_URL, **kwargs):
@@ -74,7 +97,7 @@ def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
 
     :param pulp_smash.config.PulpSmashConfig: Information about a Pulp application.
     :param url: The URL to a file repository's ``PULP_MANIFEST`` file. Defaults to
-        :data:`pulp_smash.constants.FILE_FIXTURE_URL` + ``PULP_MANIFEST``.
+        :data:`pulp_smash.constants.FILE_FIXTURE_MANIFEST_URL` + ``PULP_MANIFEST``.
     :returns: A list of dicts, where each dict describes one file content in Pulp.
     """
     client = api.Client(cfg, api.json_handler)
@@ -119,3 +142,41 @@ skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-nam
 :func:`pulp_smash.selectors.skip_if` is test runner agnostic. This function is
 identical, except that ``exc`` has been set to ``unittest.SkipTest``.
 """
+
+core_client = CoreApiClient(configuration)
+tasks = TasksApi(core_client)
+
+
+def gen_artifact(url=FILE_URL, file=None):
+    """Creates an artifact."""
+    if not file:
+        response = requests.get(url)
+        with NamedTemporaryFile() as temp_file:
+            temp_file.write(response.content)
+            return ArtifactsApi(core_client).create(file=temp_file.name).to_dict()
+
+    return ArtifactsApi(core_client).create(file=file).to_dict()
+
+
+def monitor_task(task_href):
+    """Polls the Task API until the task is in a completed state.
+
+    Prints the task details and a success or failure message. Exits on failure.
+
+    Args:
+        task_href(str): The href of the task to monitor
+
+    Returns:
+        list[str]: List of hrefs that identify resource created by the task
+
+    """
+    completed = ["completed", "failed", "canceled"]
+    task = tasks.read(task_href)
+    while task.state not in completed:
+        sleep(2)
+        task = tasks.read(task_href)
+
+    if task.state == "completed":
+        return task.created_resources
+
+    return task.to_dict()

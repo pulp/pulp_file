@@ -6,12 +6,14 @@ all: false
 black: true
 bootstrap: false
 check_commit_message: true
+cherry_pick_automation: true
 coverage: false
 deploy_client_to_pypi: true
 deploy_client_to_rubygems: true
 deploy_daily_client_to_pypi: true
 deploy_daily_client_to_rubygems: true
 deploy_to_pypi: true
+docker_fixtures: true
 docs: false
 docs_test: true
 plugin_app_label: file
@@ -25,8 +27,10 @@ plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
 pulp_settings: null
+pulpcore_branch: master
 pydocstyle: true
 pypi_username: pulp
+stable_branch: '0.1'
 test: false
 test_bindings: true
 test_performance: true
