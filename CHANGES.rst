@@ -13,6 +13,26 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.1 (2020-01-31)
+==================
+
+
+Bugfixes
+--------
+
+- Adjusts setup.py classifier to show 0.1.0 as Production/Stable.
+  `#5897 <https://pulp.plan.io/issues/5897>`_
+
+
+Misc
+----
+
+- `#5867 <https://pulp.plan.io/issues/5867>`_, `#5872 <https://pulp.plan.io/issues/5872>`_, `#5967 <https://pulp.plan.io/issues/5967>`_, `#6016 <https://pulp.plan.io/issues/6016>`_
+
+
+----
+
+
 0.1.0 (2019-12-12)
 ==================
 
