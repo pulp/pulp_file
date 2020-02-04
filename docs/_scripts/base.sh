@@ -8,6 +8,9 @@ export CONTENT_ADDR=${CONTENT_ADDR:-http://localhost:24816}
 # Necessary for `django-admin`
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 
+# Setting httpie env
+export HTTPIE_CONFIG_DIR=$TRAVIS_BUILD_DIR/.github
+
 # Poll a Pulp task until it is finished.
 wait_until_task_finished() {
     echo "Polling the task until it has reached a final state."

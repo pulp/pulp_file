@@ -1,0 +1,78 @@
+name: Pulp CI
+on: [push, pull_request]
+jobs:
+  pulp:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - TEST: pulp
+          - TEST: docs
+          - TEST: bindings
+    services:
+      postgres:
+        image: postgres:9.6
+      redis:
+        image: redis
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.7'
+      - name: Install httpie
+        run: |
+          echo ::group::HTTPIE
+          sudo apt-get update -yq
+          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
+          echo ::endgroup::
+      - name: Check commit message
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
+        run: |
+          echo ::group::REQUESTS
+          pip install requests
+          echo ::endgroup::
+          for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
+          do
+            python .travis/validate_commit_message.py $sha
+            VALUE=$?
+            if [ "$VALUE" -gt 0 ]; then
+              exit $VALUE
+            fi
+          done
+        shell: bash
+      - name: Travis to GH actions
+        run: |
+          find ./ -type f -exec sed -i -e 's/TRAVIS_BUILD_DIR/GITHUB_WORKSPACE/g' {} \;
+          find ./ -type f -exec sed -i -e 's/TRAVIS_EVENT_TYPE/GITHUB_EVENT_NAME/g' {} \;
+          find ./ -type f -exec sed -i -e 's/TRAVIS_BRANCH/\{GITHUB_REF##*\/\}/g' {} \;
+          find ./ -type f -exec sed -i -e 's/TRAVIS_PULL_REQUEST_BRANCH/\{GITHUB_REF##*\/\}/g' {} \;
+          find ./ -type f -exec sed -i -e 's/TRAVIS_TAG/\{GITHUB_REF##*\/\}/g' {} \;
+          find ./ -type f -exec sed -i -e 's/-z "$TRAVIS_TAG" //g' {} \;
+          find ./ -type f -exec sed -i -e 's/${TRAVIS_PYTHON_VERSION}/3.7/g' {} \;
+          find ./ -type f -exec sed -i -e 's/"$TRAVIS_PULL_REQUEST" != "false"/"$GITHUB_EVENT_NAME" = "pull_request"/g' {} \;
+          find ./ -type f -exec sed -i -e 's/"$TRAVIS_PULL_REQUEST" = "false"/"$GITHUB_EVENT_NAME" != "pull_request"/g' {} \;
+          find ./ -type f -exec sed -i -e 's/travis_fold:start:/::group::/g' {} \;
+          find ./ -type f -exec sed -i -e 's/travis_fold:end:$containerlog/::endgroup::/g' {} \;
+          find ./ -type f -exec sed -i -e 's/.\/.travis\/check_commit.sh/#.\/.travis\/check_commit.sh/g' {} \;
+      - name: Before Install
+        run: |
+          .travis/before_install.sh
+          echo "::set-env name=TEST::${{ matrix.env.TEST }}"
+          cd ..
+          find ./ -type f -exec sed -i -e 's/timeout 90 bash/timeout 120 bash/g' {} \;
+          find ./ -type f -exec sed -i -e 's/\/usr\/local\/bin\/kubectl/$(which kubectl)/g' {} \;
+          find ./ -type f -exec sed -i -e 's/# containers are not running yet./sudo cp -i \/etc\/rancher\/k3s\/k3s.yaml $HOME\/.kube\/config/g' {} \;
+          cd pulp_file
+      - name: Install
+        run: |
+          mkdir -p $HOME/.kube
+          .travis/install.sh
+      - name: Before Script
+        run: .travis/before_script.sh
+      - name: Script
+        run: .travis/script.sh
+        shell: bash
