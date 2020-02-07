@@ -87,7 +87,7 @@ class DownloadContentTestCase(unittest.TestCase):
         repo = repo_api.create(gen_repo())
         self.addCleanup(repo_api.delete, repo.pulp_href)
 
-        body = gen_file_remote()
+        body = gen_file_remote(policy=policy)
         remote = remote_api.create(body)
         self.addCleanup(remote_api.delete, remote.pulp_href)
 
