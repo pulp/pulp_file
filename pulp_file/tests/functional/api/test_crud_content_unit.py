@@ -295,3 +295,41 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
         repo_latest_version = versions_api.read(repo_api.read(repo.pulp_href).latest_version_href)
 
         self.assertEqual(repo_latest_version.content_summary.present["file.file"]["count"], "1")
+
+    def test_second_unit_raises_error(self):
+        """Create a duplicate content unit with different ``artifacts`` and same ``relative_path``.
+
+        Artifacts are unique by ``relative_path`` and ``file``.
+        """
+        delete_orphans()
+        content_api = ContentFilesApi(self.client)
+        repo_api = RepositoriesFileApi(self.client)
+
+        repo = repo_api.create(gen_repo())
+        self.addCleanup(repo_api.delete, repo.pulp_href)
+
+        artifact = gen_artifact()
+
+        # create first content unit.
+        content_attrs = gen_file_content_attrs(artifact)
+        response = content_api.create(**content_attrs)
+        monitor_task(response.task)
+
+        artifact = gen_artifact(file=__file__)
+
+        # create second content unit.
+        second_content_attrs = gen_file_content_attrs(artifact)
+        second_content_attrs["relative_path"] = content_attrs["relative_path"]
+        response = content_api.create(**second_content_attrs)
+        monitor_task(response.task)
+
+        data = {"add_content_units": [c.pulp_href for c in content_api.list().results]}
+        response = repo_api.modify(repo.pulp_href, data)
+        task = monitor_task(response.task)
+
+        error_message = (
+            "Cannot create repository version. "
+            "More than one file.file content with "
+            "the duplicate values for relative_path."
+        )
+        self.assertEqual(task["error"]["description"], error_message)
