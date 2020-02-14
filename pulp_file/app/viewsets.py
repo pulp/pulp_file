@@ -1,3 +1,4 @@
+from django_filters import CharFilter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
@@ -43,10 +44,11 @@ class FileContentFilter(ContentFilter):
     """
     FilterSet for FileContent.
     """
+    sha256 = CharFilter(field_name="digest")
 
     class Meta:
         model = FileContent
-        fields = ["relative_path", "digest"]
+        fields = ["relative_path", "sha256"]
 
 
 class FileContentViewSet(SingleArtifactContentUploadViewSet):

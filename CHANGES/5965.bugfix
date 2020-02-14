@@ -1,0 +1,1 @@
+Renamed the filter for the field 'digest' because it is no longer present in the public API
