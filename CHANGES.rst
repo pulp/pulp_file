@@ -13,6 +13,27 @@ Changelog
 
 .. towncrier release notes start
 
+0.2.0 (2020-02-26)
+==================
+
+
+Deprecations and Removals
+-------------------------
+
+- Renamed the filter for the field 'digest' to 'sha256' to correspond to field name in API and other
+  plugins.
+  `#5965 <https://pulp.plan.io/issues/5965>`_
+
+
+Misc
+----
+
+- `#5567 <https://pulp.plan.io/issues/5567>`_
+
+
+----
+
+
 0.1.1 (2020-01-31)
 ==================
 
