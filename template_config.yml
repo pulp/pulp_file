@@ -30,7 +30,7 @@ pulp_settings: null
 pulpcore_branch: master
 pydocstyle: true
 pypi_username: pulp
-stable_branch: '0.1'
+stable_branch: '0.2'
 test: false
 test_bindings: true
 test_performance: true

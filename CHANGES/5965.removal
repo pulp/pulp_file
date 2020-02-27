@@ -1,2 +1,0 @@
-Renamed the filter for the field 'digest' to 'sha256' to correspond to field name in API and other
-plugins.
