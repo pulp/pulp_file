@@ -85,13 +85,40 @@ fi
 
 git clone --depth=1 https://github.com/pulp/pulpcore.git --branch master
 
+cd pulpcore
 if [ -n "$PULP_PR_NUMBER" ]; then
-  cd pulpcore
   git fetch --depth=1 origin pull/$PULP_PR_NUMBER/head:$PULP_PR_NUMBER
   git checkout $PULP_PR_NUMBER
-  cd ..
 fi
 
+if [[ "$TEST" == 's3' ]]; then
+  sed -i "s/gunicorn/gunicorn django-storages[boto3]/g" ./containers/images/pulp/Dockerfile.j2
+  sed -i "s/pulpcore.app.models.storage.FileSystem/storages.backends.s3boto3.S3Boto3Storage/g" ./pulpcore/app/settings.py
+  sed -i "s/\/var\/lib\/pulp\///g" ./pulpcore/app/settings.py
+  sed -i "s/tmp\//\/tmp/g" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a S3_USE_SIGV4 = True" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_S3_ENDPOINT_URL = \'http:\/\/$(hostname):4572\/'" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_ACCESS_KEY_ID = \'AKIAIT2Z5TDYPX3ARJBA\'" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_SECRET_ACCESS_KEY = \'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\'" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_STORAGE_BUCKET_NAME = \'pulp3\'" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_DEFAULT_ACL = None" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_S3_SIGNATURE_VERSION = \'s3v4\'" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_S3_ADDRESSING_STYLE = \'path\'" ./pulpcore/app/settings.py
+  sed -i "/STATIC_ROOT/a AWS_S3_REGION_NAME = \'eu-central-1\'" ./pulpcore/app/settings.py
+  pip install awscli localstack
+  aws configure set aws_access_key_id AKIAIT2Z5TDYPX3ARJBA
+  aws configure set aws_secret_access_key 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
+  aws configure set default.region eu-central-1
+  aws configure set s3.signature_version s3v4
+  aws configure set default.s3.addressing_style path
+  mkdir -p /tmp/localstack/data
+  export LOCALSTACK_SERVICES=s3
+  export DEFAULT_REGION="eu-central-1"
+  export DATA_DIR=/tmp/localstack/data
+  ENTRYPOINT=-d localstack start --docker
+fi
+
+cd ..
 
 
 # When building a (release) tag, we don't need the development modules for the

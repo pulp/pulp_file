@@ -18,9 +18,10 @@ export FUNC_TEST_SCRIPT=$TRAVIS_BUILD_DIR/.travis/func_test_script.sh
 # Gets set in .travis/settings.yml, but doesn't seem to inherited by
 # this script.
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
+export PULP_CONTENT_ORIGIN=http://$(hostname):24816
 
 if [ "$TEST" = 'docs' ]; then
-  
+
 
   cd docs
   make html
@@ -89,8 +90,10 @@ export CMD_STDIN_PREFIX="sudo kubectl exec -i $PULP_API_POD --"
 cat unittest_requirements.txt | $CMD_STDIN_PREFIX bash -c "cat > /tmp/test_requirements.txt"
 $CMD_PREFIX pip3 install -r /tmp/test_requirements.txt
 
-# Run unit tests.
-$CMD_PREFIX bash -c "PULP_DATABASES__default__USER=postgres django-admin test --noinput /usr/local/lib/python${TRAVIS_PYTHON_VERSION}/site-packages/pulp_file/tests/unit/"
+if [[ "$TEST" != 's3' ]]; then
+  # Run unit tests.
+  $CMD_PREFIX bash -c "PULP_DATABASES__default__USER=postgres django-admin test --noinput /usr/local/lib/python${TRAVIS_PYTHON_VERSION}/site-packages/pulp_file/tests/unit/"
+fi
 
 # Note: This function is in the process of being merged into after_failure
 show_logs_and_return_non_zero() {
@@ -113,6 +116,14 @@ if [[ "$TEST" == "performance" ]]; then
   else
     pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance.test_$PERFORMANCE_TEST || show_logs_and_return_non_zero
   fi
+  exit
+fi
+
+if [[ "$TEST" == 's3' ]]; then
+  mv .travis/conftest.py pulp_file/tests/functional/
+  aws --endpoint-url=http://localhost:4572 s3 mb s3://pulp3
+  aws --endpoint-url=http://localhost:4572 s3api list-buckets
+  pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional || show_logs_and_return_non_zero
   exit
 fi
 

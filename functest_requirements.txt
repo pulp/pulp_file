@@ -1,3 +1,6 @@
+boto3
+django
+dynaconf
 git+https://github.com/pulp/pulp-smash.git#egg=pulp-smash
 pulpcore-client
 pulp-file-client

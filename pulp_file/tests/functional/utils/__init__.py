@@ -6,6 +6,8 @@ from unittest import SkipTest
 from time import sleep
 from tempfile import NamedTemporaryFile
 
+from django.conf import settings
+
 from pulp_smash import api, selectors, utils
 from pulp_smash.pulp3.utils import (
     gen_remote,
@@ -25,6 +27,8 @@ from pulp_file.tests.functional.constants import (
     FILE_REPO_PATH,
     FILE_URL,
 )
+
+from pulp_file.tests.functional.utils.s3 import create_bucket
 
 from pulpcore.client.pulpcore import (
     ApiClient as CoreApiClient,
@@ -173,8 +177,10 @@ def monitor_task(task_href):
     completed = ["completed", "failed", "canceled"]
     task = tasks.read(task_href)
     while task.state not in completed:
-        sleep(2)
+        sleep(1)
         task = tasks.read(task_href)
+        if "S3Boto3Storage" in settings.DEFAULT_FILE_STORAGE:
+            create_bucket()
 
     if task.state == "completed":
         return task.created_resources

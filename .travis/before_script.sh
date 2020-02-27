@@ -37,7 +37,7 @@ cat ~/.config/pulp_smash/settings.json | \
 cat temp.json > ~/.config/pulp_smash/settings.json
 
 
-if [[ "$TEST" == 'pulp' || "$TEST" == 'performance' ]]; then
+if [[ "$TEST" == 'pulp' || "$TEST" == 'performance' || "$TEST" == 's3' ]]; then
     # set up pulp-fixtures docker container
     docker run -d -p 0.0.0.0:8000:80 quay.io/pulp/pulp-fixtures:latest
 
