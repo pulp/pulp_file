@@ -173,7 +173,7 @@ def monitor_task(task_href):
     completed = ["completed", "failed", "canceled"]
     task = tasks.read(task_href)
     while task.state not in completed:
-        sleep(2)
+        sleep(1)
         task = tasks.read(task_href)
 
     if task.state == "completed":

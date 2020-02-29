@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.core.files.storage import default_storage as storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from pulpcore.plugin.models import Artifact, ContentArtifact, RepositoryVersion
@@ -36,8 +37,9 @@ class RepositoryVersionCRUDTestCase(TestCase):
         artifact.save()
         self.content = FileContent.objects.create()
         self.content.save()
+        artifact_file = storage.open(artifact.file.name)
         self.content_artifact = ContentArtifact.objects.create(
-            artifact=artifact, content=self.content, relative_path=artifact.file.path
+            artifact=artifact, content=self.content, relative_path=artifact_file.name
         )
         self.content_artifact.save()
         self.repository = FileRepository.objects.create(name="foo")
