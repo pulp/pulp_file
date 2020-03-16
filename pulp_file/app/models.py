@@ -4,7 +4,7 @@ from django.db import models
 
 from pulpcore.plugin.models import (
     Content,
-    FileSystemPublicationExporter,
+    FileSystemExporter,
     Publication,
     PublicationDistribution,
     Remote,
@@ -106,12 +106,12 @@ class FileDistribution(PublicationDistribution):
         default_related_name = "%(app_label)s_%(model_name)s"
 
 
-class FileFileSystemExporter(FileSystemPublicationExporter):
+class FileFileSystemExporter(FileSystemExporter):
     """
     File system exporter for 'file' content.
     """
 
-    TYPE = "file"
+    TYPE = "filesystem"
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"

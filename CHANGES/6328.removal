@@ -1,0 +1,5 @@
+The fileystem exporter endpoint has been moved from ``/exporters/file/file/`` to
+``/exporters/file/filesystem/`` and the export endpoint is now at POST
+``/exporters/file/filesystem/<uuid>/exports/``. Additionally, the table is being dropped and
+recreated due to a data structure change in core so users will lose any filesystem exporter data on
+upgrade.
