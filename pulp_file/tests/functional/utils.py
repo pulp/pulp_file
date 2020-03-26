@@ -6,7 +6,7 @@ from unittest import SkipTest
 from time import sleep
 from tempfile import NamedTemporaryFile
 
-from pulp_smash import api, selectors, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
@@ -29,16 +29,13 @@ from pulp_file.tests.functional.constants import (
 from pulpcore.client.pulpcore import (
     ApiClient as CoreApiClient,
     ArtifactsApi,
-    Configuration,
     TasksApi,
 )
 from pulpcore.client.pulp_file import ApiClient as FileApiClient
 
 
-configuration = Configuration()
-configuration.username = "admin"
-configuration.password = "password"
-configuration.safe_chars_for_path_param = "/"
+cfg = config.get_config()
+configuration = cfg.get_bindings_config()
 
 
 def set_up_module():
