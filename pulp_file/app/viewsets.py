@@ -1,7 +1,9 @@
 from django.http import Http404
 from django_filters import CharFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.serializers import (
@@ -54,6 +56,20 @@ class FileContentFilter(ContentFilter):
         fields = ["relative_path", "sha256"]
 
 
+class StableOrderingFilter(OrderingFilter):
+    """Docstring 1."""
+
+    def get_ordering(self, request, queryset, view):
+        """Docstring 2."""
+        ordering = super(StableOrderingFilter, self).get_ordering(request, queryset, view)
+        pk = queryset.model._meta.pk.name
+
+        if ordering is None:
+            return ["-" + pk]
+
+        return list(ordering) + ["-" + pk]
+
+
 class FileContentViewSet(SingleArtifactContentUploadViewSet):
     """
     <!-- User-facing documentation, rendered as html-->
@@ -65,6 +81,7 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
     queryset = FileContent.objects.prefetch_related("_artifacts")
     serializer_class = FileContentSerializer
     filterset_class = FileContentFilter
+    filter_backends = [DjangoFilterBackend, StableOrderingFilter]
 
 
 class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
