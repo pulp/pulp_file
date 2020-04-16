@@ -13,6 +13,39 @@ Changelog
 
 .. towncrier release notes start
 
+0.3.0 (2020-04-16)
+==================
+
+
+Features
+--------
+
+- Added history for filesystem exports at ``/exporters/file/filesystem/<uuid>/exports/``.
+  `#6328 <https://pulp.plan.io/issues/6328>`_
+- Add support for import/export processing
+  `#6472 <https://pulp.plan.io/issues/6472>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- The fileystem exporter endpoint has been moved from ``/exporters/file/file/`` to
+  ``/exporters/file/filesystem/`` and the export endpoint is now at POST
+  ``/exporters/file/filesystem/<uuid>/exports/``. Additionally, the table is being dropped and
+  recreated due to a data structure change in core so users will lose any filesystem exporter data on
+  upgrade.
+  `#6328 <https://pulp.plan.io/issues/6328>`_
+
+
+Misc
+----
+
+- `#6155 <https://pulp.plan.io/issues/6155>`_, `#6300 <https://pulp.plan.io/issues/6300>`_, `#6362 <https://pulp.plan.io/issues/6362>`_, `#6392 <https://pulp.plan.io/issues/6392>`_
+
+
+----
+
+
 0.2.0 (2020-02-26)
 ==================
 
