@@ -102,6 +102,10 @@ spec:
     admin_password: pulp
   pulp_content:
     replicas: 1
+  pulp_settings:
+     allowed_import_paths: ['/tmp']
+     allowed_export_paths: ['/tmp']
+    
 CRYAML
 
 if [ "$TEST" = 's3' ]; then
@@ -125,6 +129,8 @@ if [ "$TEST" = 's3' ]; then
     pulp_content:
       replicas: 1
     pulp_settings:
+      allowed_import_paths: ['/tmp']
+      allowed_export_paths: ['/tmp']
       aws_access_key_id: "AKIAIT2Z5TDYPX3ARJBA"
       aws_secret_access_key: "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"
       aws_storage_bucket_name: "pulp3"
