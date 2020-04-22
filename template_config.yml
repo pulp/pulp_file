@@ -26,7 +26,9 @@ plugin_dash_short: file
 plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
-pulp_settings: null
+pulp_settings:
+   allowed_import_paths: ['/tmp']
+   allowed_export_paths: ['/tmp']
 pulpcore_branch: master
 pulpcore_pip_version_specifier: null
 pydocstyle: true
