@@ -31,7 +31,7 @@ pulpcore_branch: master
 pulpcore_pip_version_specifier: null
 pydocstyle: true
 pypi_username: pulp
-stable_branch: '0.2'
+stable_branch: '0.3'
 test: false
 test_bindings: false
 test_performance: true
