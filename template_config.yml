@@ -27,12 +27,15 @@ plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
 pulp_settings:
-   allowed_import_paths: ['/tmp']
-   allowed_export_paths: ['/tmp']
+  allowed_export_paths:
+  - /tmp
+  allowed_import_paths:
+  - /tmp
 pulpcore_branch: master
 pulpcore_pip_version_specifier: null
 pydocstyle: true
 pypi_username: pulp
+redmine_project: pulp_file
 stable_branch: '0.3'
 test: false
 test_bindings: false

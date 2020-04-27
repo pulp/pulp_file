@@ -52,6 +52,9 @@ black --check --diff .
 # Lint code.
 flake8 --config flake8.cfg
 
+# check for imports from pulpcore that aren't pulpcore.plugin
+./.travis/check_pulpcore_imports.sh
+
 cd ..
 git clone --depth=1 https://github.com/pulp/pulp_installer.git
 if [ -n "$PULP_ROLES_PR_NUMBER" ]; then
