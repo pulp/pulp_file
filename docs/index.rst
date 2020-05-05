@@ -45,6 +45,7 @@ Table of Contents
    restapi/index
    changes
    contributing
+   client
 
 
 Indices and tables

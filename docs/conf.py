@@ -21,6 +21,7 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))  # noqa
 
 import pulp_file
+from recommonmark.transform import AutoStructify
 
 # -- General configuration -----------------------------------------------------
 
@@ -29,13 +30,16 @@ import pulp_file
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.extlinks']
+extensions = ['sphinx.ext.extlinks', 'recommonmark']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -247,3 +251,14 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+
+# app setup hook
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+        'auto_toc_tree_section': 'Client Documentation',
+        'enable_math': False,
+        'enable_inline_math': False,
+        'enable_eval_rst': True,
+    }, True)
+    app.add_transform(AutoStructify)
