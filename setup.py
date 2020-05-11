@@ -2,10 +2,11 @@
 
 from setuptools import setup, find_packages
 
-requirements = ["pulpcore>=3.3"]
-
 with open("README.rst") as f:
     long_description = f.read()
+
+with open("requirements.txt") as requirements:
+    requirements = requirements.readlines()
 
 setup(
     name="pulp-file",
