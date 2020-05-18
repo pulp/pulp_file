@@ -6,7 +6,7 @@ from pulpcore.plugin import models
 from pulpcore.plugin.serializers import (
     ContentChecksumSerializer,
     DetailRelatedField,
-    FileSystemExporterSerializer,
+    FilesystemExporterSerializer,
     PublicationDistributionSerializer,
     PublicationSerializer,
     RemoteSerializer,
@@ -17,7 +17,7 @@ from pulpcore.plugin.serializers import (
 from pulp_file.app.models import (
     FileContent,
     FileDistribution,
-    FileFileSystemExporter,
+    FileFilesystemExporter,
     FileRemote,
     FileRepository,
     FilePublication,
@@ -116,11 +116,11 @@ class FileDistributionSerializer(PublicationDistributionSerializer):
         model = FileDistribution
 
 
-class FileFileSystemExporterSerializer(FileSystemExporterSerializer):
+class FileFilesystemExporterSerializer(FilesystemExporterSerializer):
     """
     Serializer for File file system exporters.
     """
 
     class Meta:
-        fields = FileSystemExporterSerializer.Meta.fields
-        model = FileFileSystemExporter
+        fields = FilesystemExporterSerializer.Meta.fields
+        model = FileFilesystemExporter

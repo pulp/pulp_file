@@ -27,7 +27,7 @@ from . import tasks
 from .models import (
     FileContent,
     FileDistribution,
-    FileFileSystemExporter,
+    FileFilesystemExporter,
     FileRemote,
     FileRepository,
     FilePublication,
@@ -35,7 +35,7 @@ from .models import (
 from .serializers import (
     FileContentSerializer,
     FileDistributionSerializer,
-    FileFileSystemExporterSerializer,
+    FileFilesystemExporterSerializer,
     FileRemoteSerializer,
     FileRepositorySerializer,
     FilePublicationSerializer,
@@ -180,25 +180,26 @@ class FileDistributionViewSet(BaseDistributionViewSet):
     serializer_class = FileDistributionSerializer
 
 
-class FileFileSystemExporterViewSet(ExporterViewSet):
+class FileFilesystemExporterViewSet(ExporterViewSet):
     """
-    FileSystemExporters export content from a publication to a path on the file system.
+    FilesystemExporters export content from a publication to a path on the file system.
 
     WARNING: This feature is provided as a tech preview and may change in the future. Backwards
     compatibility is not guaranteed.
     """
 
     endpoint_name = "filesystem"
-    queryset = FileFileSystemExporter.objects.all()
-    serializer_class = FileFileSystemExporterSerializer
+    queryset = FileFilesystemExporter.objects.all()
+    serializer_class = FileFilesystemExporterSerializer
 
 
-class FileFileSystemExportViewSet(ExportViewSet):
+class FileFilesystemExportViewSet(ExportViewSet):
     """
-    FileSystemExports provide a history of previous exports.
+    FilesystemExports provide a history of previous exports.
     """
 
-    parent_viewset = FileFileSystemExporterViewSet
+    parent_viewset = FileFilesystemExporterViewSet
+    parent_lookup_kwargs = {"filesystem_exporter_pk": "filesystem_exporter__pk"}
 
     @swagger_auto_schema(
         request_body=PublicationExportSerializer,
@@ -212,8 +213,8 @@ class FileFileSystemExportViewSet(ExportViewSet):
         The ``repository`` field has to be provided.
         """
         try:
-            exporter = FileFileSystemExporter.objects.get(pk=exporter_pk)
-        except FileFileSystemExporter.DoesNotExist:
+            exporter = FileFilesystemExporter.objects.get(pk=exporter_pk)
+        except FileFilesystemExporter.DoesNotExist:
             raise Http404
 
         serializer = PublicationExportSerializer(data=request.data, context={"request": request})
