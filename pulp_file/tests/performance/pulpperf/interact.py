@@ -2,11 +2,13 @@ import logging
 import requests
 import tempfile
 import time
-import os
+
+from pulp_smash import config
 
 from .utils import measureit, urljoin
 
-BASE_ADDR = os.environ.get("BASE_ADDR", "http://localhost:24817")
+cfg = config.get_config()
+BASE_ADDR = cfg.get_base_url()
 
 
 def get(url, params={}):
