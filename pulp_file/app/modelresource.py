@@ -1,8 +1,8 @@
-from pulpcore.plugin.importexport import QueryModelResource
+from pulpcore.plugin.importexport import BaseContentResource
 from pulp_file.app.models import FileContent
 
 
-class FileContentResource(QueryModelResource):
+class FileContentResource(BaseContentResource):
     """
     Resource for import/export of file_filecontent entities
     """
@@ -15,6 +15,7 @@ class FileContentResource(QueryModelResource):
 
     class Meta:
         model = FileContent
+        import_id_fields = model.natural_key_fields()
 
 
 IMPORT_ORDER = [FileContentResource]
