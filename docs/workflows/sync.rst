@@ -1,6 +1,10 @@
 Synchronize a Repository
 ========================
 
+In this section, there is provided a basic workflow for synchronizing a remote repository. Bear in
+mind that the attached snippets utilize ``httpie`` and ``jq``. Refer to :ref:`workflows-index` to
+learn more about these utilities.
+
 Create a repository ``foo``
 ---------------------------
 

@@ -1,6 +1,9 @@
 Upload Content
 ==============
 
+The section shows how to upload content to Pulp. The attached snippets use the utilities ``httpie``
+and ``jq``. Learn more about them at :ref:`workflows-index`.
+
 Upload a file to Pulp (Create an Artifact)
 ------------------------------------------
 
