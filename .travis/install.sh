@@ -64,6 +64,7 @@ services:
     image: "pulp:${TAG}"
     volumes:
       - ./settings:/etc/pulp
+      - ./pulp_storage:/var/lib/pulp
 VARSYAML
 else
   cat > vars/main.yaml << VARSYAML
@@ -81,6 +82,7 @@ services:
     image: "pulp:${TAG}"
     volumes:
       - ./settings:/etc/pulp
+      - ./pulp_storage:/var/lib/pulp
 VARSYAML
 fi
 
