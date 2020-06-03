@@ -13,6 +13,20 @@ Changelog
 
 .. towncrier release notes start
 
+1.0.1 (2020-06-03)
+==================
+
+
+Bugfixes
+--------
+
+- Including requirements.txt on MANIFEST.in
+  `#6885 <https://pulp.plan.io/issues/6885>`_
+
+
+----
+
+
 1.0.0 (2020-05-27)
 ==================
 
