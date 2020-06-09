@@ -11,4 +11,4 @@ fi
 
 # Next we download a file from the distribution
 # This will default to http://
-http -d $DISTRIBUTION_BASE_URL/test.iso
+http -d $DISTRIBUTION_BASE_URL/1.iso

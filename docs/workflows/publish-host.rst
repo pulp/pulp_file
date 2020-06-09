@@ -43,7 +43,7 @@ Distribution GET Response (after task is complete)::
 
 Reference: `File Distribution Usage <../restapi.html#tag/distributions>`_
 
-Download ``test.iso`` from Pulp
+Download ``1.iso`` from Pulp
 ---------------------------------
 
 If you created your repository version using the :doc:`sync` workflow:

@@ -46,7 +46,7 @@ Remote GET Response::
         "ssl_client_certificate": null,
         "ssl_client_key": null,
         "ssl_validation": true,
-        "url": "https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST",
+        "url": "https://fixtures.pulpproject.org/file/PULP_MANIFEST",
         "validate": true
     }
 
