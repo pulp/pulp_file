@@ -13,6 +13,29 @@ Changelog
 
 .. towncrier release notes start
 
+1.1.0 (2020-07-08)
+==================
+
+
+Bugfixes
+--------
+
+- Including requirements.txt on MANIFEST.in
+  `#6885 <https://pulp.plan.io/issues/6885>`_
+
+
+Improved Documentation
+----------------------
+
+- Added a remainder about the recommended utilities used in the workflows.
+  `#5998 <https://pulp.plan.io/issues/5998>`_
+- Updated fixture links from fedorapeople.org to fixtures.pulpproject.org.
+  `#6653 <https://pulp.plan.io/issues/6653>`_
+
+
+----
+
+
 1.0.0 (2020-05-27)
 ==================
 
