@@ -116,7 +116,7 @@ class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
 class FileRemoteViewSet(RemoteViewSet):
     """
     <!-- User-facing documentation, rendered as html-->
-    FileRemote represents an external source of <a href="#operation/content_file_files_list">File
+    FileRemote_ represents an external source of <a href="#operation/content_file_files_list">File
     Content</a>.  The target url of a FileRemote must contain a file manifest, which contains the
     metadata for all files at the source.
     """
