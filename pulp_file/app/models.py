@@ -40,6 +40,17 @@ class FileContent(Content):
         unique_together = ("relative_path", "digest")
 
 
+class FileRemote(Remote):
+    """
+    Remote for "file" content.
+    """
+
+    TYPE = "file"
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
+
 class FileRepository(Repository):
     """
     The "file" repository type.
@@ -47,6 +58,7 @@ class FileRepository(Repository):
 
     TYPE = "file"
     CONTENT_TYPES = [FileContent]
+    REMOTE_TYPES = [FileRemote]
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
@@ -65,17 +77,6 @@ class FileRepository(Repository):
         """
         remove_duplicates(new_version)
         validate_repo_version(new_version)
-
-
-class FileRemote(Remote):
-    """
-    Remote for "file" content.
-    """
-
-    TYPE = "file"
-
-    class Meta:
-        default_related_name = "%(app_label)s_%(model_name)s"
 
 
 class FilePublication(Publication):
