@@ -1,6 +1,6 @@
 from django.http import Http404
 from django_filters import CharFilter
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
@@ -78,8 +78,8 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     queryset = FileRepository.objects.all()
     serializer_class = FileRepositorySerializer
 
-    @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to sync file content.",
+    @extend_schema(
+        description="Trigger an asynchronous task to sync file content.",
         responses={202: AsyncOperationResponseSerializer},
     )
     @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
@@ -140,8 +140,8 @@ class FilePublicationViewSet(PublicationViewSet):
     queryset = FilePublication.objects.exclude(complete=False)
     serializer_class = FilePublicationSerializer
 
-    @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to publish file content.",
+    @extend_schema(
+        description="Trigger an asynchronous task to publish file content.",
         responses={202: AsyncOperationResponseSerializer},
     )
     def create(self, request):
@@ -201,9 +201,9 @@ class FileFilesystemExportViewSet(ExportViewSet):
     parent_viewset = FileFilesystemExporterViewSet
     parent_lookup_kwargs = {"filesystem_exporter_pk": "filesystem_exporter__pk"}
 
-    @swagger_auto_schema(
-        request_body=PublicationExportSerializer,
-        operation_description="Trigger an asynchronous task to export a file publication.",
+    @extend_schema(
+        request=PublicationExportSerializer,
+        description="Trigger an asynchronous task to export a file publication.",
         responses={202: AsyncOperationResponseSerializer},
     )
     def create(self, request, exporter_pk):
