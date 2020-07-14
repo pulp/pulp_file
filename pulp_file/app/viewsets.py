@@ -89,11 +89,13 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
 
         The ``repository`` field has to be provided.
         """
-        serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
+        serializer = RepositorySyncURLSerializer(
+            data=request.data, context={"request": request, "repository_pk": pk}
+        )
         serializer.is_valid(raise_exception=True)
 
         repository = self.get_object()
-        remote = serializer.validated_data.get("remote")
+        remote = serializer.validated_data.get("remote", repository.remote)
 
         mirror = serializer.validated_data.get("mirror", False)
         result = enqueue_with_reservation(
