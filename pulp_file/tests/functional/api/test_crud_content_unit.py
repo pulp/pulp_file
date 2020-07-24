@@ -294,7 +294,7 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
 
         repo_latest_version = versions_api.read(repo_api.read(repo.pulp_href).latest_version_href)
 
-        self.assertEqual(repo_latest_version.content_summary.present["file.file"]["count"], "1")
+        self.assertEqual(repo_latest_version.content_summary.present["file.file"]["count"], 1)
 
     def test_second_unit_raises_error(self):
         """Create a duplicate content unit with different ``artifacts`` and same ``relative_path``.
