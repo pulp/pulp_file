@@ -1,0 +1,11 @@
+---
+site_name: Pulp File Client
+site_description: Pulp File Client
+site_author: Pulp Team
+site_url: https://pulp-file-client.readthedocs.io/
+repo_name: pulp/pulp_file
+repo_url: https://github.com/pulp/pulp_file
+theme: readthedocs
+docs_dir: docs/pulp_file_client
+markdown_extensions:
+  - pymdownx.superfences
