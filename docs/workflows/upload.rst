@@ -37,7 +37,7 @@ Create ``file`` content from an Artifact
 Content GET Response::
 
     {
-        "_artifact": "/pulp/api/v3/artifacts/cff8078a-826f-4f7e-930d-422c2f134a07/",
+        "artifact": "/pulp/api/v3/artifacts/cff8078a-826f-4f7e-930d-422c2f134a07/",
         "pulp_created": "2019-05-16T20:07:48.929374Z",
         "pulp_href": "/pulp/api/v3/content/file/files/c23def43-44bc-45f4-8a6f-0310285f5339/",
         "md5": "3b4fd267e71a1a8e8746893fcc91e5b5",
