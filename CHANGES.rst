@@ -13,6 +13,33 @@ Changelog
 
 .. towncrier release notes start
 
+1.2.0 (2020-08-13)
+==================
+
+
+Features
+--------
+
+- Added ability for users to add Remote to Repository and automatically use it when syncing.
+  `#7135 <https://pulp.plan.io/issues/7135>`_
+
+
+Improved Documentation
+----------------------
+
+- Fixed the name of the artifact field
+  `#5966 <https://pulp.plan.io/issues/5966>`_
+
+
+Misc
+----
+
+- `#6936 <https://pulp.plan.io/issues/6936>`_
+
+
+----
+
+
 1.1.0 (2020-07-08)
 ==================
 
