@@ -10,12 +10,10 @@ from pulp_file.app.models import FileContent, FileRepository
 
 
 class RepositoryVersionCRUDTestCase(TestCase):
-    """Test RepositoryVersion CRUD and content association.
-    """
+    """Test RepositoryVersion CRUD and content association."""
 
     def setUp(self):
-        """Create Artifact, Content, ContentArtifact, and Repository.
-        """
+        """Create Artifact, Content, ContentArtifact, and Repository."""
         artifact = Artifact.objects.create(
             md5="ec0df26316b1deb465d2d18af7b600f5",
             sha1="cf6121b0425c2f2e3a2fcfe6f402d59730eb5661",
@@ -49,15 +47,13 @@ class RepositoryVersionCRUDTestCase(TestCase):
 
     @patch("pulpcore.app.models.task.get_current_job")
     def test_create_repository_version(self, mock_task):
-        """Test creating a RepositoryVersion.
-        """
+        """Test creating a RepositoryVersion."""
         mock_task.return_value.id = self.task.pk
         with self.repository.new_version() as new_version:
             new_version.add_content(FileContent.objects.filter(pk=self.content.pk))
         self.assertTrue(RepositoryVersion.objects.filter().exists())
 
     def test_remove_repository_version(self):
-        """Test deleting a RepositoryVersion.
-        """
+        """Test deleting a RepositoryVersion."""
         RepositoryVersion.objects.filter().delete()
         self.assertFalse(RepositoryVersion.objects.filter().exists())
