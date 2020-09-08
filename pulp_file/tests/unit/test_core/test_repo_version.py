@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch
 
 from django.core.files.storage import default_storage as storage
@@ -42,7 +43,9 @@ class RepositoryVersionCRUDTestCase(TestCase):
         self.content_artifact.save()
         self.repository = FileRepository.objects.create(name="foo")
         self.repository.save()
-        self.task = Task.objects.create(state="Completed", name="test-task")
+        self.task = Task.objects.create(
+            state="Completed", name="test-task", _resource_job_id=uuid.uuid4()
+        )
         self.task.save()
 
     @patch("pulpcore.app.models.task.get_current_job")
