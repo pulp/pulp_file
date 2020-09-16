@@ -31,6 +31,12 @@ pulp_settings:
   - /tmp
   allowed_import_paths:
   - /tmp
+  allowed_content_checksums:
+  - sha1
+  - sha224
+  - sha256
+  - sha384
+  - sha512
 pulpcore_branch: master
 pulpcore_pip_version_specifier: null
 pydocstyle: true
