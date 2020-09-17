@@ -16,7 +16,6 @@ class RepositoryVersionCRUDTestCase(TestCase):
     def setUp(self):
         """Create Artifact, Content, ContentArtifact, and Repository."""
         artifact = Artifact.objects.create(
-            md5="ec0df26316b1deb465d2d18af7b600f5",
             sha1="cf6121b0425c2f2e3a2fcfe6f402d59730eb5661",
             sha224="9a6297eb28d91fad5277c0833856031d0e940432ad807658bd2b60f4",
             sha256="c8ddb3dcf8da48278d57b0b94486832c66a8835316ccf7ca39e143cbfeb9184f",
