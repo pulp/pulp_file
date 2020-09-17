@@ -44,13 +44,10 @@ else
   # Fallback
   TAG=$(git rev-parse --abbrev-ref HEAD | tr / _)
 fi
-
-mkdir vars
 if [ -n "$TRAVIS_TAG" ]; then
   # Install the plugin only and use published PyPI packages for the rest
   # Quoting ${TAG} ensures Ansible casts the tag as a string.
-  cat > vars/main.yaml << VARSYAML
----
+  cat >> vars/main.yaml << VARSYAML
 image:
   name: pulp
   tag: "${TAG}"
@@ -66,8 +63,7 @@ services:
       - ./settings:/etc/pulp
 VARSYAML
 else
-  cat > vars/main.yaml << VARSYAML
----
+  cat >> vars/main.yaml << VARSYAML
 image:
   name: pulp
   tag: "${TAG}"
@@ -85,13 +81,13 @@ VARSYAML
 fi
 
 cat >> vars/main.yaml << VARSYAML
-pulp_settings: {"allowed_export_paths": ["/tmp"], "allowed_import_paths": ["/tmp"]}
+pulp_settings: {"allowed_content_checksums": ["sha1", "sha224", "sha256", "sha384", "sha512"], "allowed_export_paths": ["/tmp"], "allowed_import_paths": ["/tmp"]}
 VARSYAML
 
 if [[ "$TEST" == "pulp" || "$TEST" == "performance" || "$TEST" == "s3" ]]; then
   sed -i -e '/^services:/a \
   - name: pulp-fixtures\
-    image: docker.io/pulp/pulp-fixtures:latest
+    image: docker.io/pulp/pulp-fixtures:latest\
     env: {BASE_URL: "http://pulp-fixtures"}' vars/main.yaml
 fi
 
