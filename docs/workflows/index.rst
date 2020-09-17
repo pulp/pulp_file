@@ -41,3 +41,4 @@ library with:
    sync
    upload
    publish-host
+   export

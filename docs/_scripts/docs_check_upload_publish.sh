@@ -17,3 +17,6 @@ source add_remove.sh
 source publication.sh
 source distribution.sh
 source download_after_upload.sh
+
+source exporter.sh
+source export.sh
