@@ -20,7 +20,7 @@ SITE_ROOT = "/var/www/docs.pulpproject.org/pulp_file/"
 
 def make_directory_with_rsync(remote_paths_list):
     """
-    Ensure the remote directory path exists
+    Ensure the remote directory path exists.
 
     :param remote_paths_list: The list of parameters. e.g. ['en', 'latest'] to be en/latest on the
         remote.
@@ -44,8 +44,9 @@ def make_directory_with_rsync(remote_paths_list):
 
 def ensure_dir(target_dir, clean=True):
     """
-    Ensure that the directory specified exists and is empty.  By default this will delete
-    the directory if it already exists
+    Ensure that the directory specified exists and is empty.
+
+    By default this will delete the directory if it already exists
 
     :param target_dir: The directory to process
     :type target_dir: str
@@ -62,7 +63,7 @@ def ensure_dir(target_dir, clean=True):
 
 def main():
     """
-    Builds documentation using the 'make html' command and rsyncs to docs.pulpproject.org
+    Builds documentation using the 'make html' command and rsyncs to docs.pulpproject.org.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-type", required=True, help="Build type: nightly or beta.")

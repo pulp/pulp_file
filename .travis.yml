@@ -77,7 +77,7 @@ jobs:
       script: bash .travis/publish_docs.sh nightly
       env:
         - TEST=docs
-      if: type != pull_request AND repo = pulp/pulpcore AND branch = master
+      if: type != pull_request AND repo = pulp/pulp_file AND branch = master
     - stage: daily-performance-test
       env:
         - TEST=performance
