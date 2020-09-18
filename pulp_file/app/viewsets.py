@@ -201,7 +201,6 @@ class FileFilesystemExportViewSet(ExportViewSet):
     """
 
     parent_viewset = FileFilesystemExporterViewSet
-    parent_lookup_kwargs = {"filesystem_exporter_pk": "filesystem_exporter__pk"}
 
     @extend_schema(
         request=PublicationExportSerializer,
