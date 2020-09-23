@@ -13,6 +13,33 @@ Changelog
 
 .. towncrier release notes start
 
+1.3.0 (2020-09-23)
+==================
+
+
+Bugfixes
+--------
+
+- Fixed exception when hitting ``/pulp/api/v3/exporters/file/filesystem/<uuid>/exports/``.
+  `#7522 <https://pulp.plan.io/issues/7522>`_
+
+
+Improved Documentation
+----------------------
+
+- Added docs for using FileSystemExporter.
+  `#7515 <https://pulp.plan.io/issues/7515>`_
+
+
+Misc
+----
+
+- `#7454 <https://pulp.plan.io/issues/7454>`_
+
+
+----
+
+
 1.2.0 (2020-08-13)
 ==================
 

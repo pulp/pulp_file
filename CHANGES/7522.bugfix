@@ -1,1 +1,0 @@
-Fixed exception when hitting ``/pulp/api/v3/exporters/file/filesystem/<uuid>/exports/``.
