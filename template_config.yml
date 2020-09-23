@@ -38,13 +38,13 @@ pulp_settings:
   - sha256
   - sha384
   - sha512
-pulpcore_branch: master
-pulpcore_pip_version_specifier: null
+pulpcore_branch: 3.7
+pulpcore_pip_version_specifier: ">=3.7,<3.9"
 pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
 pypi_username: pulp
 redmine_project: pulp_file
-stable_branch: '1.2'
+stable_branch: null
 test: false
 test_bindings: false
 test_performance: true
