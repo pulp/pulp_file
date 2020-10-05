@@ -44,7 +44,7 @@ pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
 pypi_username: pulp
 redmine_project: pulp_file
-stable_branch: '1.2'
+stable_branch: null
 test: false
 test_bindings: false
 test_performance: true
