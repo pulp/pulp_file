@@ -6,6 +6,7 @@ all: false
 black: true
 bootstrap: false
 check_commit_message: true
+check_manifest: true
 cherry_pick_automation: false
 coverage: false
 deploy_client_to_pypi: true
@@ -28,16 +29,16 @@ plugin_snake: pulp_file
 plugin_snake_short: file
 publish_docs_to_pulpprojectdotorg: true
 pulp_settings:
-  allowed_export_paths:
-  - /tmp
-  allowed_import_paths:
-  - /tmp
   allowed_content_checksums:
   - sha1
   - sha224
   - sha256
   - sha384
   - sha512
+  allowed_export_paths:
+  - /tmp
+  allowed_import_paths:
+  - /tmp
 pulpcore_branch: master
 pulpcore_pip_version_specifier: null
 pulpprojectdotorg_key_id: aa499d7938ed
