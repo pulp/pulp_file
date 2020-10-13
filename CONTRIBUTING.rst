@@ -5,10 +5,11 @@ To contribute to the ``pulp_file`` package follow this process:
 
 1. Clone the GitHub repo
 2. Make a change
-3. Make sure all tests passed
-4. Add a file into CHANGES folder (Changelog update).
-5. Commit changes to own ``pulp_file`` clone
-6. Make pull request from github page for your clone against master branch
+3. Add a functional test for the change
+4. Make sure all tests passed
+5. Add a file into CHANGES folder (:ref:`changelog-update`).
+6. Commit changes to own ``pulp_file`` clone
+7. Make pull request from github page for your clone against master branch
 
 
 .. _changelog-update:
