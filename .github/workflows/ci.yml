@@ -5,11 +5,11 @@
 #
 # For more info visit https://github.com/pulp/plugin_template
 
-name: Linting
-on: [pull_request]
+name: Pulp PR CI
+on: pull_request
 
 jobs:
-  linux:
+  linting:
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -32,22 +32,10 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
-        run: |
-          echo ::group::REQUESTS
-          pip3 install requests
-          echo ::endgroup::
-          for sha in $(curl $GITHUB_CONTEXT | jq '.[].sha' | sed 's/"//g')
-          do
-            python3 .github/workflows/scripts/validate_commit_message.py $sha
-            VALUE=$?
-            if [ "$VALUE" -gt 0 ]; then
-              exit $VALUE
-            fi
-          done
-        shell: bash
+        run: sh .github/workflows/scripts/check_commit.sh
 
       - name: Check for pulpcore imports outside of pulpcore.plugin
-        run: sh .github/workflows/scripts/check_pulpcore_imports.sh
+        run: sh .scripts/check_pulpcore_imports.sh
 
       # run black separately from flake8 to get a diff
       - name: Run black
@@ -58,3 +46,20 @@ jobs:
       # Lint code.
       - name: Run flake8
         run: flake8 --config flake8.cfg
+
+      # check for any files unintentionally left out of MANIFEST.in
+      - name: Check manifest
+        run: check-manifest
+
+  testing:
+    runs-on: ubuntu-latest
+    # run only after lint finishes
+    needs:
+      - linting
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
