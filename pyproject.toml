@@ -43,5 +43,7 @@ ignore = [
     ".travis/**",
     ".travis.yml",
     ".pep8speaks.yml",
+    ".ci/**",
+    ".github/**",
 ]
 
