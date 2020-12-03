@@ -13,6 +13,27 @@ Changelog
 
 .. towncrier release notes start
 
+1.4.0 (2020-12-02)
+==================
+
+
+Bugfixes
+--------
+
+- Added some missing files to MANIFEST.in.
+  `#7685 <https://pulp.plan.io/issues/7685>`_
+
+
+Improved Documentation
+----------------------
+
+- Documented that a functional test is now a requirement for a feature or a bug fix.
+  `#7437 <https://pulp.plan.io/issues/7437>`_
+
+
+----
+
+
 1.3.0 (2020-09-23)
 ==================
 
