@@ -86,6 +86,8 @@ class FilePublication(Publication):
 
     TYPE = "file"
 
+    manifest = models.TextField()
+
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
 

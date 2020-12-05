@@ -1,0 +1,2 @@
+Fixed a bug which caused the plugin to report the default manifest's name instead of the specified
+one in the publication endpoint.

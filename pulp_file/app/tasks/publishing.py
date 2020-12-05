@@ -33,6 +33,7 @@ def publish(manifest, repository_version_pk):
 
     with WorkingDirectory():
         with FilePublication.create(repo_version, pass_through=True) as publication:
+            publication.manifest = manifest
             manifest = Manifest(manifest)
             manifest.write(populate(publication))
             PublishedMetadata.create_from_file(
