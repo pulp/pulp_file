@@ -33,6 +33,31 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
     * `Pulp Smash #897 <https://github.com/pulp/pulp-smash/issues/897>`_
     """
 
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+
+        client = gen_file_client()
+        cls.repo_api = RepositoriesFileApi(client)
+        cls.remote_api = RemotesFileApi(client)
+        cls.publications = PublicationsFileApi(client)
+
+    def setUp(self):
+        """Create a new repository before each test."""
+        body = gen_file_remote()
+        remote = self.remote_api.create(body)
+        self.addCleanup(self.remote_api.delete, remote.pulp_href)
+
+        repo = self.repo_api.create(gen_repo())
+        self.addCleanup(self.repo_api.delete, repo.pulp_href)
+
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
+
+        self.repo = self.repo_api.read(repo.pulp_href)
+
     def test_all(self):
         """Test whether a particular repository version can be published.
 
@@ -46,52 +71,45 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         6. Assert that an exception is raised when providing two different
            repository versions to be published at same time.
         """
-        cfg = config.get_config()
-        client = gen_file_client()
-        repo_api = RepositoriesFileApi(client)
-        remote_api = RemotesFileApi(client)
-        publications = PublicationsFileApi(client)
-
-        body = gen_file_remote()
-        remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
-
-        repo = repo_api.create(gen_repo())
-        self.addCleanup(repo_api.delete, repo.pulp_href)
-
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-
         # Step 1
-        repo = repo_api.read(repo.pulp_href)
-        for file_content in get_content(repo.to_dict())[FILE_CONTENT_NAME]:
-            modify_repo(cfg, repo.to_dict(), remove_units=[file_content])
-        version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo.to_dict()))
+        for file_content in get_content(self.repo.to_dict())[FILE_CONTENT_NAME]:
+            modify_repo(self.cfg, self.repo.to_dict(), remove_units=[file_content])
+        version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(self.repo.to_dict()))
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
-        publish_data = FileFilePublication(repository=repo.pulp_href)
-        publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task).created_resources
-        publication_href = created_resources[0]
-        self.addCleanup(publications.delete, publication_href)
-        publication = publications.read(publication_href)
+        publish_data = FileFilePublication(repository=self.repo.pulp_href)
+        publication = self.create_publication(publish_data)
 
         # Step 3
         self.assertEqual(publication.repository_version, version_hrefs[-1])
 
         # Step 4
         publish_data = FileFilePublication(repository_version=non_latest)
-        publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task).created_resources
-        publication_href = created_resources[0]
-        publication = publications.read(publication_href)
+        publication = self.create_publication(publish_data)
 
         # Step 5
         self.assertEqual(publication.repository_version, non_latest)
 
         # Step 6
         with self.assertRaises(ApiException):
-            body = {"repository": repo.pulp_href, "repository_version": non_latest}
-            publications.create(body)
+            body = {"repository": self.repo.pulp_href, "repository_version": non_latest}
+            self.publications.create(body)
+
+    def test_custom_manifest(self):
+        """Test whether a repository version can be published with a specified manifest."""
+        publish_data = FileFilePublication(repository=self.repo.pulp_href)
+        publication = self.create_publication(publish_data)
+        self.assertEqual(publication.manifest, "PULP_MANIFEST")
+
+        publish_data = FileFilePublication(repository=self.repo.pulp_href, manifest="listing")
+        publication = self.create_publication(publish_data)
+        self.assertEqual(publication.manifest, "listing")
+
+    def create_publication(self, publish_data):
+        """Create a new publication from the passed data."""
+        publish_response = self.publications.create(publish_data)
+        created_resources = monitor_task(publish_response.task).created_resources
+        publication_href = created_resources[0]
+        self.addCleanup(self.publications.delete, publication_href)
+        return self.publications.read(publication_href)

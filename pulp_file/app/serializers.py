@@ -98,7 +98,6 @@ class FilePublicationSerializer(PublicationSerializer):
     )
     manifest = serializers.CharField(
         help_text=_("Filename to use for manifest file containing metadata for all the files."),
-        required=False,
         default="PULP_MANIFEST",
     )
 
