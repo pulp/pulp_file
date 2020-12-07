@@ -5,14 +5,11 @@ import requests
 import unittest
 from urllib.parse import urljoin
 
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_distribution, gen_repo
 
 from pulp_file.tests.functional.constants import FILE_FIXTURE_COUNT
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-    monitor_task,
-)
+from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 from pulpcore.client.pulp_file import (
@@ -58,7 +55,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
 
         publish_data = FileFilePublication(repository=repo.pulp_href)
         publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task)
+        created_resources = monitor_task(publish_response.task).created_resources
         publication_href = created_resources[0]
         self.addCleanup(publications.delete, publication_href)
 
@@ -66,7 +63,7 @@ class AccessingPublishedDataTestCase(unittest.TestCase):
         body["publication"] = publication_href
 
         distribution_response = distributions.create(body)
-        created_resources = monitor_task(distribution_response.task)
+        created_resources = monitor_task(distribution_response.task).created_resources
         distribution = distributions.read(created_resources[0])
         self.addCleanup(distributions.delete, distribution.pulp_href)
 

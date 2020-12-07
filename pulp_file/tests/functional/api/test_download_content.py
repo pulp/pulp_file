@@ -6,6 +6,7 @@ from random import choice
 from urllib.parse import urljoin
 
 from pulp_smash import config, utils
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo
 
@@ -14,7 +15,6 @@ from pulp_file.tests.functional.utils import (
     gen_file_client,
     get_file_content_paths,
     gen_file_remote,
-    monitor_task,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
@@ -100,7 +100,7 @@ class DownloadContentTestCase(unittest.TestCase):
         # Create a publication.
         publish_data = FileFilePublication(repository=repo.pulp_href)
         publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task)
+        created_resources = monitor_task(publish_response.task).created_resources
         publication_href = created_resources[0]
         self.addCleanup(publications.delete, publication_href)
 
@@ -108,7 +108,7 @@ class DownloadContentTestCase(unittest.TestCase):
         body = gen_distribution()
         body["publication"] = publication_href
         distribution_response = distributions.create(body)
-        created_resources = monitor_task(distribution_response.task)
+        created_resources = monitor_task(distribution_response.task).created_resources
         distribution = distributions.read(created_resources[0])
         self.addCleanup(distributions.delete, distribution.pulp_href)
 

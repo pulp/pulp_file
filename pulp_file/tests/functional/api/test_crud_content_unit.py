@@ -3,6 +3,7 @@
 import unittest
 
 from pulp_smash import utils
+from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
 from pulp_smash.pulp3.utils import gen_repo, delete_orphans
 
 from pulp_file.tests.functional.utils import (
@@ -10,7 +11,6 @@ from pulp_file.tests.functional.utils import (
     gen_file_client,
     gen_file_content_attrs,
     gen_file_content_upload_attrs,
-    monitor_task,
     tasks,
     skip_if,
 )
@@ -50,7 +50,7 @@ class ContentUnitTestCase(unittest.TestCase):
         """Create content unit."""
         attrs = gen_file_content_attrs(self.artifact)
         response = self.file_content_api.create(**attrs)
-        created_resources = monitor_task(response.task)
+        created_resources = monitor_task(response.task).created_resources
         content_unit = self.file_content_api.read(created_resources[0])
         self.content_unit.update(content_unit.to_dict())
         for key, val in attrs.items():
@@ -134,7 +134,7 @@ class ContentUnitUploadTestCase(unittest.TestCase):
     def test_01_create_content_unit(self):
         """Create content unit."""
         response = self.file_content_api.create(**self.attrs, file=__file__)
-        created_resources = monitor_task(response.task)
+        created_resources = monitor_task(response.task).created_resources
         content_unit = self.file_content_api.read(created_resources[0])
         self.content_unit.update(content_unit.to_dict())
         for key, val in self.attrs.items():
@@ -162,11 +162,13 @@ class ContentUnitUploadTestCase(unittest.TestCase):
     def test_03_fail_duplicate_content_unit(self):
         """Create content unit."""
         response = self.file_content_api.create(**self.attrs, file=__file__)
-        task = monitor_task(response.task)
+        with self.assertRaises(PulpTaskError) as cm:
+            monitor_task(response.task)
+        task = cm.exception.task.to_dict()
         self.assertEqual(task["state"], "failed")
-        error = task["error"]
+        error_description = task["error"]["description"]
         for key in ("already", "relative", "path", "digest"):
-            self.assertIn(key, error["description"].lower(), error)
+            self.assertIn(key, error_description.lower(), task["error"])
 
     @skip_if(bool, "content_unit", False)
     def test_03_duplicate_content_unit(self):
@@ -175,8 +177,6 @@ class ContentUnitUploadTestCase(unittest.TestCase):
         attrs["relative_path"] = utils.uuid4()
         response = self.file_content_api.create(**attrs, file=__file__)
         monitor_task(response.task)
-        task = tasks.read(response.task)
-        self.assertEqual(task.state, "completed")
 
 
 class DuplicateContentUnit(unittest.TestCase):
@@ -215,9 +215,9 @@ class DuplicateContentUnit(unittest.TestCase):
 
         # using the same attrs used to create the first content unit.
         response = self.file_content_api.create(**attrs)
-        task = monitor_task(response.task)
-        self.assertEqual(task["state"], "failed")
-        error = task["error"]
+        with self.assertRaises(PulpTaskError) as cm:
+            monitor_task(response.task)
+        error = cm.exception.task.to_dict()["error"]
         for key in ("already", "relative", "path", "digest"):
             self.assertIn(key, error["description"].lower(), error)
 
@@ -325,7 +325,9 @@ class DuplicateRelativePathsInRepo(unittest.TestCase):
 
         data = {"add_content_units": [c.pulp_href for c in content_api.list().results]}
         response = repo_api.modify(repo.pulp_href, data)
-        task = monitor_task(response.task)
+        with self.assertRaises(PulpTaskError) as cm:
+            monitor_task(response.task)
+        task = cm.exception.task.to_dict()
 
         error_message = (
             "Cannot create repository version. "

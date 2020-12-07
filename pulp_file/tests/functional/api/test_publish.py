@@ -4,13 +4,13 @@ import unittest
 from random import choice
 
 from pulp_smash import config
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, modify_repo
 
 from pulp_file.tests.functional.constants import FILE_CONTENT_NAME
 from pulp_file.tests.functional.utils import (
     gen_file_client,
     gen_file_remote,
-    monitor_task,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
@@ -73,7 +73,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         # Step 2
         publish_data = FileFilePublication(repository=repo.pulp_href)
         publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task)
+        created_resources = monitor_task(publish_response.task).created_resources
         publication_href = created_resources[0]
         self.addCleanup(publications.delete, publication_href)
         publication = publications.read(publication_href)
@@ -84,7 +84,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         # Step 4
         publish_data = FileFilePublication(repository_version=non_latest)
         publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task)
+        created_resources = monitor_task(publish_response.task).created_resources
         publication_href = created_resources[0]
         publication = publications.read(publication_href)
 
