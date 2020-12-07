@@ -3,6 +3,7 @@
 import unittest
 
 from pulp_smash import config
+from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
 from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary
 
 from pulp_file.tests.functional.constants import (
@@ -10,11 +11,7 @@ from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_SUMMARY,
     FILE_INVALID_MANIFEST_URL,
 )
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-    monitor_task,
-)
+from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 from pulpcore.client.pulp_file import (
@@ -98,7 +95,9 @@ class SyncInvalidTestCase(unittest.TestCase):
 
         Test that we get a task failure. See :meth:`do_test`.
         """
-        task = self.do_test("http://i-am-an-invalid-url.com/invalid/")
+        with self.assertRaises(PulpTaskError) as cm:
+            task = self.do_test("http://i-am-an-invalid-url.com/invalid/")
+        task = cm.exception.task.to_dict()
         self.assertIsNotNone(task["error"]["description"])
 
     def test_invalid_file(self):
@@ -107,7 +106,9 @@ class SyncInvalidTestCase(unittest.TestCase):
         Assert that an exception is raised, and that error message has
         keywords related to the reason of the failure. See :meth:`do_test`.
         """
-        task = self.do_test(FILE_INVALID_MANIFEST_URL)
+        with self.assertRaises(PulpTaskError) as cm:
+            task = self.do_test(FILE_INVALID_MANIFEST_URL)
+        task = cm.exception.task.to_dict()
         for key in ("checksum", "failed"):
             self.assertIn(key, task["error"]["description"])
 

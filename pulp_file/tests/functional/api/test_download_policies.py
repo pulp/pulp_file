@@ -3,6 +3,7 @@
 from random import choice
 import unittest
 
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 from pulp_smash.pulp3.utils import (
     delete_orphans,
@@ -19,7 +20,6 @@ from pulp_file.tests.functional.utils import (
     core_client,
     gen_file_client,
     gen_file_remote,
-    monitor_task,
     skip_if,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -134,7 +134,7 @@ class SyncPublishDownloadPolicyTestCase(unittest.TestCase):
 
         publish_data = FileFilePublication(repository=repo.pulp_href)
         publish_response = publications.create(publish_data)
-        created_resources = monitor_task(publish_response.task)
+        created_resources = monitor_task(publish_response.task).created_resources
         publication_href = created_resources[0]
         self.addCleanup(publications.delete, publication_href)
         publication = publications.read(publication_href)

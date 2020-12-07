@@ -6,6 +6,7 @@ import unittest
 
 from pulp_smash import utils
 
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 
 from pulp_file.tests.functional.constants import (
@@ -15,7 +16,6 @@ from pulp_file.tests.functional.constants import (
 from pulp_file.tests.functional.utils import (
     gen_file_client,
     gen_file_remote,
-    monitor_task,
     skip_if,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -31,6 +31,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Create class-wide variables."""
         cls.remote_api = RemotesFileApi(gen_file_client())
+        cls.remote = gen_file_remote()
 
     def test_01_create_remote(self):
         """Create a remote."""

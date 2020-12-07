@@ -3,7 +3,6 @@
 from functools import partial
 import requests
 from unittest import SkipTest
-from time import sleep
 from tempfile import NamedTemporaryFile
 
 from pulp_smash import api, config, selectors, utils
@@ -153,27 +152,3 @@ def gen_artifact(url=FILE_URL, file=None):
             return ArtifactsApi(core_client).create(file=temp_file.name).to_dict()
 
     return ArtifactsApi(core_client).create(file=file).to_dict()
-
-
-def monitor_task(task_href):
-    """Polls the Task API until the task is in a completed state.
-
-    Prints the task details and a success or failure message. Exits on failure.
-
-    Args:
-        task_href(str): The href of the task to monitor
-
-    Returns:
-        list[str]: List of hrefs that identify resource created by the task
-
-    """
-    completed = ["completed", "failed", "canceled"]
-    task = tasks.read(task_href)
-    while task.state not in completed:
-        sleep(1)
-        task = tasks.read(task_href)
-
-    if task.state == "completed":
-        return task.created_resources
-
-    return task.to_dict()
