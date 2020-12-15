@@ -13,6 +13,16 @@ Changelog
 
 .. towncrier release notes start
 
+1.5.0 (2020-12-15)
+==================
+
+
+No significant changes. Addressed pulpcore 3.9 deprecations.
+
+
+----
+
+
 1.4.0 (2020-12-02)
 ==================
 
