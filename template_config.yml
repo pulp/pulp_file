@@ -40,13 +40,12 @@ pulp_settings:
   - /tmp
   allowed_import_paths:
   - /tmp
-pulpcore_branch: master
-pulpcore_pip_version_specifier: null
+pulpcore_branch: 3.9
+pulpcore_pip_version_specifier: ~=3.9.0
 pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
 pypi_username: pulp
 redmine_project: pulp_file
-stable_branch: null
 test: false
 test_bindings: false
 test_performance: true
