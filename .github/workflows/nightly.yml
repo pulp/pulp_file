@@ -154,9 +154,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
 
-    env:
-      TEST: performance
-
     steps:
       - uses: actions/checkout@v2
         with:
@@ -168,16 +165,13 @@ jobs:
         with:
           python-version: "3.7"
 
-      - uses: actions/setup-ruby@v1
-        with:
-          ruby-version: "2.6"
-
       - name: Install httpie
         run: |
           echo ::group::HTTPIE
           sudo apt-get update -yq
           sudo -E apt-get -yq --no-install-suggests --no-install-recommends install httpie
           echo ::endgroup::
+          echo "TEST=performance" >> $GITHUB_ENV
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/.ci/assets/httpie/" >> $GITHUB_ENV
 
       - name: Install python dependencies
@@ -204,9 +198,8 @@ jobs:
         run: python3 .github/workflows/scripts/secrets.py "$SECRETS_CONTEXT"
         env:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
+
       - name: Performance test
-        env:
-          TEST: performance
         run: .github/workflows/scripts/script.sh
 
       - name: After failure
