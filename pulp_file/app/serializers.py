@@ -62,8 +62,23 @@ class FileRepositorySerializer(RepositorySerializer):
     Serializer for File Repositories.
     """
 
+    autopublish = serializers.BooleanField(
+        help_text=_(
+            "Whether to automatically create publications for new repository versions, "
+            "and update any distributions pointing to this repository."
+        ),
+        default=False,
+        required=False,
+    )
+
+    manifest = serializers.CharField(
+        help_text=_("Filename to use for manifest file containing metadata for all the files."),
+        default="PULP_MANIFEST",
+        required=False,
+    )
+
     class Meta:
-        fields = RepositorySerializer.Meta.fields
+        fields = RepositorySerializer.Meta.fields + ("autopublish", "manifest")
         model = FileRepository
 
 
@@ -99,6 +114,7 @@ class FilePublicationSerializer(PublicationSerializer):
     manifest = serializers.CharField(
         help_text=_("Filename to use for manifest file containing metadata for all the files."),
         default="PULP_MANIFEST",
+        required=False,
     )
 
     class Meta:

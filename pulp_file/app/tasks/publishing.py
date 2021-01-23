@@ -40,7 +40,9 @@ def publish(manifest, repository_version_pk):
                 file=File(open(manifest.relative_path, "rb")), publication=publication
             )
 
-    log.info(_("Publication: {publication} created").format(publication=publication.pk))
+        log.info(_("Publication: {publication} created").format(publication=publication.pk))
+
+        return publication
 
 
 def populate(publication):
