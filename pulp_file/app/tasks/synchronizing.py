@@ -42,7 +42,7 @@ def synchronize(remote_pk, repository_pk, mirror):
 
     first_stage = FileFirstStage(remote)
     dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
-    dv.create()
+    return dv.create()
 
 
 class FileFirstStage(Stage):
@@ -66,14 +66,14 @@ class FileFirstStage(Stage):
         Build and emit `DeclarativeContent` from the Manifest data.
         """
         deferred_download = self.remote.policy != Remote.IMMEDIATE  # Interpret download policy
-        with ProgressReport(message="Downloading Metadata", code="downloading.metadata") as pb:
+        with ProgressReport(message="Downloading Metadata", code="sync.downloading.metadata") as pb:
             parsed_url = urlparse(self.remote.url)
             root_dir = os.path.dirname(parsed_url.path)
             downloader = self.remote.get_downloader(url=self.remote.url)
             result = await downloader.run()
             pb.increment()
 
-        with ProgressReport(message="Parsing Metadata Lines", code="parsing.metadata") as pb:
+        with ProgressReport(message="Parsing Metadata Lines", code="sync.parsing.metadata") as pb:
             manifest = Manifest(result.path)
             entries = list(manifest.read())
 
