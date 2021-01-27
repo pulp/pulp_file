@@ -1,27 +1,22 @@
 # coding=utf-8
 """Tests that CRUD file remotes."""
 import json
-from random import choice
 import unittest
+from random import choice
 
 from pulp_smash import utils
-
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
-
-from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE2_FIXTURE_MANIFEST_URL,
-)
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-    skip_if,
-)
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
 from pulpcore.client.pulp_file import RemotesFileApi
 from pulpcore.client.pulp_file.exceptions import ApiException
+
+from pulp_file.tests.functional.constants import (
+    FILE2_FIXTURE_MANIFEST_URL,
+    FILE_FIXTURE_MANIFEST_URL,
+)
+from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
+from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
+from pulp_file.tests.functional.utils import skip_if
 
 
 class CRUDRemotesTestCase(unittest.TestCase):

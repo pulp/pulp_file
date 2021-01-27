@@ -8,13 +8,14 @@
 # For more info visit https://github.com/pulp/plugin_template
 
 import argparse
-import subprocess
+import json
 import os
 import re
-from shutil import rmtree
+import subprocess
 import tempfile
+from shutil import rmtree
+
 import requests
-import json
 from packaging import version
 
 WORKING_DIR = os.environ["WORKSPACE"]

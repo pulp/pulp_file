@@ -3,24 +3,22 @@
 import unittest
 
 from pulp_smash import utils
-from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
-from pulp_smash.pulp3.utils import gen_repo, delete_orphans
+from pulp_smash.pulp3.bindings import PulpTaskError, monitor_task
+from pulp_smash.pulp3.utils import delete_orphans, gen_repo
+from pulpcore.client.pulp_file import (
+    ContentFilesApi,
+    RepositoriesFileApi,
+    RepositoriesFileVersionsApi,
+)
 
 from pulp_file.tests.functional.utils import (
     gen_artifact,
     gen_file_client,
     gen_file_content_attrs,
     gen_file_content_upload_attrs,
-    tasks,
-    skip_if,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
-from pulpcore.client.pulp_file import (
-    ContentFilesApi,
-    RepositoriesFileApi,
-    RepositoriesFileVersionsApi,
-)
+from pulp_file.tests.functional.utils import skip_if, tasks
 
 
 class ContentUnitTestCase(unittest.TestCase):

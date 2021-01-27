@@ -9,23 +9,22 @@ from pulp_smash import config, utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo
+from pulpcore.client.pulp_file import (
+    DistributionsFileApi,
+    FileFilePublication,
+    PublicationsFileApi,
+    RemotesFileApi,
+    RepositoriesFileApi,
+    RepositorySyncURL,
+)
 
 from pulp_file.tests.functional.constants import FILE_FIXTURE_URL
 from pulp_file.tests.functional.utils import (
     gen_file_client,
-    get_file_content_paths,
     gen_file_remote,
+    get_file_content_paths,
 )
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
-from pulpcore.client.pulp_file import (
-    DistributionsFileApi,
-    PublicationsFileApi,
-    RepositoriesFileApi,
-    RepositorySyncURL,
-    RemotesFileApi,
-    FileFilePublication,
-)
 
 
 class DownloadContentTestCase(unittest.TestCase):

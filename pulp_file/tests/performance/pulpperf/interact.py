@@ -1,7 +1,8 @@
 import logging
-import requests
 import tempfile
 import time
+
+import requests
 
 from pulp_smash import config
 

@@ -18,9 +18,9 @@ from pulp_file.app.models import (
     FileContent,
     FileDistribution,
     FileFilesystemExporter,
+    FilePublication,
     FileRemote,
     FileRepository,
-    FilePublication,
 )
 
 

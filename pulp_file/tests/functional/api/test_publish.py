@@ -6,22 +6,18 @@ from random import choice
 from pulp_smash import config
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, modify_repo
-
-from pulp_file.tests.functional.constants import FILE_CONTENT_NAME
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-)
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
 from pulpcore.client.pulp_file import (
+    FileFilePublication,
     PublicationsFileApi,
+    RemotesFileApi,
     RepositoriesFileApi,
     RepositorySyncURL,
-    RemotesFileApi,
-    FileFilePublication,
 )
 from pulpcore.client.pulp_file.exceptions import ApiException
+
+from pulp_file.tests.functional.constants import FILE_CONTENT_NAME
+from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
+from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
 class PublishAnyRepoVersionTestCase(unittest.TestCase):

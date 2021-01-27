@@ -4,8 +4,9 @@ from unittest.mock import patch
 from django.core.files.storage import default_storage as storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from pulpcore.plugin.models import Artifact, ContentArtifact, RepositoryVersion
+
 from pulpcore.app.models.task import Task
+from pulpcore.plugin.models import Artifact, ContentArtifact, RepositoryVersion
 
 from pulp_file.app.models import FileContent, FileRepository
 

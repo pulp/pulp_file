@@ -18,8 +18,8 @@ from pulpcore.plugin.viewsets import (
     OperationPostponedResponse,
     PublicationViewSet,
     RemoteViewSet,
-    RepositoryViewSet,
     RepositoryVersionViewSet,
+    RepositoryViewSet,
     SingleArtifactContentUploadViewSet,
 )
 
@@ -28,17 +28,17 @@ from .models import (
     FileContent,
     FileDistribution,
     FileFilesystemExporter,
+    FilePublication,
     FileRemote,
     FileRepository,
-    FilePublication,
 )
 from .serializers import (
     FileContentSerializer,
     FileDistributionSerializer,
     FileFilesystemExporterSerializer,
+    FilePublicationSerializer,
     FileRemoteSerializer,
     FileRepositorySerializer,
-    FilePublicationSerializer,
 )
 
 

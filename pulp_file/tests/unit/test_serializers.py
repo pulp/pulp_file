@@ -1,10 +1,10 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from pulp_file.app.serializers import FileContentSerializer
-from pulp_file.app.models import FileContent
-
 from pulpcore.plugin.models import Artifact
+
+from pulp_file.app.models import FileContent
+from pulp_file.app.serializers import FileContentSerializer
 
 
 class TestFileContentSerializer(TestCase):

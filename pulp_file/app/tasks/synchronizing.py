@@ -1,6 +1,5 @@
 import logging
 import os
-
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
@@ -14,7 +13,6 @@ from pulpcore.plugin.stages import (
 
 from pulp_file.app.models import FileContent, FileRemote, FileRepository
 from pulp_file.manifest import Manifest
-
 
 log = logging.getLogger(__name__)
 

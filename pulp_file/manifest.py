@@ -1,7 +1,5 @@
 from collections import namedtuple
-
 from gettext import gettext as _
-
 
 Line = namedtuple("Line", ("number", "content"))
 

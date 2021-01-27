@@ -3,8 +3,9 @@
 import unittest
 
 from pulp_smash import config
-from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
+from pulp_smash.pulp3.bindings import PulpTaskError, monitor_task
 from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary
+from pulpcore.client.pulp_file import RemotesFileApi, RepositoriesFileApi, RepositorySyncURL
 
 from pulp_file.tests.functional.constants import (
     FILE2_FIXTURE_MANIFEST_URL,
@@ -13,12 +14,6 @@ from pulp_file.tests.functional.constants import (
 )
 from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
-from pulpcore.client.pulp_file import (
-    RepositoriesFileApi,
-    RepositorySyncURL,
-    RemotesFileApi,
-)
 
 
 class BasicSyncTestCase(unittest.TestCase):

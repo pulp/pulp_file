@@ -1,15 +1,13 @@
 import logging
-
 from gettext import gettext as _
 
 from django.core.files import File
 
-from pulpcore.plugin.models import RepositoryVersion, PublishedMetadata, RemoteArtifact
+from pulpcore.plugin.models import PublishedMetadata, RemoteArtifact, RepositoryVersion
 from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_file.app.models import FileContent, FilePublication
 from pulp_file.manifest import Entry, Manifest
-
 
 log = logging.getLogger(__name__)
 

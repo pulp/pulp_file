@@ -1,9 +1,10 @@
 # coding=utf-8
 """Utilities for tests for the file plugin."""
 from functools import partial
-import requests
-from unittest import SkipTest
 from tempfile import NamedTemporaryFile
+from unittest import SkipTest
+
+import requests
 
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.utils import (
@@ -14,6 +15,9 @@ from pulp_smash.pulp3.utils import (
     require_pulp_plugins,
     sync,
 )
+from pulpcore.client.pulp_file import ApiClient as FileApiClient
+from pulpcore.client.pulpcore import ApiClient as CoreApiClient
+from pulpcore.client.pulpcore import ArtifactsApi, TasksApi
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
@@ -24,14 +28,6 @@ from pulp_file.tests.functional.constants import (
     FILE_REPO_PATH,
     FILE_URL,
 )
-
-from pulpcore.client.pulpcore import (
-    ApiClient as CoreApiClient,
-    ArtifactsApi,
-    TasksApi,
-)
-from pulpcore.client.pulp_file import ApiClient as FileApiClient
-
 
 cfg = config.get_config()
 configuration = cfg.get_bindings_config()

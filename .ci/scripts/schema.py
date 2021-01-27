@@ -8,6 +8,7 @@ But some pulp paths start with curly brackets e.g. {artifact_href}
 This script modifies drf-spectacular schema validation to accept slashes and curly brackets.
 """
 import json
+
 from drf_spectacular.validation import JSON_SCHEMA_SPEC_PATH
 
 with open(JSON_SCHEMA_SPEC_PATH) as fh:

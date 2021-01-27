@@ -47,3 +47,10 @@ ignore = [
     ".github/**",
 ]
 
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+line_length = 100
+skip_glob= ["*/migrations/*"]
+sections = "FUTURE,STDLIB,THIRDPARTY,PULPCORE,FIRSTPARTY,LOCALFOLDER"
+known_pulpcore = "pulpcore,pulp_smash"

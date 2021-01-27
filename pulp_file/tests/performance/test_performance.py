@@ -1,14 +1,11 @@
 import datetime
 import multiprocessing
-
 from collections import namedtuple
 from unittest import TestCase
 
 from pulp_file.tests.functional.constants import FILE_PERFORMANCE_FIXTURE_URL
 
-from .pulpperf import interact
-from .pulpperf import utils
-from .pulpperf import reporting
+from .pulpperf import interact, reporting, utils
 
 Args = namedtuple("Arguments", "limit processes repositories")
 

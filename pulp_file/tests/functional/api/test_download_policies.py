@@ -1,7 +1,7 @@
 # coding=utf-8
 """Tests for Pulp`s download policies."""
-from random import choice
 import unittest
+from random import choice
 
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
@@ -11,28 +11,20 @@ from pulp_smash.pulp3.utils import (
     get_added_content_summary,
     get_content_summary,
 )
-
-from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_COUNT,
-    FILE_FIXTURE_SUMMARY,
-)
-from pulp_file.tests.functional.utils import (
-    core_client,
-    gen_file_client,
-    gen_file_remote,
-    skip_if,
-)
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
-from pulpcore.client.pulpcore import ArtifactsApi
 from pulpcore.client.pulp_file import (
     ContentFilesApi,
     FileFilePublication,
     PublicationsFileApi,
+    RemotesFileApi,
     RepositoriesFileApi,
     RepositorySyncURL,
-    RemotesFileApi,
 )
+from pulpcore.client.pulpcore import ArtifactsApi
+
+from pulp_file.tests.functional.constants import FILE_FIXTURE_COUNT, FILE_FIXTURE_SUMMARY
+from pulp_file.tests.functional.utils import core_client, gen_file_client, gen_file_remote
+from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
+from pulp_file.tests.functional.utils import skip_if
 
 
 class SyncPublishDownloadPolicyTestCase(unittest.TestCase):

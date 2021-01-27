@@ -13,7 +13,6 @@ from pulpcore.plugin.models import (
 from pulpcore.plugin.publication_utils import validate_publication_paths
 from pulpcore.plugin.repo_version_utils import remove_duplicates, validate_repo_version
 
-
 log = getLogger(__name__)
 
 

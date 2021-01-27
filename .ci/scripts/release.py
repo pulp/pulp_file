@@ -7,8 +7,8 @@
 
 import argparse
 import json
-import re
 import os
+import re
 import textwrap
 from collections import defaultdict
 from pathlib import Path
@@ -16,7 +16,6 @@ from pathlib import Path
 from git import Repo
 from redminelib import Redmine
 from redminelib.exceptions import ResourceAttrError
-
 
 REDMINE_URL = "https://pulp.plan.io"
 REDMINE_QUERY_URL = f"{REDMINE_URL}/issues?set_filter=1&status_id=*&issue_id="
