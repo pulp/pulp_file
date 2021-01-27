@@ -18,6 +18,7 @@ deploy_to_pypi: true
 docker_fixtures: true
 docs: false
 docs_test: true
+isort: true
 plugin_app_label: file
 plugin_camel: PulpFile
 plugin_camel_short: File

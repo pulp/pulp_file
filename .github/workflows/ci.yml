@@ -46,6 +46,10 @@ jobs:
           black --version
           black --check --diff .
 
+      - name: Run isort
+        run: |
+          isort -c --diff .
+
       # Lint code.
       - name: Run flake8
         run: flake8 --config flake8.cfg
