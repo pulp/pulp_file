@@ -5,7 +5,7 @@
 
 # From the _scripts directory, run with `source docs_check_sync_publish.sh` (source to preserve the
 # environment variables)
-source base.sh
+source setup.sh
 
 source repo.sh
 source remote.sh

@@ -7,7 +7,7 @@
 
 # From the _scripts directory, run with `source docs_check_upload_publish.sh` (source to preserve
 # the environment variables)
-source base.sh
+source setup.sh
 
 source repo.sh
 source artifact.sh
