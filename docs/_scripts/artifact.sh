@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 
-echo "Creating a dummy file at path FILE_CONTENT to upload."
-export FILE_CONTENT=$(head /dev/urandom | tr -dc a-z | head -c10)
-echo $FILE_CONTENT > test_upload.txt
+cleanup() {
+  echo "Cleaning up $FILE_PATH"
+  rm $FILE_PATH
+}
+trap cleanup EXIT
 
-echo "Uploading the file to Pulp, creating an artifact, storing ARTIFACT_HREF."
-export ARTIFACT_HREF=$(http --form POST $BASE_ADDR/pulp/api/v3/artifacts/ \
-    file@./test_upload.txt \
-    | jq -r '.pulp_href')
+echo "Creating a dummy file to upload."
+export FILE_CONTENT=$(head /dev/urandom | tr -dc a-z | head -c10)
+export FILE_PATH="$(head /dev/urandom | tr -dc a-z | head -c5).txt"
+echo $FILE_CONTENT > $FILE_PATH
+ARTIFACT_SHA256=$(sha256sum $FILE_PATH | cut -d' ' -f1)
+
+echo "Uploading the file to Pulp and creating an artifact"
+ARTIFACT_HREF=$(pulp artifact upload --file $FILE_PATH | jq -r '.pulp_href')
 
 echo "Inspecting new artifact."
-http $BASE_ADDR$ARTIFACT_HREF
+pulp artifact show --href $ARTIFACT_HREF

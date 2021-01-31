@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+# TODO: convert file to pulp-cli once the filesystem exporter commands are implemented
+
 export EXPORTER_NAME=$(head /dev/urandom | tr -dc a-z | head -c5)
 export DEST_DIR=$(mktemp -d -t export-XXXXXXXX)
 

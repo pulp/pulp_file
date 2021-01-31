@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
+export REMOTE_NAME=$(head /dev/urandom | tr -dc a-z | head -c5)
 echo "Creating a remote that points to an external source of files."
-http POST $BASE_ADDR/pulp/api/v3/remotes/file/file/ \
-    name='bar' \
-    url='https://fixtures.pulpproject.org/file/PULP_MANIFEST'
-
-echo "Export an environment variable for the new remote URI."
-export REMOTE_HREF=$(http $BASE_ADDR/pulp/api/v3/remotes/file/file/ | jq -r '.results[] | select(.name == "bar") | .pulp_href')
+pulp file remote create --name $REMOTE_NAME \
+    --url 'https://fixtures.pulpproject.org/file/PULP_MANIFEST'
 
 echo "Inspecting new Remote."
-http $BASE_ADDR$REMOTE_HREF
+pulp file remote show --name $REMOTE_NAME

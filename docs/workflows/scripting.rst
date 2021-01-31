@@ -7,9 +7,9 @@ of the scripts can be found at https://github.com/pulp/pulp_file/tree/master/doc
 
 The following scripts are used in conjunction with all the workflow scripts:
 
-**Base**
+**Setup**
 
-.. literalinclude:: ../_scripts/base.sh
+.. literalinclude:: ../_scripts/setup.sh
    :language: bash
 
 Correctness Check (Destructive)
