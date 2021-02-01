@@ -48,6 +48,8 @@ cd ../pulp-openapi-generator
 pip install ./pulpcore-client
 ./generate.sh pulp_file python
 pip install ./pulp_file-client
+./generate.sh pulp_certguard python
+pip install ./pulp_certguard-client
 cd $REPO_ROOT
 
 if [[ "$TEST" = 'bindings' || "$TEST" = 'publish' ]]; then
