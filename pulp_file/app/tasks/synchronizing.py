@@ -75,10 +75,12 @@ class FileFirstStage(Stage):
 
         with ProgressReport(message="Parsing Metadata Lines", code="parsing.metadata") as pb:
             manifest = Manifest(result.path)
-            pb.total = manifest.count()
+            entries = list(manifest.read())
+
+            pb.total = len(entries)
             pb.save()
 
-            for entry in manifest.read():
+            for entry in entries:
                 path = os.path.join(root_dir, entry.relative_path)
                 url = urlunparse(parsed_url._replace(path=path))
                 file = FileContent(relative_path=entry.relative_path, digest=entry.digest)

@@ -93,6 +93,23 @@ class Manifest:
         """
         self.relative_path = relative_path
 
+    @staticmethod
+    def parse(manifest_str):
+        """
+        Parse a manifest string and yield entries.
+
+        Yields:
+            Entry: for each line.
+
+        """
+        for n, line in enumerate(manifest_str.splitlines(), 1):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("#"):
+                continue
+            yield Entry.parse(Line(number=n, content=line))
+
     def read(self):
         """
         Read the file at `relative_path` and yield entries.
@@ -102,13 +119,7 @@ class Manifest:
 
         """
         with open(self.relative_path) as fp:
-            for n, line in enumerate(fp.readlines(), 1):
-                line = line.strip()
-                if not line:
-                    continue
-                if line.startswith("#"):
-                    continue
-                yield Entry.parse(Line(number=n, content=line))
+            yield from Manifest.parse(fp.read())
 
     def write(self, entries):
         """
@@ -123,17 +134,3 @@ class Manifest:
                 line = str(entry)
                 fp.write(line)
                 fp.write("\n")
-
-    def count(self):
-        """
-        Count the number entries in the manifest.
-        """
-        count = 0
-        with open(self.relative_path) as fp:
-            for line in fp:
-                if not line:
-                    continue
-                if line.startswith("#"):
-                    continue
-                count = count + 1
-        return count
