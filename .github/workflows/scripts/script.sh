@@ -34,7 +34,7 @@ if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]; then
   echo "Validating OpenAPI schema..."
   cat $PWD/.ci/scripts/schema.py | cmd_stdin_prefix bash -c "cat > /tmp/schema.py"
   cmd_prefix bash -c "python3 /tmp/schema.py"
-  # cmd_prefix bash -c "pulpcore-manager spectacular --file pulp_schema.yml --validate"
+  cmd_prefix bash -c "pulpcore-manager spectacular --file pulp_schema.yml --validate"
 
   if [ -f $POST_DOCS_TEST ]; then
     source $POST_DOCS_TEST
@@ -111,6 +111,9 @@ if [ -f $FUNC_TEST_SCRIPT ]; then
 else
     pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional
 fi
+pushd ../pulp-cli
+pytest -v -m pulp_file
+popd
 
 if [ -f $POST_SCRIPT ]; then
   source $POST_SCRIPT
