@@ -13,6 +13,8 @@ REPO_ROOT="$PWD"
 
 set -euv
 
+source .github/workflows/scripts/utils.sh
+
 if [ "${GITHUB_REF##refs/tags/}" = "${GITHUB_REF}" ]
 then
   TAG_BUILD=0
@@ -85,13 +87,6 @@ cat >> vars/main.yaml << VARSYAML
 pulp_settings: {"allowed_content_checksums": ["sha1", "sha224", "sha256", "sha384", "sha512"], "allowed_export_paths": ["/tmp"], "allowed_import_paths": ["/tmp"]}
 VARSYAML
 
-if [[ "$TEST" == "pulp" || "$TEST" == "performance" || "$TEST" == "s3" || "$TEST" == "plugin-from-pypi" ]]; then
-  sed -i -e '/^services:/a \
-  - name: pulp-fixtures\
-    image: docker.io/pulp/pulp-fixtures:latest\
-    env: {BASE_URL: "http://pulp-fixtures:8080"}' vars/main.yaml
-fi
-
 if [ "$TEST" = "s3" ]; then
   export MINIO_ACCESS_KEY=AKIAIT2Z5TDYPX3ARJBA
   export MINIO_SECRET_KEY=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
@@ -109,3 +104,7 @@ fi
 
 ansible-playbook build_container.yaml
 ansible-playbook start_container.yaml
+
+echo ::group::PIP_LIST
+cmd_prefix bash -c "pip3 list && pip3 install pipdeptree && pipdeptree"
+echo ::endgroup::
