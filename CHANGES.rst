@@ -13,6 +13,34 @@ Changelog
 
 .. towncrier release notes start
 
+1.6.0 (2021-03-05)
+==================
+
+
+Bugfixes
+--------
+
+- Fixed a bug which caused the plugin to report the default manifest's name instead of the specified
+  one in the publication endpoint.
+  `#7838 <https://pulp.plan.io/issues/7838>`_
+
+
+Improved Documentation
+----------------------
+
+- Update workflow docs to pulp-cli.
+  `#7530 <https://pulp.plan.io/issues/7530>`_
+- Add demo requirement to the Contributing process.
+  `#7704 <https://pulp.plan.io/issues/7704>`_
+- Update docs link in README.
+  `#7932 <https://pulp.plan.io/issues/7932>`_
+- Use the ReadTheDocs theme for pulp_file docs.
+  `#8165 <https://pulp.plan.io/issues/8165>`_
+
+
+----
+
+
 1.5.0 (2020-12-15)
 ==================
 
