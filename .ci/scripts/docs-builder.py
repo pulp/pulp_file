@@ -57,25 +57,6 @@ def make_directory_with_rsync(remote_paths_list):
         os.chdir(cwd)
 
 
-def ensure_dir(target_dir, clean=True):
-    """
-    Ensure that the directory specified exists and is empty.
-
-    By default this will delete the directory if it already exists
-
-    :param target_dir: The directory to process
-    :type target_dir: str
-    :param clean: Whether or not the directory should be removed and recreated
-    :type clean: bool
-    """
-    if clean:
-        rmtree(target_dir, ignore_errors=True)
-    try:
-        os.makedirs(target_dir)
-    except OSError:
-        pass
-
-
 def main():
     """
     Builds documentation using the 'make html' command and rsyncs to docs.pulpproject.org.
@@ -95,12 +76,18 @@ def main():
 
     publish_at_root = False
 
+    print(f"branch {branch}")
+    print(f"build_type {build_type}")
+
     if (not re.search("[a-zA-Z]", branch) or "post" in branch) and len(branch.split(".")) > 2:
         ga_build = True
         # Only publish docs at the root if this is the latest version
         r = requests.get("https://pypi.org/pypi/pulp-file/json")
         latest_version = version.parse(json.loads(r.text)["info"]["version"])
         docs_version = version.parse(branch)
+        print(f"latest_version {latest_version}")
+        print(f"docs_version {docs_version}")
+
         if latest_version == docs_version:
             publish_at_root = True
         # Post releases should use the x.y.z part of the version string to form a path
