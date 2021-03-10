@@ -88,7 +88,10 @@ def main():
         print(f"latest_version {latest_version}")
         print(f"docs_version {docs_version}")
 
-        if latest_version == docs_version:
+        # comparing a release part only (x.y.z) is a temporary workaround to release the latest
+        # post release on this branch. The problemis that PyPI does not update metadata
+        # in timely manner.
+        if latest_version.release == docs_version.release:
             publish_at_root = True
         # Post releases should use the x.y.z part of the version string to form a path
         if "post" in branch:
