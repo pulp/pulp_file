@@ -6,8 +6,8 @@ from pulpcore.plugin import models
 from pulpcore.plugin.serializers import (
     ContentChecksumSerializer,
     DetailRelatedField,
+    DistributionSerializer,
     FilesystemExporterSerializer,
-    PublicationDistributionSerializer,
     PublicationSerializer,
     RemoteSerializer,
     RepositorySerializer,
@@ -91,7 +91,7 @@ class FilePublicationSerializer(PublicationSerializer):
 
     distributions = DetailRelatedField(
         help_text=_("This publication is currently hosted as defined by these distributions."),
-        source="file_filedistribution",
+        source="distribution_set",
         view_name="filedistributions-detail",
         many=True,
         read_only=True,
@@ -106,13 +106,21 @@ class FilePublicationSerializer(PublicationSerializer):
         fields = PublicationSerializer.Meta.fields + ("distributions", "manifest")
 
 
-class FileDistributionSerializer(PublicationDistributionSerializer):
+class FileDistributionSerializer(DistributionSerializer):
     """
     Serializer for File Distributions.
     """
 
+    publication = DetailRelatedField(
+        required=False,
+        help_text=_("Publication to be served"),
+        view_name_pattern=r"publications(-.*/.*)?-detail",
+        queryset=models.Publication.objects.exclude(complete=False),
+        allow_null=True,
+    )
+
     class Meta:
-        fields = PublicationDistributionSerializer.Meta.fields
+        fields = DistributionSerializer.Meta.fields + ("publication",)
         model = FileDistribution
 
 
