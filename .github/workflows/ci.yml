@@ -60,6 +60,10 @@ jobs:
       - name: Check for gettext problems
         run: sh .ci/scripts/check_gettext.sh
 
+       - name: After failure - Setup Tmate
+       if: failure()
+       uses: mxschmitt/action-tmate@v3
+
   test:
     runs-on: ubuntu-latest
     # run only after lint finishes

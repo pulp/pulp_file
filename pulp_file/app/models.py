@@ -4,9 +4,9 @@ from django.db import models
 
 from pulpcore.plugin.models import (
     Content,
+    Distribution,
     FilesystemExporter,
     Publication,
-    PublicationDistribution,
     Remote,
     Repository,
 )
@@ -98,7 +98,7 @@ class FilePublication(Publication):
         validate_publication_paths(self)
 
 
-class FileDistribution(PublicationDistribution):
+class FileDistribution(Distribution):
     """
     Distribution for 'file' content.
     """
