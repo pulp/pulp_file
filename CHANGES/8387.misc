@@ -1,0 +1,2 @@
+Switches ``FileDistribution`` to inherit from ``Distribution`` instead of ``BaseDistribution``.
+Additionally ship a migration which moves the data from ``BaseDistribution`` to ``Distribution``.

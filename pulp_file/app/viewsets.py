@@ -11,8 +11,8 @@ from pulpcore.plugin.serializers import (
 )
 from pulpcore.plugin.tasking import enqueue_with_reservation, fs_publication_export
 from pulpcore.plugin.viewsets import (
-    BaseDistributionViewSet,
     ContentFilter,
+    DistributionViewSet,
     ExporterViewSet,
     ExportViewSet,
     OperationPostponedResponse,
@@ -167,7 +167,7 @@ class FilePublicationViewSet(PublicationViewSet):
         return OperationPostponedResponse(result, request)
 
 
-class FileDistributionViewSet(BaseDistributionViewSet):
+class FileDistributionViewSet(DistributionViewSet):
     """
     <!-- User-facing documentation, rendered as html-->
     FileDistributions host <a href="#operation/publications_file_file_list">File
