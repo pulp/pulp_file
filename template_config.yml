@@ -28,6 +28,7 @@ plugin_caps: PULP_FILE
 plugin_caps_short: FILE
 plugin_dash: pulp-file
 plugin_dash_short: file
+plugin_default_branch: master
 plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
