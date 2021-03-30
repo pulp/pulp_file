@@ -100,7 +100,7 @@ pulp config create --base-url http://pulp --location tests/settings.toml
 cd ..
 
 
-git clone --depth=1 https://github.com/pulp/pulpcore.git --branch 3.10
+git clone --depth=1 https://github.com/pulp/pulpcore.git --branch master
 
 cd pulpcore
 if [ -n "$PULPCORE_PR_NUMBER" ]; then
