@@ -13,6 +13,27 @@ Changelog
 
 .. towncrier release notes start
 
+1.6.1 (2021-03-30)
+==================
+
+
+Bugfixes
+--------
+
+- Added asynchronous tasking to the Update and Delete endpoints of FilesystemExporter to provide proper locking on resources.
+  `#8451 <https://pulp.plan.io/issues/8451>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- Update and Delete endpoints of FilesystemExporter changed to return 202 with tasks.
+  `#8451 <https://pulp.plan.io/issues/8451>`_
+
+
+----
+
+
 1.6.0 (2021-03-05)
 ==================
 
