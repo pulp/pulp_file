@@ -5,9 +5,14 @@ from gettext import gettext as _
 
 from django.core.files import File
 
-from pulpcore.plugin.models import RepositoryVersion, PublishedMetadata, RemoteArtifact
+from pulpcore.plugin.models import (
+    ContentArtifact,
+    RepositoryVersion,
+    PublishedMetadata,
+    RemoteArtifact,
+)
 
-from pulp_file.app.models import FileContent, FilePublication
+from pulp_file.app.models import FilePublication
 from pulp_file.manifest import Entry, Manifest
 
 
@@ -57,20 +62,19 @@ def populate(publication):
 
     """
 
-    def find_artifact():
-        _artifact = content_artifact.artifact
-        if not _artifact:
-            _artifact = RemoteArtifact.objects.filter(content_artifact=content_artifact).first()
-        return _artifact
+    content_artifacts = ContentArtifact.objects.filter(
+        content__in=publication.repository_version.content
+    ).order_by("-content__pulp_created")
 
-    for content in FileContent.objects.filter(
-        pk__in=publication.repository_version.content
-    ).order_by("-pulp_created"):
-        for content_artifact in content.contentartifact_set.all():
-            artifact = find_artifact()
-            entry = Entry(
-                relative_path=content_artifact.relative_path,
-                digest=artifact.sha256,
-                size=artifact.size,
-            )
-            yield entry
+    for content_artifact in content_artifacts.select_related("artifact").iterator():
+        if content_artifact.artifact:
+            artifact = content_artifact.artifact
+        else:
+            # TODO: this scales poorly, one query per on_demand content being published.
+            artifact = RemoteArtifact.objects.filter(content_artifact=content_artifact).first()
+        entry = Entry(
+            relative_path=content_artifact.relative_path,
+            digest=artifact.sha256,
+            size=artifact.size,
+        )
+        yield entry
