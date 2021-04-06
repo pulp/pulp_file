@@ -4,38 +4,48 @@ from django.db import connection, migrations, models, transaction
 import django.db.models.deletion
 
 
-pks_to_delete = []
-
-
-def migrate_data_from_old_master_model_to_new_master_model(apps, schema_editor):
+def migrate_data_from_old_model_to_new_model_up(apps, schema_editor):
+    """ Move objects from FileDistribution to NewFileDistribution."""
     FileDistribution = apps.get_model('file', 'FileDistribution')
-    CoreDistribution = apps.get_model('core', 'Distribution')
-    for old_file_distribution in FileDistribution.objects.all():
+    NewFileDistribution = apps.get_model('file', 'NewFileDistribution')
+    for file_distribution in FileDistribution.objects.all():
         with transaction.atomic():
-            new_master_model_entry = CoreDistribution(
-                pulp_id=old_file_distribution.pulp_id,
-                pulp_created=old_file_distribution.pulp_created,
-                pulp_last_updated=old_file_distribution.pulp_last_updated,
-                pulp_type=old_file_distribution.pulp_type,
-                name=old_file_distribution.name,
-                base_path=old_file_distribution.base_path,
-                content_guard=old_file_distribution.content_guard,
-                remote=old_file_distribution.remote,
-                publication=old_file_distribution.publication,
-            )
-            new_master_model_entry.save()
-            old_file_distribution.distribution_ptr = new_master_model_entry
-            old_file_distribution.save()
-            pks_to_delete.append(old_file_distribution.pulp_id)
+            NewFileDistribution(
+                pulp_id=file_distribution.pulp_id,
+                pulp_created=file_distribution.pulp_created,
+                pulp_last_updated=file_distribution.pulp_last_updated,
+                pulp_type=file_distribution.pulp_type,
+                name=file_distribution.name,
+                base_path=file_distribution.base_path,
+                content_guard=file_distribution.content_guard,
+                remote=file_distribution.remote,
+                publication=file_distribution.publication
+            ).save()
+            file_distribution.delete()
 
 
-def delete_remaining_old_master_model_entries(apps, schema_editor):
-    with connection.cursor() as cursor:
-        for pk in pks_to_delete:
-            cursor.execute("DELETE from core_basedistribution WHERE pulp_id = %s", [pk])
+def migrate_data_from_old_model_to_new_model_down(apps, schema_editor):
+    """ Move objects from NewFileDistribution to FileDistribution."""
+    FileDistribution = apps.get_model('file', 'FileDistribution')
+    NewFileDistribution = apps.get_model('file', 'NewFileDistribution')
+    for file_distribution in NewFileDistribution.objects.all():
+        with transaction.atomic():
+            FileDistribution(
+                pulp_id=file_distribution.pulp_id,
+                pulp_created=file_distribution.pulp_created,
+                pulp_last_updated=file_distribution.pulp_last_updated,
+                pulp_type=file_distribution.pulp_type,
+                name=file_distribution.name,
+                base_path=file_distribution.base_path,
+                content_guard=file_distribution.content_guard,
+                remote=file_distribution.remote,
+                publication=file_distribution.publication
+            ).save()
+            file_distribution.delete()
 
 
 class Migration(migrations.Migration):
+    atomic = False
 
     dependencies = [
         ('core', '0062_add_new_distribution_mastermodel'),
@@ -43,34 +53,25 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='filedistribution',
-            name='distribution_ptr',
-            field=models.OneToOneField(auto_created=True, null=True, default=None,
-                                       on_delete=django.db.models.deletion.CASCADE,
-                                       parent_link=True, primary_key=False,
-                                       related_name='file_filedistribution', serialize=False,
-                                       to='core.Distribution'),
-            preserve_default=False,
+        migrations.CreateModel(
+            name='NewFileDistribution',
+            fields=[
+                ('distribution_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, related_name='file_filedistribution', serialize=False, to='core.Distribution')),
+            ],
+            options={
+                'default_related_name': '%(app_label)s_%(model_name)s',
+            },
+            bases=('core.distribution',),
         ),
-        migrations.RunPython(migrate_data_from_old_master_model_to_new_master_model),
-        migrations.RemoveField(
-            model_name='filedistribution',
-            name='basedistribution_ptr',
+        migrations.RunPython(
+            code=migrate_data_from_old_model_to_new_model_up,
+            reverse_code=migrate_data_from_old_model_to_new_model_down,
         ),
-        migrations.AlterField(
-            model_name='filedistribution',
-            name='distribution_ptr',
-            field=models.OneToOneField(auto_created=True,
-                                       on_delete=django.db.models.deletion.CASCADE,
-                                       parent_link=True, primary_key=True,
-                                       related_name='file_filedistribution', serialize=False,
-                                       to='core.Distribution'),
-            preserve_default=False,
+        migrations.DeleteModel(
+            name='FileDistribution',
         ),
-        migrations.RemoveField(
-            model_name='filedistribution',
-            name='publication',
+        migrations.RenameModel(
+            old_name='NewFileDistribution',
+            new_name='FileDistribution',
         ),
-        migrations.RunPython(delete_remaining_old_master_model_entries),
     ]
