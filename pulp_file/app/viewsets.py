@@ -9,7 +9,7 @@ from pulpcore.plugin.serializers import (
     PublicationExportSerializer,
     RepositorySyncURLSerializer,
 )
-from pulpcore.plugin.tasking import enqueue_with_reservation, fs_publication_export
+from pulpcore.plugin.tasking import dispatch, fs_publication_export
 from pulpcore.plugin.viewsets import (
     ContentFilter,
     DistributionViewSet,
@@ -22,7 +22,6 @@ from pulpcore.plugin.viewsets import (
     RepositoryVersionViewSet,
     SingleArtifactContentUploadViewSet,
 )
-from pulpcore.plugin.viewsets.content import tasks as coretasks
 
 from . import tasks
 from .models import (
@@ -99,10 +98,14 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
         remote = serializer.validated_data.get("remote", repository.remote)
 
         mirror = serializer.validated_data.get("mirror", False)
-        result = enqueue_with_reservation(
+        result = dispatch(
             tasks.synchronize,
             [repository, remote],
-            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
+            kwargs={
+                "remote_pk": str(remote.pk),
+                "repository_pk": str(repository.pk),
+                "mirror": mirror,
+            },
         )
         return OperationPostponedResponse(result, request)
 
@@ -159,7 +162,7 @@ class FilePublicationViewSet(PublicationViewSet):
         repository_version = serializer.validated_data.get("repository_version")
         manifest = serializer.validated_data.get("manifest")
 
-        result = enqueue_with_reservation(
+        result = dispatch(
             tasks.publish,
             [repository_version.repository],
             kwargs={"repository_version_pk": str(repository_version.pk), "manifest": str(manifest)},
@@ -195,60 +198,6 @@ class FileFilesystemExporterViewSet(ExporterViewSet):
     queryset = FileFilesystemExporter.objects.all()
     serializer_class = FileFilesystemExporterSerializer
 
-    # ----8<----8<----8<----
-    # This section can be savely removed, once the plugin depends on pulpcore >= 3.12
-    @extend_schema(
-        description="Trigger an asynchronous update task",
-        responses={202: AsyncOperationResponseSerializer},
-    )
-    def update(self, request, pk, **kwargs):
-        """
-        Update a model instance.
-        """
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        app_label = instance._meta.app_label
-        async_result = enqueue_with_reservation(
-            coretasks.base.general_update,
-            [instance],
-            args=(pk, app_label, serializer.__class__.__name__),
-            kwargs={"data": request.data, "partial": partial},
-        )
-        return OperationPostponedResponse(async_result, request)
-
-    @extend_schema(
-        description="Trigger an asynchronous partial update task",
-        responses={202: AsyncOperationResponseSerializer},
-    )
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Partially update a model instance.
-        """
-        kwargs["partial"] = True
-        return self.update(request, *args, **kwargs)
-
-    @extend_schema(
-        description="Trigger an asynchronous delete task",
-        responses={202: AsyncOperationResponseSerializer},
-    )
-    def destroy(self, request, pk, **kwargs):
-        """
-        Delete a model instance.
-        """
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        app_label = instance._meta.app_label
-        async_result = enqueue_with_reservation(
-            coretasks.base.general_delete,
-            [instance],
-            args=(pk, app_label, serializer.__class__.__name__),
-        )
-        return OperationPostponedResponse(async_result, request)
-
-    # ----8<----8<----8<----
-
 
 class FileFilesystemExportViewSet(ExportViewSet):
     """
@@ -276,9 +225,9 @@ class FileFilesystemExportViewSet(ExportViewSet):
         serializer = PublicationExportSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         publication = serializer.validated_data.get("publication")
-        result = enqueue_with_reservation(
+        result = dispatch(
             fs_publication_export,
             [publication, exporter],
-            kwargs={"exporter_pk": exporter.pk, "publication_pk": publication.pk},
+            kwargs={"exporter_pk": str(exporter.pk), "publication_pk": str(publication.pk)},
         )
         return OperationPostponedResponse(result, request)
