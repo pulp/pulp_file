@@ -1,1 +1,1 @@
-pulpcore>=3.12.dev
+pulpcore>=3.12,<3.14
