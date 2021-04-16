@@ -13,6 +13,33 @@ Changelog
 
 .. towncrier release notes start
 
+1.7.0 (2021-04-16)
+==================
+
+
+Features
+--------
+
+- Add support for automatic publishing and distributing.
+  `#7469 <https://pulp.plan.io/issues/7469>`_
+
+
+Improved Documentation
+----------------------
+
+- Documented the auto-publication and auto-distribution feature.
+  `#8548 <https://pulp.plan.io/issues/8548>`_
+
+
+Misc
+----
+
+- `#8387 <https://pulp.plan.io/issues/8387>`_, `#8415 <https://pulp.plan.io/issues/8415>`_, `#8508 <https://pulp.plan.io/issues/8508>`_
+
+
+----
+
+
 1.6.1 (2021-03-30)
 ==================
 
