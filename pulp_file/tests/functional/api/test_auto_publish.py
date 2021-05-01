@@ -37,7 +37,7 @@ class AutoPublishDistributeTestCase(unittest.TestCase):
         cls.CUSTOM_MANIFEST = "TEST_MANIFEST"
 
     def setUp(self):
-        """Create remote, repo, publish settings, and distribution."""
+        """Create remote, repo, and distribution."""
         self.remote = self.remote_api.create(gen_file_remote())
         self.repo = self.repo_api.create(gen_repo(manifest=self.CUSTOM_MANIFEST, autopublish=True))
         response = self.distributions_api.create(
@@ -48,11 +48,9 @@ class AutoPublishDistributeTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Clean up."""
-        tasks = []
-        tasks.append(self.repo_api.delete(self.repo.pulp_href).task)
-        tasks.append(self.remote_api.delete(self.remote.pulp_href).task)
-        tasks.append(self.distributions_api.delete(self.distribution.pulp_href).task)
-        [monitor_task(task) for task in tasks]
+        monitor_task(self.repo_api.delete(self.repo.pulp_href).task)
+        monitor_task(self.remote_api.delete(self.remote.pulp_href).task)
+        monitor_task(self.distributions_api.delete(self.distribution.pulp_href).task)
 
     def test_01_sync(self):
         """Assert that syncing the repository triggers auto-publish and auto-distribution."""
