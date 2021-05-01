@@ -18,6 +18,8 @@ from pulpcore.client.pulp_file import (
     RepositoriesFileApi,
     RepositorySyncURL,
     RemotesFileApi,
+    ContentFilesApi,
+    PublicationsFileApi,
 )
 
 
@@ -80,6 +82,43 @@ class BasicSyncTestCase(unittest.TestCase):
 
         self.assertEqual(latest_version_href, repo.latest_version_href)
         self.assertDictEqual(get_content_summary(repo.to_dict()), FILE_FIXTURE_SUMMARY)
+
+
+class MirrorSyncTestCase(unittest.TestCase):
+    """Do a mirrored sync a repository with the file plugin."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = gen_file_client()
+
+        cls.content_api = ContentFilesApi(cls.client)
+        cls.repo_api = RepositoriesFileApi(cls.client)
+        cls.remote_api = RemotesFileApi(cls.client)
+        cls.publications_api = PublicationsFileApi(cls.client)
+
+    def setUp(self):
+        """Create remote, repo, and distribution."""
+        self.remote = self.remote_api.create(gen_file_remote())
+        self.repo = self.repo_api.create(gen_repo())
+
+    def tearDown(self):
+        """Clean up."""
+        monitor_task(self.repo_api.delete(self.repo.pulp_href).task)
+        monitor_task(self.remote_api.delete(self.remote.pulp_href).task)
+
+    def test_01_sync(self):
+        """Assert that syncing the repository w/ mirror=True creates a publication."""
+        # Sync the repository.
+        repository_sync_data = RepositorySyncURL(remote=self.remote.pulp_href, mirror=True)
+        sync_response = self.repo_api.sync(self.repo.pulp_href, repository_sync_data)
+        task = monitor_task(sync_response.task)
+
+        # Check that all the appropriate resources were created
+        self.assertEqual(len(task.created_resources), 2)
+        self.assertTrue(any(["publication" in resource for resource in task.created_resources]))
+        self.assertTrue(any(["version" in resource for resource in task.created_resources]))
 
 
 class SyncInvalidTestCase(unittest.TestCase):

@@ -4,7 +4,9 @@ import os
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressReport, Remote
+from django.core.files import File
+
+from pulpcore.plugin.models import Artifact, ProgressReport, Remote, PublishedMetadata
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
     DeclarativeContent,
@@ -12,11 +14,14 @@ from pulpcore.plugin.stages import (
     Stage,
 )
 
-from pulp_file.app.models import FileContent, FileRemote, FileRepository
+from pulp_file.app.models import FileContent, FileRemote, FileRepository, FilePublication
 from pulp_file.manifest import Manifest
 
 
 log = logging.getLogger(__name__)
+
+
+metadata_files = []
 
 
 def synchronize(remote_pk, repository_pk, mirror):
@@ -42,7 +47,24 @@ def synchronize(remote_pk, repository_pk, mirror):
 
     first_stage = FileFirstStage(remote)
     dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
-    return dv.create()
+    rv = dv.create()
+    if mirror:
+        # TODO: this is awful, we really should rewrite the DeclarativeVersion API to
+        # accomodate this use case
+        global metadata_files
+        with FilePublication.create(rv, pass_through=True) as publication:
+            (mdfile_path, relative_path) = metadata_files.pop()
+            PublishedMetadata.create_from_file(
+                file=File(open(mdfile_path, "rb")),
+                relative_path=relative_path,
+                publication=publication,
+            )
+            publication.manifest = relative_path
+            publication.save()
+
+        log.info(_("Publication: {publication} created").format(publication=publication.pk))
+
+    return rv
 
 
 class FileFirstStage(Stage):
@@ -65,6 +87,8 @@ class FileFirstStage(Stage):
         """
         Build and emit `DeclarativeContent` from the Manifest data.
         """
+        global metadata_files
+
         deferred_download = self.remote.policy != Remote.IMMEDIATE  # Interpret download policy
         with ProgressReport(message="Downloading Metadata", code="sync.downloading.metadata") as pb:
             parsed_url = urlparse(self.remote.url)
@@ -72,6 +96,7 @@ class FileFirstStage(Stage):
             downloader = self.remote.get_downloader(url=self.remote.url)
             result = await downloader.run()
             pb.increment()
+            metadata_files.append((result.path, self.remote.url.split("/")[-1]))
 
         with ProgressReport(message="Parsing Metadata Lines", code="sync.parsing.metadata") as pb:
             manifest = Manifest(result.path)
