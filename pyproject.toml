@@ -1,9 +1,66 @@
+[tool.poetry]
+name = "pulp_file"
+version = "1.8.0.dev"
+description = "File plugin for the Pulp Project"
+authors = ["Pulp Project Developers <pulp-dev@redhat.com>"]
+license = "GPL-2.0-or-later"
+readme = "README.rst"
+homepage = "https://pulpproject.org/"
+repository = "https://github.com/pulp/pulp_file"
+documentation = "https://pulp-file.readthedocs.io"
+classifiers=[
+  "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+  "Operating System :: POSIX :: Linux",
+  "Development Status :: 5 - Production/Stable",
+  "Framework :: Django",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+]
+packages = [
+    {include = "pulp_file"}
+]
+include = [
+  "LICENSE",
+  "poetry.lock",
+  "pyproject.toml",
+  "requirements.txt",
+  "CHANGES.rst",
+  "COMMITMENT",
+  "COPYRIGHT",
+  "functest_requirements.txt",
+  "test_requirements.txt",
+  "unittest_requirements.txt",
+]
+
+[tool.poetry.plugins."pulpcore.plugin"]
+"pulp_file" = "pulp_file:default_app_config"
+
+[tool.poetry.urls]
+"Redmine" = "https://pulp.plan.io/projects/pulp_file"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+pulpcore = ">=3.12"
+
+[tool.poetry.dev-dependencies]
+flake8-docstrings = "^1.5.0"
+flake8-tuple = "^0.4.1"
+flake8-quotes = "^3.0.0"
+pydocstyle = "<4"
+requests = "^2.23.0"
+black = "^19.10b0"
+bump2version = "^1.0.0"
+flake8 = "^3.8.0"
+
 [build-system]
 requires = [
+    "poetry-core>=1.0.0",
     "setuptools >= 40.8.0",
     "wheel >= 0.29.0",
 ]
-build-backend = 'setuptools.build_meta'
+build-backend = "poetry.core.masonry.api"
 
 [tool.towncrier]
 package = "pulp_file"
@@ -44,5 +101,7 @@ ignore = [
     ".ci/**",
     ".github/**",
     "pulp_manifest/**",
+    "setup.py",
+    "MANIFEST.in",
 ]
 

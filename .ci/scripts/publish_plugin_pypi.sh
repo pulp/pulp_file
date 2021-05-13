@@ -20,8 +20,5 @@ then
   exit
 fi
 
-pip install twine
-
-python3 setup.py sdist bdist_wheel --python-tag py3
-twine check dist/* || exit 1
-twine upload dist/* -u pulp -p $PYPI_PASSWORD
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+poetry publish --build --username pulp --password $PYPI_PASSWORD

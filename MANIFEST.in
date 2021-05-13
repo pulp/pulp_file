@@ -1,5 +1,6 @@
 include LICENSE
 include requirements.txt
+include poetry.lock
 include pyproject.toml
 include CHANGES.rst
 include COMMITMENT
