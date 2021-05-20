@@ -12,8 +12,10 @@ cd "$(dirname "$(realpath -e "$0")")"/../..
 
 set -euv
 
-export VERSION=$(http pulp/pulp/api/v3/status/ | jq --arg plugin file -r '.versions[] | select(.component == $plugin) | .version')
-export response=$(curl --write-out %{http_code} --silent --output /dev/null https://pypi.org/project/pulp-file-client/$VERSION/)
+export PULP_URL="${PULP_URL:-http://pulp}"
+
+export VERSION=$(http pulp/pulp/api/v3/status/ | jq --arg plugin file --arg legacy_plugin pulp_file -r '.versions[] | select(.component == $plugin or .component == $legacy_plugin) | .version')
+export response=$(curl --write-out %{http_code} --silent --output /dev/null https://pypi.org/project/pulp-file/$VERSION/)
 if [ "$response" == "200" ];
 then
   echo "pulp_file $VERSION has already been released. Skipping."
