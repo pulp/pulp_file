@@ -79,17 +79,10 @@ class FileRepository(Repository):
         from pulp_file.app import tasks
 
         if self.autopublish:
-            publication = tasks.publish(
+            tasks.publish(
                 manifest=self.manifest,
                 repository_version_pk=version.pk,
             )
-
-            distributions = self.distributions.all()
-
-            if publication and distributions:
-                for distribution in distributions:
-                    distribution.publication = publication
-                    distribution.save()
 
     def finalize_new_version(self, new_version):
         """
