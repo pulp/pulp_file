@@ -10,6 +10,7 @@ bootstrap: false
 check_commit_message: true
 check_gettext: true
 check_manifest: true
+check_openapi_schema: true
 check_stray_pulpcore_imports: true
 cherry_pick_automation: false
 coverage: false
@@ -21,6 +22,7 @@ deploy_to_pypi: true
 docker_fixtures: true
 docs: false
 docs_test: true
+issue_tracker: redmine
 plugin_app_label: file
 plugin_camel: PulpFile
 plugin_camel_short: File
@@ -66,4 +68,7 @@ travis_notifications:
     on_failure: always
     on_success: change
 update_redmine: true
-
+upgrade_range:
+- pulp_file_branch: 1.6
+  pulpcore_branch: 3.11
+  pulp-certguard_branch: 1.2
