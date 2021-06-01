@@ -28,9 +28,10 @@ export PULP_SETTINGS=$PWD/.ci/ansible/settings/settings.py
 
 export PULP_URL="http://pulp"
 
-if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]; then
+if [[ "$TEST" = "docs" ]]; then
   cd docs
-  make PULP_URL="$PULP_URL" html
+  make PULP_URL="$PULP_URL" diagrams html
+  tar -cvf docs.tar ./_build
   cd ..
 
   echo "Validating OpenAPI schema..."
@@ -50,40 +51,38 @@ if [[ "$TEST" == "plugin-from-pypi" ]]; then
 fi
 
 cd ../pulp-openapi-generator
-
 ./generate.sh pulpcore python
 pip install ./pulpcore-client
-./generate.sh pulp_file python
-pip install ./pulp_file-client
-./generate.sh pulp_certguard python
-pip install ./pulp_certguard-client
-cd $REPO_ROOT
-
-if [[ "$TEST" = 'bindings' || "$TEST" = 'publish' ]]; then
-  python $REPO_ROOT/.ci/assets/bindings/test_bindings.py
-  cd ../pulp-openapi-generator
-  if [ ! -f $REPO_ROOT/.ci/assets/bindings/test_bindings.rb ]
-  then
-    exit
-  fi
-
-  rm -rf ./pulpcore-client
-
+rm -rf ./pulpcore-client
+if [[ "$TEST" = 'bindings' ]]; then
   ./generate.sh pulpcore ruby 0
   cd pulpcore-client
-  gem build pulpcore_client
+  gem build pulpcore_client.gemspec
   gem install --both ./pulpcore_client-0.gem
-  cd ..
-  rm -rf ./pulp_file-client
+fi
+./generate.sh pulp_certguard python
+pip install ./pulp_certguard-client
+rm -rf ./pulp_certguard-client
+if [[ "$TEST" = 'bindings' ]]; then
+  ./generate.sh pulp-certguard ruby 0
+  cd pulp-certguard-client
+  gem build pulp-certguard_client.gemspec
+  gem install --bot ./pulp-certguard_client-0.gem
+fi
+cd ..
+cd $REPO_ROOT
 
-  ./generate.sh pulp_file ruby 0
+if [[ "$TEST" = 'bindings' ]]; then
+  python $REPO_ROOT/.ci/assets/bindings/test_bindings.py
+fi
 
-  cd pulp_file-client
-  gem build pulp_file_client
-  gem install --both ./pulp_file_client-0.gem
-  cd ..
-  ruby $REPO_ROOT/.ci/assets/bindings/test_bindings.rb
-  exit
+if [[ "$TEST" = 'bindings' ]]; then
+  if [ ! -f $REPO_ROOT/.ci/assets/bindings/test_bindings.rb ]; then
+    exit
+  else
+    ruby $REPO_ROOT/.ci/assets/bindings/test_bindings.rb
+    exit
+  fi
 fi
 
 cat unittest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/unittest_requirements.txt"
@@ -129,7 +128,12 @@ if [[ "$TEST" == "upgrade" ]]; then
 
   # CLI commands to display plugin versions and content data
   pulp status
-  pulp file content list
+  pulp content list
+  CONTENT_LENGTH=$(pulp content list | jq length)
+  if [[ "$CONTENT_LENGTH" == "0" ]]; then
+    echo "Empty content list"
+    exit 1
+  fi
 
   # Rebuilding bindings
   cd ../pulp-openapi-generator
