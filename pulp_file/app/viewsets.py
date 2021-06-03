@@ -1,4 +1,3 @@
-from django.http import Http404
 from django_filters import CharFilter
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -6,15 +5,12 @@ from rest_framework.decorators import action
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
-    PublicationExportSerializer,
     RepositorySyncURLSerializer,
 )
-from pulpcore.plugin.tasking import dispatch, fs_publication_export
+from pulpcore.plugin.tasking import dispatch
 from pulpcore.plugin.viewsets import (
     ContentFilter,
     DistributionViewSet,
-    ExporterViewSet,
-    ExportViewSet,
     OperationPostponedResponse,
     PublicationViewSet,
     RemoteViewSet,
@@ -27,7 +23,6 @@ from . import tasks
 from .models import (
     FileContent,
     FileDistribution,
-    FileFilesystemExporter,
     FileRemote,
     FileRepository,
     FilePublication,
@@ -35,7 +30,6 @@ from .models import (
 from .serializers import (
     FileContentSerializer,
     FileDistributionSerializer,
-    FileFilesystemExporterSerializer,
     FileRemoteSerializer,
     FileRepositorySerializer,
     FilePublicationSerializer,
@@ -184,50 +178,3 @@ class FileDistributionViewSet(DistributionViewSet):
     endpoint_name = "file"
     queryset = FileDistribution.objects.all()
     serializer_class = FileDistributionSerializer
-
-
-class FileFilesystemExporterViewSet(ExporterViewSet):
-    """
-    FilesystemExporters export content from a publication to a path on the file system.
-
-    WARNING: This feature is provided as a tech preview and may change in the future. Backwards
-    compatibility is not guaranteed.
-    """
-
-    endpoint_name = "filesystem"
-    queryset = FileFilesystemExporter.objects.all()
-    serializer_class = FileFilesystemExporterSerializer
-
-
-class FileFilesystemExportViewSet(ExportViewSet):
-    """
-    FilesystemExports provide a history of previous exports.
-    """
-
-    parent_viewset = FileFilesystemExporterViewSet
-
-    @extend_schema(
-        request=PublicationExportSerializer,
-        description="Trigger an asynchronous task to export a file publication.",
-        responses={202: AsyncOperationResponseSerializer},
-    )
-    def create(self, request, exporter_pk):
-        """
-        Export a publication to the file system.
-
-        The ``repository`` field has to be provided.
-        """
-        try:
-            exporter = FileFilesystemExporter.objects.get(pk=exporter_pk)
-        except FileFilesystemExporter.DoesNotExist:
-            raise Http404
-
-        serializer = PublicationExportSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        publication = serializer.validated_data.get("publication")
-        result = dispatch(
-            fs_publication_export,
-            [publication, exporter],
-            kwargs={"exporter_pk": str(exporter.pk), "publication_pk": str(publication.pk)},
-        )
-        return OperationPostponedResponse(result, request)
