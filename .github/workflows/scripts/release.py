@@ -9,11 +9,16 @@ import argparse
 import asyncio
 import re
 import os
+import shutil
 import textwrap
+
+from bandersnatch.mirror import BandersnatchMirror
+from bandersnatch.master import Master
+from bandersnatch.configuration import BandersnatchConfig
 
 from git import Repo
 
-from pypi_tools import get_package_from_pypi
+from packaging.requirements import Requirement
 
 
 from collections import defaultdict
@@ -26,6 +31,39 @@ REDMINE_API_KEY = os.environ["REDMINE_API_KEY"]
 REDMINE_URL = "https://pulp.plan.io"
 REDMINE_QUERY_URL = f"{REDMINE_URL}/issues?set_filter=1&status_id=*&issue_id="
 REDMINE_PROJECT = "pulp_file"
+
+
+async def get_package_from_pypi(package_name, plugin_path):
+    """
+    Download a package from PyPI.
+
+    :param name: name of the package to download from PyPI
+    :return: String path to the package
+    """
+    config = BandersnatchConfig().config
+    config["mirror"]["master"] = "https://pypi.org"
+    config["mirror"]["workers"] = "1"
+    config["mirror"]["directory"] = plugin_path
+    if not config.has_section("plugins"):
+        config.add_section("plugins")
+    config["plugins"]["enabled"] = "blocklist_release\n"
+    if not config.has_section("allowlist"):
+        config.add_section("allowlist")
+    config["plugins"]["enabled"] += "allowlist_release\nallowlist_project\n"
+    config["allowlist"]["packages"] = "\n".join([package_name])
+    os.makedirs(os.path.join(plugin_path, "dist"), exist_ok=True)
+    async with Master("https://pypi.org/") as master:
+        mirror = BandersnatchMirror(homedir=plugin_path, master=master)
+        name = Requirement(package_name).name
+        result = await mirror.synchronize([name])
+    package_found = False
+
+    for package in result[name]:
+        current_path = os.path.join(plugin_path, package)
+        destination_path = os.path.join(plugin_path, "dist", os.path.basename(package))
+        shutil.move(current_path, destination_path)
+        package_found = True
+    return package_found
 
 
 def validate_and_update_redmine_data(redmine_query_url, redmine_issues, release_version):

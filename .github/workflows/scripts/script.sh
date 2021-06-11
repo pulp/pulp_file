@@ -109,8 +109,8 @@ if [[ "$TEST" == "upgrade" ]]; then
   pytest -v -r sx --color=yes --pyargs -capture=no pulp_file.tests.upgrade.pre
 
   # Checking out ci_upgrade_test branch and upgrading plugins
-  cmd_prefix bash -c "cd pulp_file; git checkout -f ci_upgrade_test; pip install ."
   cmd_prefix bash -c "cd pulp-certguard; git checkout -f ci_upgrade_test; pip install ."
+  cmd_prefix bash -c "cd pulp_file; git checkout -f ci_upgrade_test; pip install ."
   cmd_prefix bash -c "cd pulpcore; git checkout -f ci_upgrade_test; pip install ."
 
   # Migrating
