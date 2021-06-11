@@ -119,8 +119,21 @@ def validate_and_update_redmine_data(redmine_query_url, redmine_issues, release_
     return f"{milestone.url}.json"
 
 
-def create_release_commits(repo, release_version):
+def create_release_commits(repo, release_version, plugin_path):
     """Build changelog, set version, commit, bump to next dev version, commit."""
+
+    issues_to_close = set()
+    for filename in Path(f"{plugin_path}/CHANGES").rglob("*"):
+        if filename.stem.isdigit():
+            issue = filename.stem
+            issues_to_close.add(issue)
+
+    issues = ",".join(issues_to_close)
+    redmine_final_query = f"{REDMINE_QUERY_URL}{issues}"
+    milestone_url = validate_and_update_redmine_data(
+        redmine_final_query, issues_to_close, release_version
+    )
+
     # First commit: changelog
     os.system(f"towncrier --yes --version {release_version}")
     git = repo.git
@@ -177,7 +190,7 @@ def create_release_commits(repo, release_version):
     return sha
 
 
-def create_tag_and_build_package(repo, desired_tag, commit_sha):
+def create_tag_and_build_package(repo, desired_tag, commit_sha, plugin_path):
     """Create a tag if one is needed and build a package if one is not on PyPI."""
     # Remove auth header config
     with repo.config_writer() as conf:
@@ -253,21 +266,6 @@ with open(f"{plugin_path}/setup.py") as fp:
         raise RuntimeError("Could not detect existing version ... aborting.")
 release_version = version.replace(".dev", "")
 
-
-issues_to_close = set()
-for filename in Path(f"{plugin_path}/CHANGES").rglob("*"):
-    if filename.stem.isdigit():
-        issue = filename.stem
-        issues_to_close.add(issue)
-
-issues = ",".join(issues_to_close)
-redmine_final_query = f"{REDMINE_QUERY_URL}{issues}"
-milestone_url = validate_and_update_redmine_data(
-    redmine_final_query, issues_to_close, release_version
-)
-
-
-print("\n\nHave you checked the output of: $towncrier --version x.y.z --draft")
 print(f"\n\nRepo path: {plugin_path}")
 repo = Repo(plugin_path)
 
@@ -285,7 +283,7 @@ if release_version != release_version_arg:
         )
 
 if not release_commit:
-    release_commit_sha = create_release_commits(repo, release_version)
+    release_commit_sha = create_release_commits(repo, release_version, plugin_path)
 else:
     release_commit_sha = release_commit.hexsha
-create_tag_and_build_package(repo, release_version, release_commit_sha)
+create_tag_and_build_package(repo, release_version, release_commit_sha, plugin_path)
