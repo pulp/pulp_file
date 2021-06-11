@@ -1,3 +1,0 @@
-The filesystem export functionality has been removed from pulp_file. Users should now use the
-filesystem export functionaliy in pulpcore instead. Upgrading to pulp_file 1.8.0 will drop any
-``FilesystemExporters`` in pulp_file.

@@ -1,1 +1,0 @@
-Performing a sync with "mirror=True" will automatically generate a publication at sync-time.

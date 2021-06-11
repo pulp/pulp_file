@@ -13,6 +13,36 @@ Changelog
 
 .. towncrier release notes start
 
+1.8.0 (2021-06-11)
+
+Features
+--------
+
+- Auto-publish no longer modifies distributions.
+  Auto-distribute now only requires setting a distribution's ``repository`` field.
+  `#8762 <https://pulp.plan.io/issues/8762>`_
+- Performing a sync with "mirror=True" will automatically generate a publication at sync-time.
+  `#8851 <https://pulp.plan.io/issues/8851>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- The filesystem export functionality has been removed from pulp_file. Users should now use the
+  filesystem export functionaliy in pulpcore instead. Upgrading to pulp_file 1.8.0 will drop any
+  ``FilesystemExporters`` in pulp_file.
+  `#8861 <https://pulp.plan.io/issues/8861>`_
+
+
+Misc
+----
+
+- `#8719 <https://pulp.plan.io/issues/8719>`_
+
+
+----
+
+
 1.7.0 (2021-04-16)
 ==================
 
