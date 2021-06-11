@@ -275,6 +275,7 @@ if release_version != release_version_arg:
     for commit in repo.iter_commits():
         if f"Release {release_version_arg}\n" in commit.message:
             release_commit = commit
+            release_version = release_version_arg
             break
     if not release_commit:
         raise RuntimeError(
