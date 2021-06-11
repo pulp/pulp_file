@@ -243,7 +243,7 @@ jobs:
       - name: Download Ruby client
         uses: actions/download-artifact@v2
         with:
-          name: python-client.tar
+          name: ruby-client.tar
 
       - name: Untar Ruby client packages
         run: tar -xvf ruby-client.tar
