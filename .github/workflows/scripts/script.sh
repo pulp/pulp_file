@@ -45,6 +45,16 @@ if [[ "$TEST" = "docs" ]]; then
   exit
 fi
 
+if [[ "${RELEASE_WORKFLOW:-false}" == "true" ]]; then
+  REPORTED_VERSION=$(http pulp/pulp/api/v3/status/ | jq --arg plugin file --arg legacy_plugin pulp_file -r '.versions[] | select(.component == $plugin or .component == $legacy_plugin) | .version')
+  response=$(curl --write-out %{http_code} --silent --output /dev/null https://pypi.org/project/pulp-file/$REPORTED_VERSION/)
+  if [ "$response" == "200" ];
+  then
+    echo "pulp_file $REPORTED_VERSION has already been released. Skipping running tests."
+    exit
+  fi
+fi
+
 if [[ "$TEST" == "plugin-from-pypi" ]]; then
   COMPONENT_VERSION=$(http https://pypi.org/pypi/pulp-file/json | jq -r '.info.version')
   git checkout ${COMPONENT_VERSION} -- pulp_file/tests/
