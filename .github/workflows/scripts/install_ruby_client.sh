@@ -30,7 +30,7 @@ then
   echo "pulp_file client $VERSION has already been released. Installing from RubyGems.org."
   gem install pulp_file_client -v $VERSION
   touch pulp_file_client-$VERSION.gem
-  tar cvf ../../pulp_file/ruby-client.tar ./pulp_file_client-$VERSION.gem
+  tar cvf ruby-client.tar ./pulp_file_client-$VERSION.gem
   exit
 fi
 

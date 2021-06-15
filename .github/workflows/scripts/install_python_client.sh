@@ -32,7 +32,7 @@ then
   echo "pulp_file client $VERSION has already been released. Installing from PyPI."
   pip install pulp-file-client==$VERSION
   mkdir -p dist
-  tar cvf ../../pulp_file/python-client.tar ./dist
+  tar cvf python-client.tar ./dist
   exit
 fi
 
