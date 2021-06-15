@@ -52,6 +52,7 @@ pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
 pypi_username: pulp
 redmine_project: pulp_file
+release_user: pulpbot
 stable_branch: null
 test: false
 test_bindings: false
@@ -69,6 +70,7 @@ travis_notifications:
     on_success: change
 update_redmine: true
 upgrade_range:
-- pulp_file_branch: 1.6
+- pulp-certguard_branch: 1.2
+  pulp_file_branch: 1.6
   pulpcore_branch: 3.11
-  pulp-certguard_branch: 1.2
+

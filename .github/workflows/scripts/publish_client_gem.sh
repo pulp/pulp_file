@@ -20,6 +20,12 @@ echo "---
 sudo chmod 600 ~/.gem/credentials
 
 export VERSION=$(ls pulp_file_client* | sed -rn 's/pulp_file_client-(.*)\.gem/\1/p')
+
+if [[ -z "$VERSION" ]]; then
+  echo "No client package found."
+  exit
+fi
+
 export response=$(curl --write-out %{http_code} --silent --output /dev/null https://rubygems.org/gems/pulp_file_client/versions/$VERSION)
 
 if [ "$response" == "200" ];
