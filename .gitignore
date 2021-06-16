@@ -43,4 +43,5 @@ Vagrantfile
 # Built documentation
 docs/_build
 docs/_diagrams
+docs/_static/api.json
 
