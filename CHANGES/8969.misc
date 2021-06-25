@@ -1,0 +1,1 @@
+Fixed packing problem by updating the pulpcore requirement to >=3.13.0,<3.15.
