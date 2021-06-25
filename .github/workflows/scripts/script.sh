@@ -79,7 +79,6 @@ if [[ "$TEST" = 'bindings' ]]; then
   gem build pulp-certguard_client.gemspec
   gem install --bot ./pulp-certguard_client-0.gem
 fi
-cd ..
 cd $REPO_ROOT
 
 if [[ "$TEST" = 'bindings' ]]; then
