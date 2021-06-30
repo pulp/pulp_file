@@ -1,7 +1,7 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-additional_plugins:
+additional_repos:
 - branch: master
   name: pulp-certguard
 all: false
@@ -10,6 +10,7 @@ bootstrap: false
 check_commit_message: true
 check_gettext: true
 check_manifest: true
+check_openapi_schema: true
 check_stray_pulpcore_imports: true
 cherry_pick_automation: false
 coverage: false
@@ -21,6 +22,7 @@ deploy_to_pypi: true
 docker_fixtures: true
 docs: false
 docs_test: true
+issue_tracker: redmine
 plugin_app_label: file
 plugin_camel: PulpFile
 plugin_camel_short: File
@@ -44,12 +46,13 @@ pulp_settings:
   - /tmp
   allowed_import_paths:
   - /tmp
-pulpcore_branch: '3.10'
-pulpcore_pip_version_specifier: ~=3.10.0
+pulpcore_branch: '3.12'
+pulpcore_pip_version_specifier: ~=3.12.0
 pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
 pypi_username: pulp
 redmine_project: pulp_file
+release_user: pulpbot
 stable_branch: null
 test: false
 test_bindings: false
@@ -66,4 +69,5 @@ travis_notifications:
     on_failure: always
     on_success: change
 update_redmine: true
+upgrade_range: []
 
