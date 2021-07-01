@@ -13,6 +13,17 @@ Changelog
 
 .. towncrier release notes start
 
+1.8.1 (2021-07-01)
+
+Misc
+----
+
+- `#8969 <https://pulp.plan.io/issues/8969>`_
+
+
+----
+
+
 1.8.0 (2021-06-11)
 
 Features
