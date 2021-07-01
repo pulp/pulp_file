@@ -1,0 +1,1 @@
+Fix an issue where "mirror=True" syncs of a repository which has already been synced, and has not changed since the last sync, would fail.
