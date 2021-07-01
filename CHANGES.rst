@@ -14,6 +14,7 @@ Changelog
 .. towncrier release notes start
 
 1.8.1 (2021-07-01)
+==================
 
 Misc
 ----
@@ -25,6 +26,7 @@ Misc
 
 
 1.8.0 (2021-06-11)
+==================
 
 Features
 --------
