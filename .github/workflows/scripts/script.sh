@@ -77,7 +77,8 @@ if [[ "$TEST" = 'bindings' ]]; then
   ./generate.sh pulp-certguard ruby 0
   cd pulp-certguard-client
   gem build pulp-certguard_client.gemspec
-  gem install --bot ./pulp-certguard_client-0.gem
+  gem install --both ./pulp-certguard_client-0.gem
+  cd ..
 fi
 cd $REPO_ROOT
 
@@ -109,8 +110,6 @@ export PYTHONPATH=$REPO_ROOT:$REPO_ROOT/../pulpcore${PYTHONPATH:+:${PYTHONPATH}}
 
 
 if [[ "$TEST" == "upgrade" ]]; then
-  git checkout ci_upgrade_test -- pulp_file/tests/
-
   # Handle app label change:
   sed -i "/require_pulp_plugins(/d" pulp_file/tests/functional/utils.py
 
@@ -128,9 +127,12 @@ if [[ "$TEST" == "upgrade" ]]; then
   # Restarting single container services
   cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-api"
   cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-content"
-  cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-resource-manager"
-  cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-worker@1"
-  cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-worker@2"
+  cmd_prefix bash -c "s6-svc -d /var/run/s6/services/pulpcore-resource-manager"
+  cmd_prefix bash -c "s6-svc -d /var/run/s6/services/pulpcore-worker@1"
+  cmd_prefix bash -c "s6-svc -d /var/run/s6/services/pulpcore-worker@2"
+  cmd_prefix bash -c "s6-svc -u /var/run/s6/services/new-pulpcore-resource-manager"
+  cmd_prefix bash -c "s6-svc -u /var/run/s6/services/new-pulpcore-worker@1"
+  cmd_prefix bash -c "s6-svc -u /var/run/s6/services/new-pulpcore-worker@2"
 
   echo "Restarting in 60 seconds"
   sleep 60
@@ -155,6 +157,7 @@ if [[ "$TEST" == "upgrade" ]]; then
   cd $REPO_ROOT
 
   # Running post upgrade tests
+  git checkout ci_upgrade_test -- pulp_file/tests/
   pytest -v -r sx --color=yes --pyargs -capture=no pulp_file.tests.upgrade.post
   exit
 fi
