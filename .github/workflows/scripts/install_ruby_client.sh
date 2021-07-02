@@ -35,7 +35,7 @@ then
 fi
 
 cd ../pulp-openapi-generator
-
+rm -rf pulp_file-client
 ./generate.sh pulp_file ruby $VERSION
 cd pulp_file-client
 gem build pulp_file_client
