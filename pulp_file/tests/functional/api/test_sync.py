@@ -1,15 +1,21 @@
-# coding=utf-8
 """Tests that sync file plugin repositories."""
 import unittest
 
 from pulp_smash import config
 from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
-from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary
+from pulp_smash.pulp3.utils import (
+    gen_repo,
+    get_added_content_summary,
+    get_content_summary,
+    wget_download_on_host,
+)
 
 from pulp_file.tests.functional.constants import (
-    FILE2_FIXTURE_MANIFEST_URL,
+    FILE_FIXTURE_MANIFEST_URL,
     FILE_FIXTURE_SUMMARY,
+    FILE_FIXTURE_URL,
     FILE_INVALID_MANIFEST_URL,
+    FILE2_FIXTURE_MANIFEST_URL,
 )
 from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -32,7 +38,17 @@ class BasicSyncTestCase(unittest.TestCase):
         cls.cfg = config.get_config()
         cls.client = gen_file_client()
 
-    def test_sync(self):
+    def test_sync_local(self):
+        """Test syncing from the local filesystem."""
+        wget_download_on_host(FILE_FIXTURE_URL, "/tmp")
+
+        self.do_test("file:///tmp/file/PULP_MANIFEST")
+
+    def test_sync_http(self):
+        """Test syncing from the network."""
+        self.do_test(FILE_FIXTURE_MANIFEST_URL)
+
+    def do_test(self, url):
         """Sync repositories with the file plugin.
 
         In order to sync a repository a remote has to be associated within
@@ -58,7 +74,7 @@ class BasicSyncTestCase(unittest.TestCase):
         repo = repo_api.create(gen_repo())
         self.addCleanup(repo_api.delete, repo.pulp_href)
 
-        body = gen_file_remote()
+        body = gen_file_remote(url)
         remote = remote_api.create(body)
         self.addCleanup(remote_api.delete, remote.pulp_href)
 
