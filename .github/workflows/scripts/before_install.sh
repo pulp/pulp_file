@@ -27,6 +27,9 @@ else
   BRANCH="${GITHUB_REF##refs/tags/}"
 fi
 
+COMMIT_MSG=$(git log --format=%B --no-merges -1)
+export COMMIT_MSG
+
 if [[ "$TEST" == "upgrade" ]]; then
   git checkout -b ci_upgrade_test
   cp -R .github /tmp/.github
@@ -52,9 +55,6 @@ echo "component_version: '${COMPONENT_VERSION}'" >> .ci/ansible/vars/main.yaml
 
 export PRE_BEFORE_INSTALL=$PWD/.github/workflows/scripts/pre_before_install.sh
 export POST_BEFORE_INSTALL=$PWD/.github/workflows/scripts/post_before_install.sh
-
-COMMIT_MSG=$(git log --format=%B --no-merges -1)
-export COMMIT_MSG
 
 if [ -f $PRE_BEFORE_INSTALL ]; then
   source $PRE_BEFORE_INSTALL
