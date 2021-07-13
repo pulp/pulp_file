@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from pulpcore.plugin import models
 from pulpcore.plugin.serializers import (
+    AlternateContentSourceSerializer,
     ContentChecksumSerializer,
     DetailRelatedField,
     DistributionSerializer,
@@ -14,6 +15,7 @@ from pulpcore.plugin.serializers import (
 )
 
 from pulp_file.app.models import (
+    FileAlternateContentSource,
     FileContent,
     FileDistribution,
     FileRemote,
@@ -160,3 +162,13 @@ class FileDistributionSerializer(DistributionSerializer):
     class Meta:
         fields = DistributionSerializer.Meta.fields + ("publication",)
         model = FileDistribution
+
+
+class FileAlternateContentSourceSerializer(AlternateContentSourceSerializer):
+    """
+    Serializer for File alternate content source.
+    """
+
+    class Meta:
+        fields = AlternateContentSourceSerializer.Meta.fields
+        model = FileAlternateContentSource
