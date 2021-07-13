@@ -3,6 +3,7 @@ from logging import getLogger
 from django.db import models
 
 from pulpcore.plugin.models import (
+    AlternateContentSource,
     Content,
     Distribution,
     Publication,
@@ -121,6 +122,17 @@ class FilePublication(Publication):
 class FileDistribution(Distribution):
     """
     Distribution for 'file' content.
+    """
+
+    TYPE = "file"
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
+
+class FileAlternateContentSource(AlternateContentSource):
+    """
+    Alternate Content Source for 'file" content.
     """
 
     TYPE = "file"

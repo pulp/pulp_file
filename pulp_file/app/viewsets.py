@@ -9,6 +9,7 @@ from pulpcore.plugin.serializers import (
 )
 from pulpcore.plugin.tasking import dispatch
 from pulpcore.plugin.viewsets import (
+    AlternateContentSourceViewSet,
     ContentFilter,
     DistributionViewSet,
     OperationPostponedResponse,
@@ -21,6 +22,7 @@ from pulpcore.plugin.viewsets import (
 
 from . import tasks
 from .models import (
+    FileAlternateContentSource,
     FileContent,
     FileDistribution,
     FileRemote,
@@ -28,6 +30,7 @@ from .models import (
     FilePublication,
 )
 from .serializers import (
+    FileAlternateContentSourceSerializer,
     FileContentSerializer,
     FileDistributionSerializer,
     FileRemoteSerializer,
@@ -178,3 +181,13 @@ class FileDistributionViewSet(DistributionViewSet):
     endpoint_name = "file"
     queryset = FileDistribution.objects.all()
     serializer_class = FileDistributionSerializer
+
+
+class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
+    """
+    Alternate Content Source ViewSet for File
+    """
+
+    endpoint_name = "file"
+    queryset = FileAlternateContentSource.objects.all()
+    serializer_class = FileAlternateContentSourceSerializer
