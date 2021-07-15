@@ -11,6 +11,7 @@ then
   cd ../pulpcore
   git fetch origin refs/tags/${PULPCORE_VERSION}
   git checkout FETCH_HEAD
+  pip install -r functest_requirements.txt
   cd ../pulp_file
   if [ ${PULPCORE_VERSION::3} == "3.9" ]
   then
