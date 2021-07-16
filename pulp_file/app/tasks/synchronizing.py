@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 metadata_files = []
 
 
-def synchronize(remote_pk, repository_pk, mirror):
+def synchronize(remote_pk, repository_pk, mirror, url=None):
     """
     Sync content from the remote repository.
 
@@ -34,6 +34,7 @@ def synchronize(remote_pk, repository_pk, mirror):
         remote_pk (str): The remote PK.
         repository_pk (str): The repository PK.
         mirror (bool): True for mirror mode, False for additive.
+        url (str): The url to synchronize. If omitted, the url of the remote is used.
 
     Raises:
         ValueError: If the remote does not specify a URL to sync.
@@ -45,8 +46,8 @@ def synchronize(remote_pk, repository_pk, mirror):
     if not remote.url:
         raise ValueError(_("A remote must have a url specified to synchronize."))
 
-    first_stage = FileFirstStage(remote)
-    dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
+    first_stage = FileFirstStage(remote, url)
+    dv = DeclarativeVersion(first_stage, repository, mirror=mirror, acs=True)
     rv = dv.create()
     if rv and mirror:
         # TODO: this is awful, we really should rewrite the DeclarativeVersion API to
@@ -72,16 +73,18 @@ class FileFirstStage(Stage):
     The first stage of a pulp_file sync pipeline.
     """
 
-    def __init__(self, remote):
+    def __init__(self, remote, url):
         """
         The first stage of a pulp_file sync pipeline.
 
         Args:
             remote (FileRemote): The remote data to be used when syncing
+            url (str): The base url of custom remote
 
         """
         super().__init__()
         self.remote = remote
+        self.url = url if url else remote.url
 
     async def run(self):
         """
@@ -93,12 +96,12 @@ class FileFirstStage(Stage):
         async with ProgressReport(
             message="Downloading Metadata", code="sync.downloading.metadata"
         ) as pb:
-            parsed_url = urlparse(self.remote.url)
+            parsed_url = urlparse(self.url)
             root_dir = os.path.dirname(parsed_url.path)
-            downloader = self.remote.get_downloader(url=self.remote.url)
+            downloader = self.remote.get_downloader(url=self.url)
             result = await downloader.run()
             await pb.aincrement()
-            metadata_files.append((result.path, self.remote.url.split("/")[-1]))
+            metadata_files.append((result.path, self.url.split("/")[-1]))
 
         async with ProgressReport(
             message="Parsing Metadata Lines", code="sync.parsing.metadata"
