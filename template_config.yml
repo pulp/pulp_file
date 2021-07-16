@@ -22,6 +22,7 @@ deploy_to_pypi: true
 docker_fixtures: true
 docs: false
 docs_test: true
+flake8: true
 issue_tracker: redmine
 plugin_app_label: file
 plugin_camel: PulpFile
@@ -35,6 +36,7 @@ plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
 publish_docs_to_pulpprojectdotorg: true
+pulp_scheme: http
 pulp_settings:
   allowed_content_checksums:
   - sha1
@@ -54,6 +56,7 @@ pypi_username: pulp
 redmine_project: pulp_file
 release_user: pulpbot
 stable_branch: null
+sync_ci: true
 test: false
 test_bindings: false
 test_cli: true
