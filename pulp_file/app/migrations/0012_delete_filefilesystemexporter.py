@@ -10,6 +10,7 @@ def delete_fs_exporters(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    atomic = False
 
     dependencies = [
         ('file', '0011_fix_auto_publish'),
