@@ -1,11 +1,19 @@
+import os
+
 from django_filters import CharFilter
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
+from pulpcore.plugin.models import (
+    AlternateContentSource,
+    AlternateContentSourcePath,
+    TaskGroup,
+)
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     RepositorySyncURLSerializer,
+    TaskGroupResponseSerializer,
 )
 from pulpcore.plugin.tasking import dispatch
 from pulpcore.plugin.viewsets import (
@@ -18,6 +26,7 @@ from pulpcore.plugin.viewsets import (
     RepositoryViewSet,
     RepositoryVersionViewSet,
     SingleArtifactContentUploadViewSet,
+    TaskGroupResponse,
 )
 
 from . import tasks
@@ -194,3 +203,50 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
     endpoint_name = "file"
     queryset = FileAlternateContentSource.objects.all()
     serializer_class = FileAlternateContentSourceSerializer
+
+    @extend_schema(
+        description="Trigger an asynchronous task to create Alternate Content Source content.",
+        responses={202: TaskGroupResponseSerializer},
+    )
+    @action(methods=["post"], detail=True)
+    def refresh(self, request, pk):
+        """
+        Refresh ACS metadata.
+        """
+        acs = AlternateContentSource.objects.get(pk=pk)
+        acs_paths = AlternateContentSourcePath.objects.filter(alternate_content_source=pk)
+        task_group = TaskGroup.objects.create(
+            description=f"Refreshing {acs_paths.count()} alternate content source paths."
+        )
+
+        for acs_path in acs_paths:
+            # Create or get repository for the path
+            repo_data = {
+                "name": f"{acs.name}--{acs_path.pk}--repository",
+                "retain_repo_versions": 1,
+                "user_hidden": True,
+            }
+            repo, created = FileRepository.objects.get_or_create(**repo_data)
+            if created:
+                acs_path.repository = repo
+                acs_path.save()
+            acs_url = (
+                os.path.join(acs.remote.url, acs_path.path) if acs_path.path else acs.remote.url
+            )
+
+            # Dispatching ACS path to own task and assign it to common TaskGroup
+            dispatch(
+                tasks.synchronize,
+                shared_resources=[acs.remote, acs],
+                task_group=task_group,
+                kwargs={
+                    "remote_pk": str(acs.remote.pk),
+                    "repository_pk": str(acs_path.repository.pk),
+                    "mirror": False,
+                    "url": acs_url,
+                },
+            )
+
+        # Update TaskGroup that all child task are dispatched
+        task_group.finish()
+        return TaskGroupResponse(task_group, request)
