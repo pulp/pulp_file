@@ -3,7 +3,7 @@ Scripting
 
 Each workflow renders bash scripts that allow the developers to ensure the continued correctness of
 the instructions. These scripts may also be helpful to users as a basis for their own scripts. All
-of the scripts can be found at https://github.com/pulp/pulp_file/tree/master/docs/_scripts/
+of the scripts can be found at https://github.com/pulp/pulp_file/tree/main/docs/_scripts/
 
 The following scripts are used in conjunction with all the workflow scripts:
 
