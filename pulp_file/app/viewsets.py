@@ -41,7 +41,7 @@ class FileContentFilter(ContentFilter):
     FilterSet for FileContent.
     """
 
-    sha256 = CharFilter(field_name="_artifacts__sha256")
+    sha256 = CharFilter(field_name="digest")
 
     class Meta:
         model = FileContent
