@@ -48,7 +48,7 @@ def synchronize(remote_pk, repository_pk, mirror):
     first_stage = FileFirstStage(remote)
     dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
     rv = dv.create()
-    if mirror:
+    if rv and mirror:
         # TODO: this is awful, we really should rewrite the DeclarativeVersion API to
         # accomodate this use case
         global metadata_files
