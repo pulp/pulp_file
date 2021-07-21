@@ -13,6 +13,25 @@ Changelog
 
 .. towncrier release notes start
 
+1.8.2 (2021-07-21)
+==================
+
+
+Bugfixes
+--------
+
+- Fix an issue where "mirror=True" syncs of a repository which has already been synced, and has not changed since the last sync, would fail.
+  (backported from #8999)
+  `#9060 <https://pulp.plan.io/issues/9060>`_
+- Fixed failing 0012_delete_filefilesystemexporter migration which errors if there are
+  ``FileFilesystemExporters``.
+  (backported from #9102)
+  `#9122 <https://pulp.plan.io/issues/9122>`_
+
+
+----
+
+
 1.8.1 (2021-07-01)
 ==================
 
