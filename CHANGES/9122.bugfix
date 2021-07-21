@@ -1,3 +1,0 @@
-Fixed failing 0012_delete_filefilesystemexporter migration which errors if there are
-``FileFilesystemExporters``.
-(backported from #9102)
