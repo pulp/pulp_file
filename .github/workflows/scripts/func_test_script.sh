@@ -19,4 +19,6 @@ then
   fi
 fi
 
+pip install -r ../pulpcore/functest_requirements.txt
+
 pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional || show_logs_and_return_non_zero
