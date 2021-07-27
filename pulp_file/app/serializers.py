@@ -38,6 +38,8 @@ class FileContentSerializer(SingleArtifactContentUploadSerializer, ContentChecks
         )
 
         if content.exists():
+            content.get().touch()
+
             raise serializers.ValidationError(
                 _(
                     "There is already a file content with relative path '{path}' and digest "
