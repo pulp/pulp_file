@@ -28,6 +28,8 @@ class FileContent(Content):
         digest (str): The SHA256 HEX digest.
     """
 
+    PROTECTED_FROM_RECLAIM = False
+
     TYPE = "file"
     repo_key_fields = ("relative_path",)
 
