@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-export BASE_ADDR=http://pulp:80
+export BASE_ADDR=https://pulp:443
 
 cd docs/_scripts/
 bash docs_check_upload_publish.sh

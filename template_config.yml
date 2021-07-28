@@ -38,7 +38,7 @@ plugin_name: pulp_file
 plugin_snake: pulp_file
 plugin_snake_short: file
 publish_docs_to_pulpprojectdotorg: true
-pulp_scheme: http
+pulp_scheme: https
 pulp_settings:
   allowed_content_checksums:
   - sha1
