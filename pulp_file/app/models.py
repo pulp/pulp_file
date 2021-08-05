@@ -124,7 +124,7 @@ class FileDistribution(Distribution):
     """
 
     TYPE = "file"
-    publication_based = True
+    SERVE_FROM_PUBLICATION = True
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
