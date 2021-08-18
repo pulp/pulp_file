@@ -90,20 +90,24 @@ class FileFirstStage(Stage):
         global metadata_files
 
         deferred_download = self.remote.policy != Remote.IMMEDIATE  # Interpret download policy
-        with ProgressReport(message="Downloading Metadata", code="sync.downloading.metadata") as pb:
+        async with ProgressReport(
+            message="Downloading Metadata", code="sync.downloading.metadata"
+        ) as pb:
             parsed_url = urlparse(self.remote.url)
             root_dir = os.path.dirname(parsed_url.path)
             downloader = self.remote.get_downloader(url=self.remote.url)
             result = await downloader.run()
-            pb.increment()
+            await pb.aincrement()
             metadata_files.append((result.path, self.remote.url.split("/")[-1]))
 
-        with ProgressReport(message="Parsing Metadata Lines", code="sync.parsing.metadata") as pb:
+        async with ProgressReport(
+            message="Parsing Metadata Lines", code="sync.parsing.metadata"
+        ) as pb:
             manifest = Manifest(result.path)
             entries = list(manifest.read())
 
             pb.total = len(entries)
-            pb.save()
+            await pb.asave()
 
             for entry in entries:
                 path = os.path.join(root_dir, entry.relative_path)
@@ -118,5 +122,5 @@ class FileFirstStage(Stage):
                     deferred_download=deferred_download,
                 )
                 dc = DeclarativeContent(content=file, d_artifacts=[da])
-                pb.increment()
+                await pb.aincrement()
                 await self.put(dc)
