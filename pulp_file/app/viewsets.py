@@ -186,6 +186,8 @@ class FileDistributionViewSet(DistributionViewSet):
 class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
     """
     Alternate Content Source ViewSet for File
+
+    ACS support is provided as a tech preview in pulp_file.
     """
 
     endpoint_name = "file"
