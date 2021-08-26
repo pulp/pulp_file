@@ -13,6 +13,45 @@ Changelog
 
 .. towncrier release notes start
 
+1.9.0 (2021-08-26)
+==================
+
+
+Features
+--------
+
+- Enable reclaim disk feature provided by pulpcore. This feature is available with pulpcore 3.15+.
+  `#9168 <https://pulp.plan.io/issues/9168>`_
+
+
+Bugfixes
+--------
+
+- Fix an issue where "mirror=True" syncs of a repository which has already been synced, and has not changed since the last sync, would fail.
+  `#8999 <https://pulp.plan.io/issues/8999>`_
+- Fixed failing 0012_delete_filefilesystemexporter migration which errors if there are
+  ``FileFilesystemExporters``.
+  `#9102 <https://pulp.plan.io/issues/9102>`_
+- Fixed filtering content by sha256 for on-demand content.
+  `#9117 <https://pulp.plan.io/issues/9117>`_
+
+
+Deprecations and Removals
+-------------------------
+
+- Dropped support for Python 3.6 and 3.7. pulp_file now supports Python 3.8+.
+  `#9037 <https://pulp.plan.io/issues/9037>`_
+
+
+Misc
+----
+
+- `#8959 <https://pulp.plan.io/issues/8959>`_, `#9154 <https://pulp.plan.io/issues/9154>`_
+
+
+----
+
+
 1.8.2 (2021-07-21)
 ==================
 
