@@ -3,7 +3,7 @@
 
 set -mveuo pipefail
 
-pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional || show_logs_and_return_non_zero
+pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional
 
 if [ "${GITHUB_REF##refs/tags/}" != "${GITHUB_REF}" ]
 then
@@ -21,4 +21,4 @@ fi
 
 pip install -r ../pulpcore/functest_requirements.txt
 
-pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional || show_logs_and_return_non_zero
+pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional
