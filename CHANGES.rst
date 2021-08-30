@@ -13,6 +13,21 @@ Changelog
 
 .. towncrier release notes start
 
+1.9.1 (2021-08-30)
+==================
+
+
+Bugfixes
+--------
+
+- Fixed bug where sync tasks would open a lot of DB connections.
+  (backported from #9252)
+  `#9311 <https://pulp.plan.io/issues/9311>`_
+
+
+----
+
+
 1.9.0 (2021-08-26)
 ==================
 
