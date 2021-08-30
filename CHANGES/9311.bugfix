@@ -1,0 +1,2 @@
+Fixed bug where sync tasks would open a lot of DB connections.
+(backported from #9252)
