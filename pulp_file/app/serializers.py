@@ -169,6 +169,13 @@ class FileAlternateContentSourceSerializer(AlternateContentSourceSerializer):
     Serializer for File alternate content source.
     """
 
+    def validate_paths(self, paths):
+        """Validate that paths do not start with /."""
+        for path in paths:
+            if path.startswith("/"):
+                raise serializers.ValidationError(_("Path cannot start with a slash."))
+        return paths
+
     class Meta:
         fields = AlternateContentSourceSerializer.Meta.fields
         model = FileAlternateContentSource
