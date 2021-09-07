@@ -1,6 +1,3 @@
-import uuid
-from unittest.mock import patch
-
 from django.core.files.storage import default_storage as storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -42,15 +39,11 @@ class RepositoryVersionCRUDTestCase(TestCase):
         self.content_artifact.save()
         self.repository = FileRepository.objects.create(name="foo")
         self.repository.save()
-        self.task = Task.objects.create(
-            state="Completed", name="test-task", _resource_job_id=uuid.uuid4()
-        )
+        self.task = Task.objects.create(state="Completed", name="test-task")
         self.task.save()
 
-    @patch("pulpcore.app.models.task.get_current_job")
-    def test_create_repository_version(self, mock_task):
+    def test_create_repository_version(self):
         """Test creating a RepositoryVersion."""
-        mock_task.return_value.id = self.task.pk
         with self.repository.new_version() as new_version:
             new_version.add_content(FileContent.objects.filter(pk=self.content.pk))
         self.assertTrue(RepositoryVersion.objects.filter().exists())
