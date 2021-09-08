@@ -97,7 +97,8 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
         mirror = serializer.validated_data.get("mirror", False)
         result = dispatch(
             tasks.synchronize,
-            [repository, remote],
+            shared_resources=[remote],
+            exclusive_resources=[repository],
             kwargs={
                 "remote_pk": str(remote.pk),
                 "repository_pk": str(repository.pk),
@@ -161,7 +162,7 @@ class FilePublicationViewSet(PublicationViewSet):
 
         result = dispatch(
             tasks.publish,
-            [repository_version.repository],
+            shared_resources=[repository_version.repository],
             kwargs={"repository_version_pk": str(repository_version.pk), "manifest": str(manifest)},
         )
         return OperationPostponedResponse(result, request)
