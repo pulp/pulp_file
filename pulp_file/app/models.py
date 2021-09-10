@@ -139,6 +139,7 @@ class FileAlternateContentSource(AlternateContentSource):
     """
 
     TYPE = "file"
+    REMOTE_TYPES = [FileRemote]
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
