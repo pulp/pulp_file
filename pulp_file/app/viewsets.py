@@ -81,7 +81,7 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     """
 
     endpoint_name = "file"
-    queryset = FileRepository.objects.all()
+    queryset = FileRepository.objects.exclude(user_hidden=True)
     serializer_class = FileRepositorySerializer
 
     @extend_schema(
