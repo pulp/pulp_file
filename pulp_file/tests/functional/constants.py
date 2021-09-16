@@ -35,6 +35,11 @@ FILE_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "file/")
 FILE_FIXTURE_MANIFEST_URL = urljoin(FILE_FIXTURE_URL, "PULP_MANIFEST")
 """The URL to a file repository manifest."""
 
+FILE_MANIFEST_ONLY_FIXTURE_URL = urljoin(
+    PULP_FIXTURES_BASE_URL, "/".join(("file-manifest", "PULP_MANIFEST"))
+)
+"""The URL to a file manifest only repository."""
+
 FILE_FIXTURE_COUNT = 3
 """The number of packages available at :data:`FILE_FIXTURE_URL`."""
 
