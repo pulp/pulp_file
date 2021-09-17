@@ -3,6 +3,7 @@ import os
 from django_filters import CharFilter
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.models import (
@@ -213,7 +214,7 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
         """
         Refresh ACS metadata.
         """
-        acs = AlternateContentSource.objects.get(pk=pk)
+        acs = get_object_or_404(AlternateContentSource, pk=pk)
         acs_paths = AlternateContentSourcePath.objects.filter(alternate_content_source=pk)
         task_group = TaskGroup.objects.create(
             description=f"Refreshing {acs_paths.count()} alternate content source paths."
