@@ -14,7 +14,7 @@ from pulpcore.plugin.models import (
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     RepositorySyncURLSerializer,
-    TaskGroupResponseSerializer,
+    TaskGroupOperationResponseSerializer,
 )
 from pulpcore.plugin.tasking import dispatch
 from pulpcore.plugin.viewsets import (
@@ -27,7 +27,7 @@ from pulpcore.plugin.viewsets import (
     RepositoryViewSet,
     RepositoryVersionViewSet,
     SingleArtifactContentUploadViewSet,
-    TaskGroupResponse,
+    TaskGroupOperationResponse,
 )
 
 from . import tasks
@@ -207,7 +207,7 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
 
     @extend_schema(
         description="Trigger an asynchronous task to create Alternate Content Source content.",
-        responses={202: TaskGroupResponseSerializer},
+        responses={202: TaskGroupOperationResponseSerializer},
     )
     @action(methods=["post"], detail=True)
     def refresh(self, request, pk):
@@ -250,4 +250,4 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
 
         # Update TaskGroup that all child task are dispatched
         task_group.finish()
-        return TaskGroupResponse(task_group, request)
+        return TaskGroupOperationResponse(task_group, request)
