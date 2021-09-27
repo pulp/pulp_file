@@ -9,12 +9,10 @@ How to use these docs
 ---------------------
 
 The documentation here should be considered **the primary documentation for managing File
-content**. See `How to navigate the pulpcore and plugin docs
-<https://docs.pulpproject.org/en/3.0/nightly/index.html#how-to-navigate-the-pulpcore-and-plugin-docs>`_
-for a more thorough explanation.
+content**.
 
 All relevent workflows are covered here, with references to pulpcore supplemental docs. Users may
-also find `pulpcore's conceptual docs <https://docs.pulpproject.org/en/3.0/nightly/concepts.html>`_
+also find `pulpcore's conceptual docs <https://docs.pulpproject.org/pulpcore/concepts.html>`_
 helpful. Here, the documentation falls into two main categories:
 
   1. :ref:`workflows-index` show the **major features** of the File plugin, with links to reference
@@ -30,9 +28,9 @@ Also, contributions are greatly appreciated in the form of:
 
   1. `Redmine Issues <https://pulp.plan.io/projects/pulp_file/issues>`_
   2. `Github Pull Requests <https://github.com/pulp/pulp_file>`_
-  3. `Helping other users <https://docs.pulpproject.org/en/3.0/nightly/#community>`_
+  3. `Helping other users <https://pulpproject.org/get_involved/>`_
 
-We can usually be found on freenode in `#pulp-dev` and `#pulp`.
+We can usually be found on Matrix in `pulp-dev` and `pulp` rooms.
 
 Table of Contents
 -----------------
@@ -53,4 +51,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
