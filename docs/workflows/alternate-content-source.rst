@@ -6,24 +6,23 @@ ACS.
 
 .. code-block:: bash
 
-    http POST localhost:24817/pulp/api/v3/remotes/file/file/ name="remoteForACS" policy="on_demand" url="http://fixtures.pulpproject.org/"
+    pulp file remote create --name remoteForACS --policy on_demand --url http://fixtures.pulpproject.org/
 
 Create Alternate Content Source
 -------------------------------
 
 .. code-block:: bash
 
-    http POST localhost:24817/pulp/api/v3/acs/file/file/ name="fileAcs" remote=<pulp-remote-href> paths:='["file/PULP_MANIFEST", "backup/MANIFEST"]'
+    pulp file acs create --name fileAcs --remote remoteForACS --path "file/PULP_MANIFEST" --path "file2/PULP_MANIFEST"
 
 Refresh ACS
 -----------
 
-To make your ACS available for future syncs you need to call ``refresh`` endpoint
-on your ACS.
+To make your ACS available for future syncs you need to call ``refresh`` on your ACS.
 
 .. code-block:: bash
 
-    http POST localhost:24817/pulp/api/v3/acs/file/file/<ACS-UUID>/refresh/
+    pulp file acs refresh --name fileAcs
 
-Alternate Content Source has a global scope so if any content is found in ACS it
-will be used in all future syncs.
+Alternate Content Sources have a global scope so if any content is found in ACS it will be used in
+all future syncs.
