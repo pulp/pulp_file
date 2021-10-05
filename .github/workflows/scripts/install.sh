@@ -47,7 +47,7 @@ image:
   tag: "${TAG}"
 plugins:
   - name: pulpcore
-    source: pulpcore
+    source: pulpcore~=3.16.0
   - name: pulp_file
     source:  "${PLUGIN_NAME}"
   - name: pulp-certguard
