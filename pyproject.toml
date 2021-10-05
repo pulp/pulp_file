@@ -43,6 +43,5 @@ ignore = [
     ".pep8speaks.yml",
     ".ci/**",
     ".github/**",
-    "pulp_manifest/**",
 ]
 
