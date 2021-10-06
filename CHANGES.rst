@@ -13,6 +13,48 @@ Changelog
 
 .. towncrier release notes start
 
+1.10.0 (2021-10-06)
+===================
+
+
+Features
+--------
+
+- Added in validation of ACS paths.
+  `#9341 <https://pulp.plan.io/issues/9341>`_
+- Added refresh endpoint for Alternate Content Sources.
+  `#9377 <https://pulp.plan.io/issues/9377>`_
+- Enabled remote type validation for the ACS.
+  `#9384 <https://pulp.plan.io/issues/9384>`_
+
+
+Bugfixes
+--------
+
+- Fixed bug where sync tasks would open a lot of DB connections.
+  `#9252 <https://pulp.plan.io/issues/9252>`_
+- Fixed bug where user hidden repos were visible to the user.
+  `#9416 <https://pulp.plan.io/issues/9416>`_
+- Check whether ACS exists before refreshing it.
+  `#9420 <https://pulp.plan.io/issues/9420>`_
+
+
+Improved Documentation
+----------------------
+
+- Updated ACS docs to use CLI.
+  `#9373 <https://pulp.plan.io/issues/9373>`_
+
+
+Misc
+----
+
+- `#9357 <https://pulp.plan.io/issues/9357>`_, `#9426 <https://pulp.plan.io/issues/9426>`_
+
+
+----
+
+
 1.9.1 (2021-08-30)
 ==================
 
