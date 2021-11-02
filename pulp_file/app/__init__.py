@@ -8,4 +8,4 @@ class PulpFilePluginAppConfig(PulpPluginAppConfig):
 
     name = "pulp_file.app"
     label = "file"
-    version = "1.10.1"
+    version = "1.10.2.dev"
