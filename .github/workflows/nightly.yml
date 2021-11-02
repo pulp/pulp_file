@@ -23,6 +23,7 @@ jobs:
         env:
           - TEST: pulp
           - TEST: docs
+          - TEST: azure
           - TEST: s3
           - TEST: generate-bindings
           - TEST: plugin-from-pypi
@@ -310,6 +311,12 @@ jobs:
   performance:
     runs-on: ubuntu-latest
     needs: test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - TEST: performance
 
     steps:
       - uses: actions/checkout@v2
