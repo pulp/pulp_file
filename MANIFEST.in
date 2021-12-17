@@ -7,3 +7,4 @@ include COPYRIGHT
 include functest_requirements.txt
 include test_requirements.txt
 include unittest_requirements.txt
+recursive-exclude pulp_file/tests/fixtures/ *

@@ -1,14 +1,13 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-39-gb86dbd0
+# generated with plugin_template@2021.08.26-47-g98a48cc
 
 additional_repos:
-- branch: master
+- branch: main
   name: pulp-certguard
-all: false
+aiohttp_fixtures_origin: 172.18.0.1
 black: true
-bootstrap: false
 check_commit_message: true
 check_gettext: true
 check_manifest: true
@@ -24,9 +23,9 @@ deploy_client_to_rubygems: true
 deploy_daily_client_to_pypi: true
 deploy_daily_client_to_rubygems: true
 deploy_to_pypi: true
-disabled_redis_runners: []
+disabled_redis_runners:
+- s3
 docker_fixtures: true
-docs: false
 docs_test: true
 flake8: true
 issue_tracker: redmine
@@ -71,8 +70,7 @@ release_user: pulpbot
 single_commit_check: true
 stable_branch: null
 sync_ci: true
-tasking_allow_async_unsafe: false
-test: false
+tasking_allow_async_unsafe: true
 test_azure: true
 test_bindings: false
 test_cli: true
@@ -80,13 +78,6 @@ test_fips_nightly: false
 test_performance: true
 test_released_plugin_with_next_pulpcore_release: true
 test_s3: true
-travis_addtl_services: []
-travis_notifications:
-  irc:
-    channels:
-    - chat.freenode.net#pulp-build
-    on_failure: always
-    on_success: change
 update_redmine: true
 upgrade_range:
 - pulp-certguard_branch: 1.2

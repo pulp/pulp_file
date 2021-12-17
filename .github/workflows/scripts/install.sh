@@ -29,7 +29,7 @@ TAG=ci_build
 if [ -e $REPO_ROOT/../pulp-certguard ]; then
   PULP_CERTGUARD=./pulp-certguard
 else
-  PULP_CERTGUARD=git+https://github.com/pulp/pulp-certguard.git@master
+  PULP_CERTGUARD=git+https://github.com/pulp/pulp-certguard.git@main
 fi
 if [[ "$TEST" == "plugin-from-pypi" ]]; then
   PLUGIN_NAME=pulp_file
