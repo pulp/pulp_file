@@ -26,7 +26,7 @@ Community
 This plugin exists to serve the community. If we can do more for your use case, please let us know!
 Also, contributions are greatly appreciated in the form of:
 
-  1. `Redmine Issues <https://pulp.plan.io/projects/pulp_file/issues>`_
+  1. `Github Issues <https://github.com/pulp/pulp_file/issues>`_
   2. `Github Pull Requests <https://github.com/pulp/pulp_file>`_
   3. `Helping other users <https://pulpproject.org/get_involved/>`_
 
