@@ -6,33 +6,54 @@ from pathlib import Path
 import pytest
 
 from pulpcore.client.pulp_file import (
+    ApiClient,
+    AcsFileApi,
     ContentFilesApi,
+    DistributionsFileApi,
     RepositoriesFileApi,
+    RepositoriesFileVersionsApi,
     RemotesFileApi,
+    PublicationsFileApi,
 )
 from pulp_smash.pulp3.utils import gen_repo
-
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-)
 
 
 _logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session")
-def file_client():
-    return gen_file_client()
+def file_client(bindings_cfg):
+    return ApiClient(bindings_cfg)
 
 
 @pytest.fixture(scope="session")
-def content_file_api_client(file_client):
+def file_acs_api_client(file_client):
+    return AcsFileApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_content_api_client(file_client):
     return ContentFilesApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_distro_api_client(file_client):
+    return DistributionsFileApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_pub_api_client(file_client):
+    return PublicationsFileApi(file_client)
 
 
 @pytest.fixture(scope="session")
 def file_repo_api_client(file_client):
     return RepositoriesFileApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_repo_ver_api_client(file_client):
+    return RepositoriesFileVersionsApi(file_client)
 
 
 @pytest.fixture

@@ -4,6 +4,7 @@ from django.db import models
 
 from pulpcore.plugin.models import (
     AlternateContentSource,
+    AutoAddObjPermsMixin,
     Content,
     Distribution,
     Publication,
@@ -42,7 +43,7 @@ class FileContent(Content):
         unique_together = ("relative_path", "digest")
 
 
-class FileRemote(Remote):
+class FileRemote(Remote, AutoAddObjPermsMixin):
     """
     Remote for "file" content.
     """
@@ -51,9 +52,12 @@ class FileRemote(Remote):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("manage_roles_fileremote", "Can manage roles on file remotes"),
+        ]
 
 
-class FileRepository(Repository):
+class FileRepository(Repository, AutoAddObjPermsMixin):
     """
     The "file" repository type.
     """
@@ -67,6 +71,12 @@ class FileRepository(Repository):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("sync_filerepository", "Can start a sync task"),
+            ("modify_filerepository", "Can modify content of the repository"),
+            ("manage_roles_filerepository", "Can manage roles on file repositories"),
+            ("repair_filerepository", "Can repair repository versions"),
+        ]
 
     def on_new_version(self, version):
         """
@@ -102,7 +112,7 @@ class FileRepository(Repository):
         validate_repo_version(new_version)
 
 
-class FilePublication(Publication):
+class FilePublication(Publication, AutoAddObjPermsMixin):
     """
     Publication for 'file' content.
     """
@@ -113,6 +123,9 @@ class FilePublication(Publication):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("manage_roles_filepublication", "Can manage roles on file publications"),
+        ]
 
     def finalize_new_publication(self):
         """
@@ -121,7 +134,7 @@ class FilePublication(Publication):
         validate_publication_paths(self)
 
 
-class FileDistribution(Distribution):
+class FileDistribution(Distribution, AutoAddObjPermsMixin):
     """
     Distribution for 'file' content.
     """
@@ -131,9 +144,12 @@ class FileDistribution(Distribution):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("manage_roles_filedistribution", "Can manage roles on file distributions"),
+        ]
 
 
-class FileAlternateContentSource(AlternateContentSource):
+class FileAlternateContentSource(AlternateContentSource, AutoAddObjPermsMixin):
     """
     Alternate Content Source for 'file" content.
     """
@@ -143,3 +159,7 @@ class FileAlternateContentSource(AlternateContentSource):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("refresh_filealternatecontentsource", "Can refresh ACS metadata"),
+            ("manage_roles_filealternatecontentsource", "Can manage roles on file ACS"),
+        ]
