@@ -3,7 +3,8 @@
 
 set -mveuo pipefail
 
-pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional
+pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m "parallel and not nightly" -n 8
+pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m "not parallel and not nightly"
 
 if [ "${GITHUB_REF##refs/tags/}" != "${GITHUB_REF}" ]
 then
@@ -21,4 +22,5 @@ fi
 
 pip install -r ../pulpcore/functest_requirements.txt
 
-pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional
+pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m "parallel and not nightly" -n 8
+pytest -v -r sx --color=yes --pyargs pulpcore.tests.functional -m "not parallel and not nightly"

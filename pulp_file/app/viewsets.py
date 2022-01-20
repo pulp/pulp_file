@@ -26,6 +26,7 @@ from pulpcore.plugin.viewsets import (
     RemoteViewSet,
     RepositoryViewSet,
     RepositoryVersionViewSet,
+    RolesMixin,
     SingleArtifactContentUploadViewSet,
     TaskGroupOperationResponse,
 )
@@ -73,8 +74,18 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
     serializer_class = FileContentSerializer
     filterset_class = FileContentFilter
 
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "retrieve", "create"],
+                "principal": "authenticated",
+                "effect": "allow",
+            },
+        ],
+    }
 
-class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
+
+class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, RolesMixin):
     """
     <!-- User-facing documentation, rendered as html-->
     FileRepository represents a single file repository, to which content can be synced, added,
@@ -84,9 +95,99 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     endpoint_name = "file"
     queryset = FileRepository.objects.exclude(user_hidden=True)
     serializer_class = FileRepositorySerializer
+    queryset_filtering_required_permission = "file.view_filerepository"
+
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "my_permissions"],
+                "principal": "authenticated",
+                "effect": "allow",
+            },
+            {
+                "action": ["create"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_perms:file.add_filerepository",
+                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                ],
+            },
+            {
+                "action": ["retrieve"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_model_or_obj_perms:file.view_filerepository",
+            },
+            {
+                "action": ["destroy"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.delete_filerepository",
+                    "has_model_or_obj_perms:file.view_filerepository",
+                ],
+            },
+            {
+                "action": ["update", "partial_update"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.change_filerepository",
+                    "has_model_or_obj_perms:file.view_filerepository",
+                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                ],
+            },
+            {
+                "action": ["sync"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.sync_filerepository",
+                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_obj_perms:file.view_filerepository",
+                ],
+            },
+            {
+                "action": ["modify"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.modify_filerepository",
+                    "has_model_or_obj_perms:file.view_filerepository",
+                ],
+            },
+            {
+                "action": ["list_roles", "add_role", "remove_role"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": ["has_model_or_obj_perms:file.manage_roles_filerepository"],
+            },
+        ],
+        "creation_hooks": [
+            {
+                "function": "add_roles_for_object_creator",
+                "parameters": {"roles": "file.filerepository_owner"},
+            },
+        ],
+    }
+    LOCKED_ROLES = {
+        "file.filerepository_creator": ["file.add_filerepository"],
+        "file.filerepository_owner": [
+            "file.view_filerepository",
+            "file.change_filerepository",
+            "file.delete_filerepository",
+            "file.modify_filerepository",
+            "file.sync_filerepository",
+            "file.manage_roles_filerepository",
+            "file.repair_filerepository",
+        ],
+        "file.filerepository_viewer": ["file.view_filerepository"],
+    }
 
     @extend_schema(
         description="Trigger an asynchronous task to sync file content.",
+        summary="Sync from a remote",
         responses={202: AsyncOperationResponseSerializer},
     )
     @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
@@ -126,8 +227,37 @@ class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
 
     parent_viewset = FileRepositoryViewSet
 
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "retrieve"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_repository_model_or_obj_perms:file.view_filerepository",
+            },
+            {
+                "action": ["destroy"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_repository_model_or_obj_perms:file.delete_filerepository",
+                    "has_repository_model_or_obj_perms:file.view_filerepository",
+                ],
+            },
+            {
+                "action": ["repair"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_repository_model_or_obj_perms:file.repair_filerepository",
+                    "has_repository_model_or_obj_perms:file.view_filerepository",
+                ],
+            },
+        ]
+    }
 
-class FileRemoteViewSet(RemoteViewSet):
+
+class FileRemoteViewSet(RemoteViewSet, RolesMixin):
     """
     <!-- User-facing documentation, rendered as html-->
     FileRemote represents an external source of <a href="#operation/content_file_files_list">File
@@ -138,14 +268,77 @@ class FileRemoteViewSet(RemoteViewSet):
     endpoint_name = "file"
     queryset = FileRemote.objects.all()
     serializer_class = FileRemoteSerializer
+    queryset_filtering_required_permission = "file.view_fileremote"
+
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "my_permissions"],
+                "principal": "authenticated",
+                "effect": "allow",
+            },
+            {
+                "action": ["create"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_model_perms:file.add_fileremote",
+            },
+            {
+                "action": ["retrieve"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_model_or_obj_perms:file.view_fileremote",
+            },
+            {
+                "action": ["update", "partial_update"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.change_fileremote",
+                    "has_model_or_obj_perms:file.view_fileremote",
+                ],
+            },
+            {
+                "action": ["destroy"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.delete_fileremote",
+                    "has_model_or_obj_perms:file.view_fileremote",
+                ],
+            },
+            {
+                "action": ["list_roles", "add_role", "remove_role"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": ["has_model_or_obj_perms:file.manage_roles_fileremote"],
+            },
+        ],
+        "creation_hooks": [
+            {
+                "function": "add_roles_for_object_creator",
+                "parameters": {"roles": "file.fileremote_owner"},
+            },
+        ],
+    }
+    LOCKED_ROLES = {
+        "file.fileremote_creator": ["file.add_fileremote"],
+        "file.fileremote_owner": [
+            "file.view_fileremote",
+            "file.change_fileremote",
+            "file.delete_fileremote",
+            "file.manage_roles_fileremote",
+        ],
+        "file.fileremote_viewer": ["file.view_fileremote"],
+    }
 
 
-class FilePublicationViewSet(PublicationViewSet):
+class FilePublicationViewSet(PublicationViewSet, RolesMixin):
     """
     <!-- User-facing documentation, rendered as html-->
     A FilePublication contains metadata about all the <a
     href="#operation/content_file_files_list">File Content</a> in a particular <a
-    href="href="#tag/repositories:-file-versions">File Repository Version.</a>
+    href=#tag/repositories:-file-versions">File Repository Version.</a>
     Once a FilePublication has been created, it can be hosted using the
     <a href="#operation/distributions_file_file_list">File Distribution API.</a>
     """
@@ -153,6 +346,62 @@ class FilePublicationViewSet(PublicationViewSet):
     endpoint_name = "file"
     queryset = FilePublication.objects.exclude(complete=False)
     serializer_class = FilePublicationSerializer
+    queryset_filtering_required_permission = "file.view_filepublication"
+
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "my_permissions"],
+                "principal": "authenticated",
+                "effect": "allow",
+            },
+            {
+                "action": ["create"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_perms:file.add_filepublication",
+                    "has_repo_or_repo_ver_param_model_or_obj_perms:file.view_filerepository",
+                ],
+            },
+            {
+                "action": ["retrieve"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_model_or_obj_perms:file.view_filepublication",
+            },
+            {
+                "action": ["destroy"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.delete_filepublication",
+                    "has_model_or_obj_perms:file.view_filepublication",
+                ],
+            },
+            {
+                "action": ["list_roles", "add_role", "remove_role"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": ["has_model_or_obj_perms:file.manage_roles_filepublication"],
+            },
+        ],
+        "creation_hooks": [
+            {
+                "function": "add_roles_for_object_creator",
+                "parameters": {"roles": "file.filepublication_owner"},
+            },
+        ],
+    }
+    LOCKED_ROLES = {
+        "file.filepublication_creator": ["file.add_filepublication"],
+        "file.filepublication_owner": [
+            "file.view_filepublication",
+            "file.delete_filepublication",
+            "file.manage_roles_filepublication",
+        ],
+        "file.filepublication_viewer": ["file.view_filepublication"],
+    }
 
     @extend_schema(
         description="Trigger an asynchronous task to publish file content.",
@@ -178,7 +427,7 @@ class FilePublicationViewSet(PublicationViewSet):
         return OperationPostponedResponse(result, request)
 
 
-class FileDistributionViewSet(DistributionViewSet):
+class FileDistributionViewSet(DistributionViewSet, RolesMixin):
     """
     <!-- User-facing documentation, rendered as html-->
     FileDistributions host <a href="#operation/publications_file_file_list">File
@@ -192,9 +441,78 @@ class FileDistributionViewSet(DistributionViewSet):
     endpoint_name = "file"
     queryset = FileDistribution.objects.all()
     serializer_class = FileDistributionSerializer
+    queryset_filtering_required_permission = "file.view_filedistribution"
+
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "my_permissions"],
+                "principal": "authenticated",
+                "effect": "allow",
+            },
+            {
+                "action": ["create"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_perms:file.add_filedistribution",
+                    "has_repo_or_repo_ver_param_model_or_obj_perms:file.view_filerepository",
+                    "has_publication_param_model_or_obj_perms:file.view_filepublication",
+                ],
+            },
+            {
+                "action": ["retrieve"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_model_or_obj_perms:file.view_filedistribution",
+            },
+            {
+                "action": ["update", "partial_update"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.change_filedistribution",
+                    "has_model_or_obj_perms:file.view_filedistribution",
+                    "has_repo_or_repo_ver_param_model_or_obj_perms:file.view_filerepository",
+                    "has_publication_param_model_or_obj_perms:file.view_filepublication",
+                ],
+            },
+            {
+                "action": ["destroy"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.delete_filedistribution",
+                    "has_model_or_obj_perms:file.view_filedistribution",
+                ],
+            },
+            {
+                "action": ["list_roles", "add_role", "remove_role"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": ["has_model_or_obj_perms:file.manage_roles_filedistribution"],
+            },
+        ],
+        "creation_hooks": [
+            {
+                "function": "add_roles_for_object_creator",
+                "parameters": {"roles": "file.filedistribution_owner"},
+            },
+        ],
+    }
+    LOCKED_ROLES = {
+        "file.filedistribution_creator": ["file.add_filedistribution"],
+        "file.filedistribution_owner": [
+            "file.view_filedistribution",
+            "file.change_filedistribution",
+            "file.delete_filedistribution",
+            "file.manage_roles_filedistribution",
+        ],
+        "file.filedistribution_viewer": ["file.view_filedistribution"],
+    }
 
 
-class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
+class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet, RolesMixin):
     """
     Alternate Content Source ViewSet for File
 
@@ -204,9 +522,90 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet):
     endpoint_name = "file"
     queryset = FileAlternateContentSource.objects.all()
     serializer_class = FileAlternateContentSourceSerializer
+    queryset_filtering_required_permission = "file.view_filealternatecontentsource"
+
+    DEFAULT_ACCESS_POLICY = {
+        "statements": [
+            {
+                "action": ["list", "my_permissions"],
+                "principal": "authenticated",
+                "effect": "allow",
+            },
+            {
+                "action": ["create"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_perms:file.add_filealternatecontentsource",
+                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                ],
+            },
+            {
+                "action": ["retrieve"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": "has_model_or_obj_perms:file.view_filealternatecontentsource",
+            },
+            {
+                "action": ["update", "partial_update"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.change_filealternatecontentsource",
+                    "has_model_or_obj_perms:file.view_filealternatecontentsource",
+                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                ],
+            },
+            {
+                "action": ["destroy"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.delete_filealternatecontentsource",
+                    "has_model_or_obj_perms:file.view_filealternatecontentsource",
+                ],
+            },
+            {
+                "action": ["refresh"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.refresh_filealternatecontentsource",
+                    "has_model_or_obj_perms:file.view_filealternatecontentsource",
+                ],
+            },
+            {
+                "action": ["list_roles", "add_role", "remove_role"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_model_or_obj_perms:file.manage_roles_filealternatecontentsource"
+                ],
+            },
+        ],
+        "creation_hooks": [
+            {
+                "function": "add_roles_for_object_creator",
+                "parameters": {"roles": "file.filealternatecontentsource_owner"},
+            },
+        ],
+    }
+    LOCKED_ROLES = {
+        "file.filealternatecontentsource_creator": ["file.add_filealternatecontentsource"],
+        "file.filealternatecontentsource_owner": [
+            "file.view_filealternatecontentsource",
+            "file.change_filealternatecontentsource",
+            "file.delete_filealternatecontentsource",
+            "file.refresh_filealternatecontentsource",
+            "file.manage_roles_filealternatecontentsource",
+        ],
+        "file.filealternatecontentsource_viewer": ["file.view_filealternatecontentsource"],
+    }
 
     @extend_schema(
         description="Trigger an asynchronous task to create Alternate Content Source content.",
+        summary="Refresh metadata",
+        request=None,
         responses={202: TaskGroupOperationResponseSerializer},
     )
     @action(methods=["post"], detail=True)

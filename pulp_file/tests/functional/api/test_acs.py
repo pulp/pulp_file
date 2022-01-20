@@ -54,6 +54,7 @@ class AlternateContentSourceTestCase(unittest.TestCase):
         cls.publication_api = PublicationsFileApi(cls.file_client)
         cls.distribution_api = DistributionsFileApi(cls.file_client)
         cls.paths = ["goodpath/PULP_MANIFEST", "test", "whatever/test"]
+        delete_orphans()
 
     @classmethod
     def tearDownClass(cls):
@@ -105,7 +106,7 @@ class AlternateContentSourceTestCase(unittest.TestCase):
 
         # create an acs and pull in its remote artifacts
         acs = self._create_acs()
-        resp = self.file_acs_api.refresh(acs.pulp_href, acs)
+        resp = self.file_acs_api.refresh(acs.pulp_href)
         monitor_task_group(resp.task_group)
 
         # the sync should now work as the files are being pulled from ACS remote
@@ -124,7 +125,7 @@ class AlternateContentSourceTestCase(unittest.TestCase):
             paths=("file/PULP_MANIFEST", "file2/PULP_MANIFEST"),
             remote_url=PULP_FIXTURES_BASE_URL,
         )
-        resp = self.file_acs_api.refresh(acs.pulp_href, acs)
+        resp = self.file_acs_api.refresh(acs.pulp_href)
         task_group = monitor_task_group(resp.task_group)
         self.assertEquals(len(task_group.tasks), 2)
 
@@ -136,7 +137,7 @@ class AlternateContentSourceTestCase(unittest.TestCase):
         """Test serving of ACS content through the content app."""
         cfg = config.get_config()
         acs = self._create_acs()
-        resp = self.file_acs_api.refresh(acs.pulp_href, acs)
+        resp = self.file_acs_api.refresh(acs.pulp_href)
         monitor_task_group(resp.task_group)
 
         remote = self.file_remote_api.create(
