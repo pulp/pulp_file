@@ -1,9 +1,9 @@
 from uuid import uuid4
 
+from django.conf import settings
 from django.test import TestCase
 from rest_framework.serializers import ValidationError as DRFValidationError
 
-from pulpcore.constants import API_ROOT
 from pulp_file.app import models, viewsets
 
 
@@ -21,7 +21,9 @@ class TestGetResource(TestCase):
         repo = models.FileRepository.objects.create(name="foo")
         viewset = viewsets.FileRepositoryViewSet()
         resource = viewset.get_resource(
-            "/{api_root}repositories/file/file/{pk}/".format(api_root=API_ROOT, pk=repo.pk),
+            "{api_root}repositories/file/file/{pk}/".format(
+                api_root=settings.V3_API_ROOT, pk=repo.pk
+            ),
             models.FileRepository,
         )
         self.assertEquals(repo, resource)
@@ -37,7 +39,7 @@ class TestGetResource(TestCase):
         with self.assertRaises(DRFValidationError):
             # matches all repositories
             viewset.get_resource(
-                "/{api_root}repositories/file/file/".format(api_root=API_ROOT),
+                "{api_root}repositories/file/file/".format(api_root=settings.V3_API_ROOT),
                 models.FileRepository,
             )
 
@@ -60,7 +62,9 @@ class TestGetResource(TestCase):
 
         with self.assertRaises(DRFValidationError):
             viewset.get_resource(
-                "/{api_root}repositories/file/file/{pk}/".format(api_root=API_ROOT, pk=pk),
+                "{api_root}repositories/file/file/{pk}/".format(
+                    api_root=settings.V3_API_ROOT, pk=pk
+                ),
                 models.FileRepository,
             )
 
@@ -75,8 +79,8 @@ class TestGetResource(TestCase):
         with self.assertRaises(DRFValidationError):
             # has no repo versions yet
             viewset.get_resource(
-                "/{api_root}repositories/file/file/{pk}/versions/1/".format(
-                    api_root=API_ROOT, pk=repo.pk
+                "{api_root}repositories/file/file/{pk}/versions/1/".format(
+                    api_root=settings.V3_API_ROOT, pk=repo.pk
                 ),
                 models.FileRepository,
             )
