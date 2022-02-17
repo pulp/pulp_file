@@ -1,10 +1,14 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.conf import settings
 
 from pulp_file.app.serializers import FileContentSerializer
 from pulp_file.app.models import FileContent
 
 from pulpcore.plugin.models import Artifact
+
+
+V3_API_ROOT = settings.V3_API_ROOT
 
 
 class TestFileContentSerializer(TestCase):
@@ -25,7 +29,7 @@ class TestFileContentSerializer(TestCase):
     def test_valid_data(self):
         """Test that the FileContentSerializer accepts valid data."""
         data = {
-            "artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "artifact": f"{V3_API_ROOT}artifacts/{self.artifact.pk}/",
             "relative_path": "foo",
         }
         serializer = FileContentSerializer(data=data)
@@ -34,7 +38,7 @@ class TestFileContentSerializer(TestCase):
     def test_absolute_path_data(self):
         """Test that the FileContentSerializer does not accept data."""
         data = {
-            "artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "artifact": f"{V3_API_ROOT}artifacts/{self.artifact.pk}/",
             "relative_path": "/foo",
         }
         serializer = FileContentSerializer(data=data)
@@ -44,7 +48,7 @@ class TestFileContentSerializer(TestCase):
         """Test that the FileContentSerializer does not accept data."""
         FileContent.objects.create(relative_path="foo", digest=self.artifact.sha256)
         data = {
-            "artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk),
+            "artifact": f"{V3_API_ROOT}artifacts/{self.artifact.pk}/",
             "relative_path": "foo",
         }
         serializer = FileContentSerializer(data=data)
