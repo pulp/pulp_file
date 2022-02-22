@@ -83,16 +83,13 @@ fi
 cd $REPO_ROOT
 
 if [[ "$TEST" = 'bindings' ]]; then
-  python $REPO_ROOT/.ci/assets/bindings/test_bindings.py
-fi
-
-if [[ "$TEST" = 'bindings' ]]; then
-  if [ ! -f $REPO_ROOT/.ci/assets/bindings/test_bindings.rb ]; then
-    exit
-  else
-    ruby $REPO_ROOT/.ci/assets/bindings/test_bindings.rb
-    exit
+  if [ -f $REPO_ROOT/.ci/assets/bindings/test_bindings.py ]; then
+    python $REPO_ROOT/.ci/assets/bindings/test_bindings.py
   fi
+  if [ -f $REPO_ROOT/.ci/assets/bindings/test_bindings.rb ]; then
+    ruby $REPO_ROOT/.ci/assets/bindings/test_bindings.rb
+  fi
+  exit
 fi
 
 cat unittest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/unittest_requirements.txt"
@@ -102,11 +99,15 @@ cmd_prefix pip3 install -r /tmp/unittest_requirements.txt
 echo "Checking for uncommitted migrations..."
 cmd_prefix bash -c "django-admin makemigrations --check --dry-run"
 
-# Run unit tests.
-cmd_prefix bash -c "PULP_DATABASES__default__USER=postgres django-admin test --noinput /usr/local/lib/python3.8/site-packages/pulp_file/tests/unit/"
+if [[ "$TEST" != "upgrade" ]]; then
+  # Run unit tests.
+  cmd_prefix bash -c "PULP_DATABASES__default__USER=postgres django-admin test --noinput /usr/local/lib/python3.8/site-packages/pulp_file/tests/unit/"
+fi
 
 # Run functional tests
-export PYTHONPATH=$REPO_ROOT:$REPO_ROOT/../pulpcore${PYTHONPATH:+:${PYTHONPATH}}
+export PYTHONPATH=$REPO_ROOT/../pulp-certguard${PYTHONPATH:+:${PYTHONPATH}}
+export PYTHONPATH=$REPO_ROOT/../pulpcore${PYTHONPATH:+:${PYTHONPATH}}
+export PYTHONPATH=$REPO_ROOT${PYTHONPATH:+:${PYTHONPATH}}
 
 
 if [[ "$TEST" == "upgrade" ]]; then
@@ -175,7 +176,15 @@ fi
 if [ -f $FUNC_TEST_SCRIPT ]; then
   source $FUNC_TEST_SCRIPT
 else
-    pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional
+
+    if [[ "$GITHUB_WORKFLOW" == "File Nightly CI/CD" ]]; then
+        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m parallel -n 8
+        pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m "not parallel"
+    else
+        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m "parallel and not nightly" -n 8
+        pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m "not parallel and not nightly"
+    fi
+
 fi
 export PULP_FIXTURES_URL="http://pulp-fixtures:8080"
 pushd ../pulp-cli

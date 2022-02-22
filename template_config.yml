@@ -1,11 +1,12 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-19-g88bcdd3
+# generated with plugin_template@2021.08.26-76-g5c4a618
 
 additional_repos:
 - branch: master
   name: pulp-certguard
+aiohttp_fixtures_origin: 172.18.0.1
 all: false
 black: true
 bootstrap: false
@@ -24,12 +25,14 @@ deploy_client_to_rubygems: true
 deploy_daily_client_to_pypi: true
 deploy_daily_client_to_rubygems: true
 deploy_to_pypi: true
+disabled_redis_runners: []
 docker_fixtures: true
 docs: false
 docs_test: true
 flake8: true
-issue_tracker: redmine
+issue_tracker: github
 noissue_marker: '[noissue]'
+parallel_test_workers: 8
 plugin_app_label: file
 plugin_camel: PulpFile
 plugin_camel_short: File
@@ -75,6 +78,7 @@ test: false
 test_azure: false
 test_bindings: false
 test_cli: true
+test_deprecations: true
 test_fips_nightly: false
 test_performance: true
 test_released_plugin_with_next_pulpcore_release: true
@@ -86,9 +90,11 @@ travis_notifications:
     - chat.freenode.net#pulp-build
     on_failure: always
     on_success: change
+update_github: true
 update_redmine: true
 upgrade_range:
 - pulp-certguard_branch: 1.2
   pulp_file_branch: 1.6
   pulpcore_branch: 3.11
+use_issue_template: true
 
