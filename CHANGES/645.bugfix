@@ -1,0 +1,1 @@
+Fixed packaging bug which didn't allow pulp_file 1.10 to be installed with pulpcore 3.18.0.
