@@ -13,6 +13,20 @@ Changelog
 
 .. towncrier release notes start
 
+1.10.2 (2022-02-23)
+===================
+
+
+Bugfixes
+--------
+
+- Fixed packaging bug which didn't allow pulp_file 1.10 to be installed with pulpcore 3.18.0.
+  `#645 <https://pulp.plan.io/issues/645>`_
+
+
+----
+
+
 1.10.1 (2021-11-02)
 ===================
 
