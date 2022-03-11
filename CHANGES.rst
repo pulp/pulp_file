@@ -13,6 +13,20 @@ Changelog
 
 .. towncrier release notes start
 
+1.10.2 (2022-02-23)
+===================
+
+
+Bugfixes
+--------
+
+- Fixed packaging bug which didn't allow pulp_file 1.10 to be installed with pulpcore 3.18.0.
+  `#645 <https://pulp.plan.io/issues/645>`_
+
+
+----
+
+
 1.10.1 (2021-11-02)
 ===================
 
@@ -360,6 +374,20 @@ Improved Documentation
   `#5998 <https://pulp.plan.io/issues/5998>`_
 - Updated fixture links from fedorapeople.org to fixtures.pulpproject.org.
   `#6653 <https://pulp.plan.io/issues/6653>`_
+
+
+----
+
+
+1.0.1 (2020-06-03)
+==================
+
+
+Bugfixes
+--------
+
+- Including requirements.txt on MANIFEST.in
+  `#6885 <https://pulp.plan.io/issues/6885>`_
 
 
 ----
