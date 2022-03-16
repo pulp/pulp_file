@@ -28,6 +28,28 @@ export PULP_SETTINGS=$PWD/.ci/ansible/settings/settings.py
 
 export PULP_URL="https://pulp"
 
+cd ../pulp-openapi-generator
+./generate.sh pulpcore python
+pip install ./pulpcore-client
+rm -rf ./pulpcore-client
+if [[ "$TEST" = 'bindings' ]]; then
+  ./generate.sh pulpcore ruby 0
+  cd pulpcore-client
+  gem build pulpcore_client.gemspec
+  gem install --both ./pulpcore_client-0.gem
+fi
+./generate.sh pulp_certguard python
+pip install ./pulp_certguard-client
+rm -rf ./pulp_certguard-client
+if [[ "$TEST" = 'bindings' ]]; then
+  ./generate.sh pulp-certguard ruby 0
+  cd pulp-certguard-client
+  gem build pulp-certguard_client.gemspec
+  gem install --both ./pulp-certguard_client-0.gem
+  cd ..
+fi
+cd $REPO_ROOT
+
 if [[ "$TEST" = "docs" ]]; then
   cd docs
   make PULP_URL="$PULP_URL" diagrams html
@@ -64,28 +86,6 @@ if [[ "$TEST" == "plugin-from-pypi" ]]; then
   COMPONENT_VERSION=$(http https://pypi.org/pypi/pulp-file/json | jq -r '.info.version')
   git checkout ${COMPONENT_VERSION} -- pulp_file/tests/
 fi
-
-cd ../pulp-openapi-generator
-./generate.sh pulpcore python
-pip install ./pulpcore-client
-rm -rf ./pulpcore-client
-if [[ "$TEST" = 'bindings' ]]; then
-  ./generate.sh pulpcore ruby 0
-  cd pulpcore-client
-  gem build pulpcore_client.gemspec
-  gem install --both ./pulpcore_client-0.gem
-fi
-./generate.sh pulp_certguard python
-pip install ./pulp_certguard-client
-rm -rf ./pulp_certguard-client
-if [[ "$TEST" = 'bindings' ]]; then
-  ./generate.sh pulp-certguard ruby 0
-  cd pulp-certguard-client
-  gem build pulp-certguard_client.gemspec
-  gem install --both ./pulp-certguard_client-0.gem
-  cd ..
-fi
-cd $REPO_ROOT
 
 if [[ "$TEST" = 'bindings' ]]; then
   if [ -f $REPO_ROOT/.ci/assets/bindings/test_bindings.py ]; then
