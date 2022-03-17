@@ -36,14 +36,14 @@ cd ../pulp-openapi-generator/pulp_file-client
 
 cp README.md docs/index.md
 cat >> mkdocs.yml << DOCSYAML
-  ---
-  site_name: PulpFile Client
-  site_description: File bindings
-  site_author: Pulp Team
-  site_url: https://docs.pulpproject.org/pulp_file_client/
-  repo_name: pulp/pulp_file
-  repo_url: https://github.com/pulp/pulp_file
-  theme: readthedocs
+---
+site_name: PulpFile Client
+site_description: File bindings
+site_author: Pulp Team
+site_url: https://docs.pulpproject.org/pulp_file_client/
+repo_name: pulp/pulp_file
+repo_url: https://github.com/pulp/pulp_file
+theme: readthedocs
 DOCSYAML
 
 pip install mkdocs pymdown-extensions
