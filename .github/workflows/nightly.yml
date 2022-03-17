@@ -302,19 +302,6 @@ jobs:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
 
 
-      - name: Download Ruby client
-        uses: actions/download-artifact@v2
-        with:
-          name: ruby-client.tar
-
-      - name: Untar Ruby client packages
-        run: tar -xvf ruby-client.tar
-
-      - name: Publish client to rubygems
-        run: bash .github/workflows/scripts/publish_client_gem.sh
-
-
-
       - name: Download Python client
         uses: actions/download-artifact@v2
         with:
