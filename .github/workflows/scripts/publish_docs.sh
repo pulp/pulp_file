@@ -35,6 +35,8 @@ python3 .github/workflows/scripts/docs-publisher.py --build-type $1 --branch $2
 cd ../pulp-openapi-generator/pulp_file-client
 
 cp README.md docs/index.md
+sed -i 's/docs\///g' docs/index.md
+sed -i 's/\.md//g' docs/index.md
 cat >> mkdocs.yml << DOCSYAML
 ---
 site_name: PulpFile Client
