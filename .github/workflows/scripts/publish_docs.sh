@@ -32,8 +32,20 @@ ssh-add ~/.ssh/pulp-infra
 
 python3 .github/workflows/scripts/docs-publisher.py --build-type $1 --branch $2
 
-cd ../pulp-openapi-generator/pulp_file-client
+if [[ "$GITHUB_WORKFLOW" == "File changelog update" ]]; then
+  # Do not build bindings docs on changelog update
+  exit
+fi
 
+# Building python bindings
+export PULP_URL="${PULP_URL:-https://pulp}"
+VERSION=$(http $PULP_URL/pulp/api/v3/status/ | jq --arg plugin file --arg legacy_plugin pulp_file -r '.versions[] | select(.component == $plugin or .component == $legacy_plugin) | .version')
+cd ../pulp-openapi-generator
+rm -rf pulp_file-client
+./generate.sh pulp_file python $VERSION
+cd pulp_file-client
+
+# Adding mkdocs
 cp README.md docs/index.md
 sed -i 's/docs\///g' docs/index.md
 sed -i 's/\.md//g' docs/index.md
@@ -49,6 +61,8 @@ theme: readthedocs
 DOCSYAML
 
 pip install mkdocs pymdown-extensions
+
+# Building the bindings docs
 mkdocs build
 
 # publish to docs.pulpproject.org/pulp_file_client
