@@ -89,6 +89,8 @@ class AlternateContentSourceTestCase(unittest.TestCase):
 
     def test_acs_sync(self):
         """Test syncing from an ACS."""
+        delete_orphans()
+
         repo = self.repo_api.create(gen_repo())
         self.addCleanup(self.repo_api.delete, repo.pulp_href)
 
