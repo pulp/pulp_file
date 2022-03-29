@@ -41,6 +41,7 @@ Table of Contents
    installation
    workflows/index
    restapi/index
+   role-based-access-control
    changes
    contributing
 
