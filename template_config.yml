@@ -1,11 +1,12 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.04.08-98-gd000611
+# generated with plugin_template@2021.08.26-100-gbb6460d
 
 additional_repos:
 - branch: master
   name: pulp-certguard
+aiohttp_fixtures_origin: 172.18.0.1
 all: false
 black: true
 bootstrap: false
@@ -24,12 +25,16 @@ deploy_client_to_rubygems: true
 deploy_daily_client_to_pypi: true
 deploy_daily_client_to_rubygems: true
 deploy_to_pypi: true
+disabled_redis_runners: []
 docker_fixtures: true
 docs: false
 docs_test: true
 flake8: true
-issue_tracker: redmine
+github_org: pulp
+issue_tracker: github
+keep_ci_update_for_latest_branches: 5
 noissue_marker: '[noissue]'
+parallel_test_workers: 8
 plugin_app_label: file
 plugin_camel: PulpFile
 plugin_camel_short: File
@@ -67,14 +72,19 @@ python_version: '3.8'
 redmine_project: pulp_file
 release_email: pulp-infra@redhat.com
 release_user: pulpbot
+single_commit_check: true
 stable_branch: null
 sync_ci: true
+tasking_allow_async_unsafe: true
 test: false
+test_azure: false
 test_bindings: false
 test_cli: true
+test_deprecations: false
 test_fips_nightly: false
 test_performance: true
 test_released_plugin_with_next_pulpcore_release: true
+test_reroute: false
 test_s3: true
 travis_addtl_services: []
 travis_notifications:
@@ -83,9 +93,10 @@ travis_notifications:
     - chat.freenode.net#pulp-build
     on_failure: always
     on_success: change
-update_redmine: true
+update_github: true
 upgrade_range:
 - pulp-certguard_branch: 1.2
   pulp_file_branch: 1.6
   pulpcore_branch: 3.11
+use_issue_template: true
 
