@@ -39,6 +39,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
         self._partially_update()
         self._fully_update()
         self._delete()
+        self._test_negative_create_file_remote_with_invalid_parameter()
 
     def _create_remote(self):
         """Create a remote."""
@@ -107,7 +108,7 @@ class CRUDRemotesTestCase(unittest.TestCase):
         with self.assertRaises(ApiException):
             self.remote_api.read(self.remote.pulp_href)
 
-    def test_negative_create_file_remote_with_invalid_parameter(self):
+    def _test_negative_create_file_remote_with_invalid_parameter(self):
         """Attempt to create file remote passing invalid parameter."""
         with self.assertRaises(ApiException) as exc:
             RemotesFileApi(gen_file_client()).create(gen_file_remote(foo="bar"))
