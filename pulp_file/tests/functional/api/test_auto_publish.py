@@ -3,8 +3,8 @@
 import unittest
 
 from pulp_smash import config
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_repo, download_content_unit
+from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
+from pulp_smash.pulp3.utils import delete_version, download_content_unit, gen_repo
 
 from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
 from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -38,6 +38,7 @@ class AutoPublishDistributeTestCase(unittest.TestCase):
 
     def setUp(self):
         """Create remote, repo, and distribution."""
+        delete_orphans()
         self.remote = self.remote_api.create(gen_file_remote())
         self.repo = self.repo_api.create(gen_repo(manifest=self.CUSTOM_MANIFEST, autopublish=True))
         response = self.distributions_api.create(
@@ -52,7 +53,11 @@ class AutoPublishDistributeTestCase(unittest.TestCase):
         monitor_task(self.remote_api.delete(self.remote.pulp_href).task)
         monitor_task(self.distributions_api.delete(self.distribution.pulp_href).task)
 
-    def test_01_sync(self):
+    def test_workflow(self):
+        self._sync()
+        self._modify()
+
+    def _sync(self):
         """Assert that syncing the repository triggers auto-publish and auto-distribution."""
         self.assertEqual(self.publications_api.list().count, 0)
         self.assertTrue(self.distribution.publication is None)
@@ -80,12 +85,17 @@ class AutoPublishDistributeTestCase(unittest.TestCase):
         self.assertEqual(len(task.created_resources), 0)
         self.assertEqual(self.publications_api.list().count, 1)
 
-    def test_02_modify(self):
+        self.publications_api.delete(publication.pulp_href)
+        self.repo = self.repo_api.read(self.repo.pulp_href)
+        delete_version_task = delete_version(self.repo, version_href=self.repo.latest_version_href)
+        monitor_task(delete_version_task[0]["pulp_href"])
+
+    def _modify(self):
         """Assert that modifying the repository triggers auto-publish and auto-distribution."""
         self.assertEqual(self.publications_api.list().count, 0)
         self.assertTrue(self.distribution.publication is None)
 
-        # Modify the repository by adding a coment unit
+        # Modify the repository by adding a content unit
         content = self.content_api.list().results[0].pulp_href
         modify_response = self.repo_api.modify(
             self.repo.pulp_href, {"add_content_units": [content]}
