@@ -55,11 +55,6 @@ class AlternateContentSourceTestCase(unittest.TestCase):
         cls.distribution_api = DistributionsFileApi(cls.file_client)
         cls.paths = ["goodpath/PULP_MANIFEST", "test", "whatever/test"]
 
-    @classmethod
-    def tearDownClass(cls):
-        """Run orphan cleanup."""
-        delete_orphans()
-
     def _create_acs(self, name="file_acs", paths=None, remote_url=FILE_FIXTURE_MANIFEST_URL):
         remote = self.file_remote_api.create(gen_file_remote(remote_url, policy="on_demand"))
         self.addCleanup(self.file_remote_api.delete, remote.pulp_href)
@@ -89,6 +84,7 @@ class AlternateContentSourceTestCase(unittest.TestCase):
 
     def test_acs_sync(self):
         """Test syncing from an ACS."""
+        delete_orphans()
         repo = self.repo_api.create(gen_repo())
         self.addCleanup(self.repo_api.delete, repo.pulp_href)
 
