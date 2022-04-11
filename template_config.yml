@@ -1,7 +1,7 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-76-g5c4a618
+# generated with plugin_template@2021.08.26-106-g556224f
 
 additional_repos:
 - branch: master
@@ -30,7 +30,9 @@ docker_fixtures: true
 docs: false
 docs_test: true
 flake8: true
+github_org: pulp
 issue_tracker: github
+keep_ci_update_since_branch: null
 noissue_marker: '[noissue]'
 parallel_test_workers: 8
 plugin_app_label: file
@@ -78,10 +80,11 @@ test: false
 test_azure: false
 test_bindings: false
 test_cli: true
-test_deprecations: true
+test_deprecations: false
 test_fips_nightly: false
 test_performance: true
 test_released_plugin_with_next_pulpcore_release: true
+test_reroute: false
 test_s3: true
 travis_addtl_services: []
 travis_notifications:
@@ -91,7 +94,6 @@ travis_notifications:
     on_failure: always
     on_success: change
 update_github: true
-update_redmine: true
 upgrade_range:
 - pulp-certguard_branch: 1.2
   pulp_file_branch: 1.6
