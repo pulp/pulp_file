@@ -10,15 +10,29 @@ from pulpcore.client.pulp_file import (
     AcsFileApi,
     ContentFilesApi,
     DistributionsFileApi,
+    FileFileAlternateContentSource,
     RepositoriesFileApi,
     RepositoriesFileVersionsApi,
     RemotesFileApi,
     PublicationsFileApi,
 )
+from pulpcore.tests.functional.api.using_plugin.utils import gen_file_client
 from pulp_smash.pulp3.utils import gen_repo
 
 
 _logger = logging.getLogger(__name__)
+
+
+def pytest_check_for_leftover_pulp_objects(config):
+    file_client = gen_file_client()
+
+    types_to_check = [
+        FileFileAlternateContentSource(file_client),
+        RemotesFileApi(file_client),
+    ]
+    for type_to_check in types_to_check:
+        if type_to_check.list().count > 0:
+            raise Exception(f"This test left over a {type_to_check}.")
 
 
 @pytest.fixture(scope="session")
