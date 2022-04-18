@@ -18,7 +18,6 @@ from pulp_file.tests.functional.constants import (
     FILE2_FIXTURE_MANIFEST_URL,
 )
 from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 from pulpcore.client.pulp_file import (
     RepositoriesFileApi,

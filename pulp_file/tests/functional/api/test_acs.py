@@ -20,11 +20,6 @@ from pulpcore.client.pulp_file import (
     RepositorySyncURL,
 )
 from pulpcore.client.pulp_file.exceptions import ApiException
-from pulpcore.tests.functional.api.using_plugin.utils import (
-    gen_file_client,
-    gen_file_remote,
-    gen_repo,
-)
 
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_MANIFEST_URL,
@@ -32,7 +27,12 @@ from pulp_file.tests.functional.constants import (
     FILE_MANIFEST_ONLY_FIXTURE_URL,
     PULP_FIXTURES_BASE_URL,
 )
-from pulp_file.tests.functional.utils import get_file_content_paths
+from pulp_file.tests.functional.utils import (
+    gen_file_client,
+    gen_file_remote,
+    gen_repo,
+    get_file_content_paths,
+)
 
 
 class AlternateContentSourceTestCase(unittest.TestCase):

@@ -15,11 +15,11 @@ from pulp_file.tests.functional.utils import (
     gen_file_client,
     gen_file_content_attrs,
     gen_file_content_upload_attrs,
-    tasks,
+    gen_pulpcore_client,
     skip_if,
 )
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
+from pulpcore.client.pulpcore import TasksApi
 from pulpcore.client.pulp_file import (
     ContentFilesApi,
     RepositoriesFileApi,
@@ -233,6 +233,8 @@ class DuplicateContentUnit(unittest.TestCase):
         In order to avoid an HTTP error, use the same ``artifact`` and
         different ``relative_path``.
         """
+        tasks_api = TasksApi(gen_pulpcore_client())
+
         delete_orphans()
         artifact = gen_artifact()
 
@@ -243,7 +245,7 @@ class DuplicateContentUnit(unittest.TestCase):
         # create second content unit.
         response = self.file_content_api.create(**gen_file_content_attrs(artifact))
         monitor_task(response.task)
-        task = tasks.read(response.task)
+        task = tasks_api.read(response.task)
         self.assertEqual(task.state, "completed")
 
 

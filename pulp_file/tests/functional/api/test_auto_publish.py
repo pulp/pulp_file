@@ -7,7 +7,6 @@ from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
 from pulp_smash.pulp3.utils import delete_version, download_content_unit, gen_repo
 
 from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 from pulpcore.client.pulp_file import (
     ContentFilesApi,
