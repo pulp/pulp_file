@@ -16,8 +16,9 @@ from pulpcore.client.pulp_file import (
     RemotesFileApi,
     PublicationsFileApi,
 )
-from pulpcore.tests.functional.api.using_plugin.utils import gen_file_client
 from pulp_smash.pulp3.utils import gen_repo
+
+from pulp_file.tests.functional.utils import gen_file_client
 
 
 _logger = logging.getLogger(__name__)

@@ -8,9 +8,7 @@ from pulpcore.client.pulp_file import (
     ApiException,
 )
 from pulpcore.client.pulp_file import AsyncOperationResponse
-from pulp_file.tests.functional.utils import (  # noqa:F401
-    set_up_module as setUpModule,
-)
+
 from pulp_file.tests.functional.utils import gen_repo, gen_file_remote
 
 

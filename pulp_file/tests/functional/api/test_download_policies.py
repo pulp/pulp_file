@@ -16,12 +16,11 @@ from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_SUMMARY,
 )
 from pulp_file.tests.functional.utils import (
-    core_client,
     gen_file_client,
     gen_file_remote,
+    gen_pulpcore_client,
     skip_if,
 )
-from pulp_file.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 from pulpcore.client.pulpcore import ArtifactsApi
 from pulpcore.client.pulp_file import (
@@ -211,10 +210,11 @@ class SwitchDownloadPolicyTestCase(unittest.TestCase):
         # delete orphans to assure that no content units are present on the
         # file system
         delete_orphans()
-        client = gen_file_client()
+        file_client = gen_file_client()
+        core_client = gen_pulpcore_client()
         artifacts_api = ArtifactsApi(core_client)
-        repo_api = RepositoriesFileApi(client)
-        remote_api = RemotesFileApi(client)
+        repo_api = RepositoriesFileApi(file_client)
+        remote_api = RemotesFileApi(file_client)
 
         repo = repo_api.create(gen_repo())
         self.addCleanup(repo_api.delete, repo.pulp_href)
