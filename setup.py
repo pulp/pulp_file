@@ -31,8 +31,5 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ),
-    entry_points={
-        "pulpcore.plugin": ["pulp_file = pulp_file:default_app_config"],
-        "pytest11": ["pulp_file = pulp_file.tests"],
-    },
+    entry_points={"pulpcore.plugin": ["pulp_file = pulp_file:default_app_config"]},
 )
