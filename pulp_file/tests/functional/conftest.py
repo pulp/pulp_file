@@ -24,6 +24,9 @@ from pulp_file.tests.functional.utils import gen_file_client
 _logger = logging.getLogger(__name__)
 
 
+pytest_plugins = "pulpcore.tests.functional.conftest"
+
+
 def pytest_check_for_leftover_pulp_objects(config):
     file_client = gen_file_client()
 
