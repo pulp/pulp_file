@@ -1,7 +1,10 @@
+import aiofiles
 import logging
 import tempfile
 import uuid
 
+from aiohttp import web
+from collections import defaultdict
 from pathlib import Path
 
 import pytest
@@ -110,6 +113,15 @@ def basic_manifest_path(file_fixtures_root):
 
 
 @pytest.fixture
+def large_manifest_path(file_fixtures_root):
+    one_megabyte = 1048576
+    file_fixtures_root.joinpath("large").mkdir()
+    file1 = generate_iso(file_fixtures_root.joinpath("large/1.iso"), 10 * one_megabyte)
+    generate_manifest(file_fixtures_root.joinpath("large/PULP_MANIFEST"), [file1])
+    return "/large/PULP_MANIFEST"
+
+
+@pytest.fixture
 def file_fixture_server_ssl_client_cert_req(
     ssl_ctx_req_client_auth, file_fixtures_root, gen_fixture_server
 ):
@@ -192,3 +204,59 @@ def file_fixture_gen_file_repo(file_repo_api_client, gen_object_with_cleanup):
         return gen_object_with_cleanup(file_repo_api_client, kwargs)
 
     yield _file_fixture_gen_file_repo
+
+
+@pytest.fixture
+def gen_bad_response_fixture_server(gen_threaded_aiohttp_server):
+    """
+    This server will perform 3 bad responses for each file requested.
+
+    1st response will be incomplete, sending only half of the data.
+    2nd response will have corrupted data, with one byte changed.
+    3rd response will return error 429.
+    4th response will be correct.
+    """
+
+    def _gen_fixture_server(fixtures_root, ssl_ctx):
+        record = []
+        num_requests = defaultdict(int)
+
+        async def handler(request):
+            nonlocal num_requests
+            record.append(request)
+            relative_path = request.raw_path[1:]  # Strip off leading "/"
+            file_path = Path(fixtures_root) / Path(relative_path)
+            # Max retries is 3. So on fourth request, send full data
+            num_requests[relative_path] += 1
+            if "PULP_MANIFEST" in relative_path or num_requests[relative_path] % 4 == 0:
+                return web.FileResponse(file_path)
+
+            # On third request send 429 error, TooManyRequests
+            if num_requests[relative_path] % 4 == 3:
+                raise web.HTTPTooManyRequests
+
+            size = file_path.stat().st_size
+            response = web.StreamResponse(headers={"content-length": f"{size}"})
+            await response.prepare(request)
+            async with aiofiles.open(file_path, "rb") as f:
+                # Send only partial content causing aiohttp.ClientPayloadError if request num == 1
+                chunk = await f.read(size // 2)
+                await response.write(chunk)
+                # Send last chunk with modified last byte if request num == 2
+                if num_requests[relative_path] % 4 == 2:
+                    chunk2 = await f.read()
+                    await response.write(chunk2[:-1])
+                    await response.write(bytes([chunk2[-1] ^ 1]))
+
+            await response.write_eof()
+
+        app = web.Application()
+        app.add_routes([web.get("/{tail:.*}", handler)])
+        return gen_threaded_aiohttp_server(app, ssl_ctx, record)
+
+    yield _gen_fixture_server
+
+
+@pytest.fixture
+def bad_response_fixture_server(file_fixtures_root, gen_bad_response_fixture_server):
+    yield gen_bad_response_fixture_server(file_fixtures_root, None)
