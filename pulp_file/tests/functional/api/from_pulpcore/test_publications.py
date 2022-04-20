@@ -102,3 +102,8 @@ class ContentInPublicationViewTestCase(unittest.TestCase):
             self.publication_api.list(content=content_href).results[0].repository_version,
             repo.latest_version_href,
         )
+
+        # Test listing publications filtered by repository
+        publication_list = self.publication_api.list(repository=repo.pulp_href)
+        self.assertEqual(publication_list.count, 1)
+        self.assertEqual(publication_list.results[0].pulp_href, publication.pulp_href)
