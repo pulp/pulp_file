@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 from pulp_smash.pulp3.bindings import monitor_task
 
 from pulpcore.client.pulp_file import (
@@ -25,8 +27,8 @@ def _run_basic_sync_and_assert(
             assert content.artifact is None
 
 
+@pytest.mark.parallel
 def test_http_sync_no_ssl(
-    delete_orphans_pre,
     file_fixture_gen_remote,
     file_repo,
     file_repo_api_client,
@@ -42,8 +44,8 @@ def test_http_sync_no_ssl(
     )
 
 
+@pytest.mark.parallel
 def test_http_sync_ssl_tls_validation_off(
-    delete_orphans_pre,
     file_fixture_gen_remote_ssl,
     file_repo,
     file_repo_api_client,
@@ -61,8 +63,8 @@ def test_http_sync_ssl_tls_validation_off(
     )
 
 
+@pytest.mark.parallel
 def test_http_sync_ssl_tls_validation_on(
-    delete_orphans_pre,
     file_fixture_gen_remote_ssl,
     file_repo,
     file_repo_api_client,
@@ -80,8 +82,8 @@ def test_http_sync_ssl_tls_validation_on(
     )
 
 
+@pytest.mark.parallel
 def test_http_sync_ssl_tls_validation_defaults_to_on(
-    delete_orphans_pre,
     file_fixture_gen_remote_ssl,
     file_repo,
     file_repo_api_client,
@@ -98,8 +100,8 @@ def test_http_sync_ssl_tls_validation_defaults_to_on(
     )
 
 
+@pytest.mark.parallel
 def test_http_sync_ssl_with_client_cert_req(
-    delete_orphans_pre,
     file_fixture_gen_remote_client_cert_req,
     file_repo,
     file_repo_api_client,
@@ -117,8 +119,8 @@ def test_http_sync_ssl_with_client_cert_req(
     )
 
 
+@pytest.mark.parallel
 def test_ondemand_to_immediate_sync(
-    delete_orphans_pre,
     file_fixture_gen_remote_ssl,
     file_repo,
     file_repo_api_client,
@@ -147,8 +149,8 @@ def test_ondemand_to_immediate_sync(
     )
 
 
+@pytest.mark.parallel
 def test_header_for_sync(
-    delete_orphans_pre,
     file_fixture_server_ssl,
     tls_certificate_authority_cert,
     file_remote_api_client,
@@ -161,7 +163,7 @@ def test_header_for_sync(
     Test file sync will correctly submit header data during download when configured.
     """
     requests_record = file_fixture_server_ssl.requests_record
-    url = file_fixture_server_ssl.make_url("/basic/PULP_MANIFEST")
+    url = file_fixture_server_ssl.make_url("/PULP_MANIFEST")
 
     header_name = "X-SOME-HEADER"
     header_value = str(uuid.uuid4())
@@ -181,6 +183,6 @@ def test_header_for_sync(
     )
 
     assert len(requests_record) == 1
-    assert requests_record[0].path == "/basic/PULP_MANIFEST"
+    assert requests_record[0].path == "/PULP_MANIFEST"
     assert header_name in requests_record[0].headers
     assert header_value == requests_record[0].headers[header_name]
