@@ -6,7 +6,7 @@ Ansible Installer (Recommended)
 
 We recommend that you install `pulpcore` and `pulp-file` together using the `Ansible installer
 <https://docs.pulpproject.org/pulp_installer>`_. The remaining steps are all
-performed by the installer and are not needed if you use it.
+performed by the installer and are not needed if you use it..
 
 Pip Install
 -----------
