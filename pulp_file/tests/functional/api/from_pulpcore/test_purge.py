@@ -28,8 +28,8 @@ from pulp_file.tests.functional.utils import (
     gen_file_remote,
     gen_repo,
     gen_file_client,
-    gen_user,
-    del_user,
+    gen_user_rest,
+    del_user_rest,
 )
 
 TOMORROW_STR = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
@@ -258,7 +258,7 @@ class TaskPurgeUserPermsTestCase(PulpTestCase):
             remote=self.admin_info["a_remote"].pulp_href
         )
 
-        self.new_user = gen_user()
+        self.new_user = gen_user_rest()
         file_client = gen_file_client()
         self.user_info = {
             "task_api": TasksApi(self.client),
@@ -277,7 +277,7 @@ class TaskPurgeUserPermsTestCase(PulpTestCase):
         self.admin_info["repo_api"].delete(self.admin_info["a_repo"].pulp_href)
         self.user_info["remote_api"].delete(self.user_info["a_remote"].pulp_href)
         self.user_info["repo_api"].delete(self.user_info["a_repo"].pulp_href)
-        del_user(self.new_user)
+        del_user_rest(self.new_user["pulp_href"])
 
     def testUserCannotPurge(self):
         """
