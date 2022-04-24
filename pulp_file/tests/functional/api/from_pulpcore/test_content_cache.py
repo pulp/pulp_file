@@ -3,7 +3,7 @@ import requests
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
+from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
 from pulp_smash.pulp3.utils import gen_distribution, gen_repo
 
 from pulpcore.client.pulp_file import (
@@ -57,10 +57,18 @@ class ContentCacheTestCache(unittest.TestCase):
         self.url = urljoin(PULP_CONTENT_BASE_URL, f"{self.distro.base_path}/")
 
     def tearDown(self):
-        a = self.remote_api.delete(self.remote.pulp_href).task
-        b = self.dis_api.delete(self.distro.pulp_href).task
-        for task_href in [a, b]:
-            monitor_task(task_href)
+        tasks = []
+        tasks.append(self.remote_api.delete(self.remote.pulp_href).task)
+        tasks.append(self.dis_api.delete(self.distro.pulp_href).task)
+        try:
+            tasks.append(self.repo_api.delete(self.repo.pulp_href).task)
+        except:
+            pass
+        for task_href in tasks:
+            try:
+                monitor_task(task_href)
+            except PulpTaskError:
+                pass
 
     def test_content_cache_workflow(self):
         self._basic_cache_access()
