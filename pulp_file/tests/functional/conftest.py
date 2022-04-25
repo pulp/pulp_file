@@ -86,25 +86,33 @@ def file_remote_api_client(file_client):
     return RemotesFileApi(file_client)
 
 
-def generate_iso(name, size=1024):
-    with open(name, "wb") as fout:
-        contents = os.urandom(size)
-        fout.write(contents)
-        fout.flush()
-    digest = hashlib.sha256(contents).hexdigest()
-    return {"name": name.basename, "size": size, "digest": digest}
+@pytest.fixture()
+def generate_iso():
+    def _generate_iso(name, size=1024):
+        with open(name, "wb") as fout:
+            contents = os.urandom(size)
+            fout.write(contents)
+            fout.flush()
+        digest = hashlib.sha256(contents).hexdigest()
+        return {"name": name.basename, "size": size, "digest": digest}
 
-
-def generate_manifest(name, file_list):
-    with open(name, "wt") as fout:
-        for file in file_list:
-            fout.write("{},{},{}\n".format(file["name"], file["digest"], file["size"]))
-        fout.flush()
-    return name
+    return _generate_iso
 
 
 @pytest.fixture()
-def file_fixtures_root(tmpdir):
+def generate_manifest():
+    def _generate_manifest(name, file_list):
+        with open(name, "wt") as fout:
+            for file in file_list:
+                fout.write("{},{},{}\n".format(file["name"], file["digest"], file["size"]))
+            fout.flush()
+        return name
+
+    return _generate_manifest
+
+
+@pytest.fixture()
+def file_fixtures_root(tmpdir, generate_iso, generate_manifest):
     file1 = generate_iso(tmpdir.join("1.iso"))
     file2 = generate_iso(tmpdir.join("2.iso"))
     file3 = generate_iso(tmpdir.join("3.iso"))
