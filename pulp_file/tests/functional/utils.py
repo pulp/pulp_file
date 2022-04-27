@@ -2,6 +2,8 @@
 """Utilities for tests for the file plugin."""
 from datetime import datetime
 from functools import partial
+import hashlib
+import os
 import requests
 from unittest import SkipTest
 from tempfile import NamedTemporaryFile
@@ -335,3 +337,22 @@ def parse_date_from_string(s, parse_format="%Y-%m-%dT%H:%M:%S.%fZ"):
     :return: datetime.datetime
     """
     return datetime.strptime(s, parse_format)
+
+
+def generate_iso(name, size=1024):
+    """Generate a random file."""
+    with open(name, "wb") as fout:
+        contents = os.urandom(size)
+        fout.write(contents)
+        fout.flush()
+    digest = hashlib.sha256(contents).hexdigest()
+    return {"name": name.basename, "size": size, "digest": digest}
+
+
+def generate_manifest(name, file_list):
+    """Generate a pulp_file manifest file for a list of files."""
+    with open(name, "wt") as fout:
+        for file in file_list:
+            fout.write("{},{},{}\n".format(file["name"], file["digest"], file["size"]))
+        fout.flush()
+    return name
