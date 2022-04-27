@@ -1,6 +1,4 @@
-import hashlib
 import logging
-import os
 import uuid
 
 from pathlib import Path
@@ -20,7 +18,7 @@ from pulpcore.client.pulp_file import (
 )
 from pulp_smash.pulp3.utils import gen_repo
 
-from pulp_file.tests.functional.utils import gen_file_client
+from pulp_file.tests.functional.utils import gen_file_client, generate_iso, generate_manifest
 
 
 _logger = logging.getLogger(__name__)
@@ -84,32 +82,7 @@ def file_remote_api_client(file_client):
 
 
 @pytest.fixture()
-def generate_iso():
-    def _generate_iso(name, size=1024):
-        with open(name, "wb") as fout:
-            contents = os.urandom(size)
-            fout.write(contents)
-            fout.flush()
-        digest = hashlib.sha256(contents).hexdigest()
-        return {"name": name.basename, "size": size, "digest": digest}
-
-    return _generate_iso
-
-
-@pytest.fixture()
-def generate_manifest():
-    def _generate_manifest(name, file_list):
-        with open(name, "wt") as fout:
-            for file in file_list:
-                fout.write("{},{},{}\n".format(file["name"], file["digest"], file["size"]))
-            fout.flush()
-        return name
-
-    return _generate_manifest
-
-
-@pytest.fixture()
-def file_fixtures_root(tmpdir, generate_iso, generate_manifest):
+def file_fixtures_root(tmpdir):
     file1 = generate_iso(tmpdir.join("1.iso"))
     file2 = generate_iso(tmpdir.join("2.iso"))
     file3 = generate_iso(tmpdir.join("3.iso"))
