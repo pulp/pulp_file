@@ -178,11 +178,11 @@ Content and RepositoryVersions Permissions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 File Content and RepositoryVersions are unique as they do not have any default roles on their
-viewsets. Content's access policy allows any authenticated user to view and create file
-content. RepositoryVersions' access policy requires the user to have permissions on the parent
-repository in order to perform actions on the repository version. Both objects have CRD permissions
-in the database that can be assigned to users, but currently their access policies do not use them
-for authorization.
+viewsets. Content's access policy allows any authenticated user to create file content, however
+viewing content is scoped by the repositories the user has permission for. RepositoryVersions'
+access policy requires the user to have permissions on the parent repository in order to perform
+actions on the repository version. Both objects have CRD permissions in the database that can be
+assigned to users, but currently their access policies do not use them for authorization.
 
 Creating New Roles
 ------------------

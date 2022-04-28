@@ -108,17 +108,38 @@ def test_role_management(gen_users, file_repo_api_client, gen_object_with_cleanu
     _try_action(charlie, file_repo_api_client, "my_permissions", 404, href)
 
 
-def test_content_apis(gen_users, file_content_api_client):
-    """Check that each user can list content."""
+def test_content_apis(
+    gen_users,
+    file_content_api_client,
+    file_repo_api_client,
+    file_remote_api_client,
+    gen_object_with_cleanup,
+):
+    """Check that each user can list content and content is scoped by repository."""
     alice, bob, charlie = gen_users()
-    with alice:
-        aresponse = file_content_api_client.list()
-    with bob:
-        bresponse = file_content_api_client.list()
-    with charlie:
-        cresponse = file_content_api_client.list()
+    aresponse = _try_action(alice, file_content_api_client, "list", 200)
+    bresponse = _try_action(bob, file_content_api_client, "list", 200)
+    cresponse = _try_action(charlie, file_content_api_client, "list", 200)
 
-    assert aresponse.count == bresponse.count == cresponse.count
+    assert aresponse.count == bresponse.count == cresponse.count == 0
+
+    alice, bob, charlie = gen_users(["filerepository"])
+    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    monitor_task(file_repo_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task)
+
+    aresponse = _try_action(alice, file_content_api_client, "list", 200)
+    bresponse = _try_action(bob, file_content_api_client, "list", 200)
+    cresponse = _try_action(charlie, file_content_api_client, "list", 200)
+
+    assert aresponse.count > bresponse.count
+    assert bresponse.count == cresponse.count == 0
+
+    nested_role = {"users": [charlie.username], "role": "file.filerepository_viewer"}
+    file_repo_api_client.add_role(repo.pulp_href, nested_role)
+
+    cresponse = _try_action(charlie, file_content_api_client, "list", 200)
+    assert cresponse.count > bresponse.count
 
 
 @pytest.mark.parallel
