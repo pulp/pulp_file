@@ -82,6 +82,7 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
                 "effect": "allow",
             },
         ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
 
 
