@@ -26,12 +26,13 @@ def test_sync_http_through_http_proxy(
     file_repo_api_client,
     file_content_api_client,
     http_proxy,
+    basic_manifest_path,
 ):
     """
     Test syncing http through a http proxy.
     """
     remote_on_demand = file_fixture_gen_remote(
-        fixture_name="basic", policy="on_demand", proxy_url=http_proxy.proxy_url
+        manifest_path=basic_manifest_path, policy="on_demand", proxy_url=http_proxy.proxy_url
     )
 
     _run_basic_sync_and_assert(
@@ -46,12 +47,13 @@ def test_sync_https_through_http_proxy(
     file_repo_api_client,
     file_content_api_client,
     http_proxy,
+    basic_manifest_path,
 ):
     """
     Test syncing https through a http proxy.
     """
     remote_on_demand = file_fixture_gen_remote_ssl(
-        fixture_name="basic", policy="on_demand", proxy_url=http_proxy.proxy_url
+        manifest_path=basic_manifest_path, policy="on_demand", proxy_url=http_proxy.proxy_url
     )
 
     _run_basic_sync_and_assert(
@@ -66,12 +68,13 @@ def test_sync_https_through_http_proxy_with_auth(
     file_repo_api_client,
     file_content_api_client,
     http_proxy_with_auth,
+    basic_manifest_path,
 ):
     """
     Test syncing https through a http proxy that requires auth.
     """
     remote_on_demand = file_fixture_gen_remote_ssl(
-        fixture_name="basic",
+        manifest_path=basic_manifest_path,
         policy="on_demand",
         tls_validation="true",
         proxy_url=http_proxy_with_auth.proxy_url,
@@ -91,12 +94,13 @@ def test_sync_https_through_http_proxy_with_auth_but_auth_not_configured(
     file_repo_api_client,
     file_content_api_client,
     http_proxy_with_auth,
+    basic_manifest_path,
 ):
     """
     Test syncing https through a http proxy that requires auth, but auth is not configured.
     """
     remote_on_demand = file_fixture_gen_remote_ssl(
-        fixture_name="basic",
+        manifest_path=basic_manifest_path,
         policy="on_demand",
         tls_validation="true",
         proxy_url=http_proxy_with_auth.proxy_url,
@@ -117,12 +121,13 @@ def test_sync_http_through_https_proxy(
     file_repo_api_client,
     file_content_api_client,
     https_proxy,
+    basic_manifest_path,
 ):
     """
     Test syncing http through an https proxy.
     """
     remote_on_demand = file_fixture_gen_remote(
-        fixture_name="basic",
+        manifest_path=basic_manifest_path,
         policy="on_demand",
         proxy_url=https_proxy.proxy_url,
         tls_validation="false",  # We instead should have a `proxy_insecure` option
