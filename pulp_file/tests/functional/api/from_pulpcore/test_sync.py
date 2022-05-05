@@ -33,11 +33,14 @@ def test_http_sync_no_ssl(
     file_repo,
     file_repo_api_client,
     file_content_api_client,
+    basic_manifest_path,
 ):
     """
     Test file on_demand sync with plain http://
     """
-    remote_on_demand = file_fixture_gen_remote(fixture_name="basic", policy="on_demand")
+    remote_on_demand = file_fixture_gen_remote(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
 
     _run_basic_sync_and_assert(
         remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
@@ -50,12 +53,13 @@ def test_http_sync_ssl_tls_validation_off(
     file_repo,
     file_repo_api_client,
     file_content_api_client,
+    basic_manifest_path,
 ):
     """
     Test file on_demand sync with https:// serving from an untrusted certificate.
     """
     remote_on_demand = file_fixture_gen_remote_ssl(
-        fixture_name="basic", policy="on_demand", tls_validation="false"
+        manifest_path=basic_manifest_path, policy="on_demand", tls_validation="false"
     )
 
     _run_basic_sync_and_assert(
@@ -69,12 +73,13 @@ def test_http_sync_ssl_tls_validation_on(
     file_repo,
     file_repo_api_client,
     file_content_api_client,
+    basic_manifest_path,
 ):
     """
     Test file on_demand sync with https:// and a client connection configured to trust it.
     """
     remote_on_demand = file_fixture_gen_remote_ssl(
-        fixture_name="basic", policy="on_demand", tls_validation="true"
+        manifest_path=basic_manifest_path, policy="on_demand", tls_validation="true"
     )
 
     _run_basic_sync_and_assert(
@@ -88,12 +93,15 @@ def test_http_sync_ssl_tls_validation_defaults_to_on(
     file_repo,
     file_repo_api_client,
     file_content_api_client,
+    basic_manifest_path,
 ):
     """
     Test file on_demand sync with https:// and that tls validation is on by default.
     """
 
-    remote_on_demand = file_fixture_gen_remote_ssl(fixture_name="basic", policy="on_demand")
+    remote_on_demand = file_fixture_gen_remote_ssl(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
 
     _run_basic_sync_and_assert(
         remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
@@ -106,12 +114,13 @@ def test_http_sync_ssl_with_client_cert_req(
     file_repo,
     file_repo_api_client,
     file_content_api_client,
+    basic_manifest_path,
 ):
     """
     Test file on_demand sync with https:// and mutual authentication between client and server.
     """
     remote_on_demand = file_fixture_gen_remote_client_cert_req(
-        fixture_name="basic", policy="on_demand"
+        manifest_path=basic_manifest_path, policy="on_demand"
     )
 
     _run_basic_sync_and_assert(
@@ -125,11 +134,14 @@ def test_ondemand_to_immediate_sync(
     file_repo,
     file_repo_api_client,
     file_content_api_client,
+    basic_manifest_path,
 ):
     """
     Test file on_demand sync does not bring in Artifacts, but a later sync with "immediate" will.
     """
-    remote_on_demand = file_fixture_gen_remote_ssl(fixture_name="basic", policy="on_demand")
+    remote_on_demand = file_fixture_gen_remote_ssl(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
 
     _run_basic_sync_and_assert(
         remote_on_demand,
@@ -138,7 +150,9 @@ def test_ondemand_to_immediate_sync(
         file_content_api_client,
     )
 
-    remote_immediate = file_fixture_gen_remote_ssl(fixture_name="basic", policy="immediate")
+    remote_immediate = file_fixture_gen_remote_ssl(
+        manifest_path=basic_manifest_path, policy="immediate"
+    )
 
     _run_basic_sync_and_assert(
         remote_immediate,
@@ -158,12 +172,13 @@ def test_header_for_sync(
     file_repo_api_client,
     file_content_api_client,
     gen_object_with_cleanup,
+    basic_manifest_path,
 ):
     """
     Test file sync will correctly submit header data during download when configured.
     """
     requests_record = file_fixture_server_ssl.requests_record
-    url = file_fixture_server_ssl.make_url("/PULP_MANIFEST")
+    url = file_fixture_server_ssl.make_url("/basic/PULP_MANIFEST")
 
     header_name = "X-SOME-HEADER"
     header_value = str(uuid.uuid4())
@@ -183,6 +198,6 @@ def test_header_for_sync(
     )
 
     assert len(requests_record) == 1
-    assert requests_record[0].path == "/PULP_MANIFEST"
+    assert requests_record[0].path == "/basic/PULP_MANIFEST"
     assert header_name in requests_record[0].headers
     assert header_value == requests_record[0].headers[header_name]

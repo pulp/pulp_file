@@ -96,11 +96,17 @@ def file_remote_api_client(file_client):
 
 @pytest.fixture()
 def file_fixtures_root(tmpdir):
-    file1 = generate_iso(tmpdir.join("1.iso"))
-    file2 = generate_iso(tmpdir.join("2.iso"))
-    file3 = generate_iso(tmpdir.join("3.iso"))
-    generate_manifest(tmpdir.join("PULP_MANIFEST"), [file1, file2, file3])
     return Path(tmpdir)
+
+
+@pytest.fixture()
+def basic_manifest_path(file_fixtures_root):
+    file_fixtures_root.joinpath("basic").mkdir()
+    file1 = generate_iso(file_fixtures_root.joinpath("basic/1.iso"))
+    file2 = generate_iso(file_fixtures_root.joinpath("basic/2.iso"))
+    file3 = generate_iso(file_fixtures_root.joinpath("basic/3.iso"))
+    generate_manifest(file_fixtures_root.joinpath("basic/PULP_MANIFEST"), [file1, file2, file3])
+    return "/basic/PULP_MANIFEST"
 
 
 @pytest.fixture
@@ -122,8 +128,8 @@ def file_fixture_server(file_fixtures_root, gen_fixture_server):
 
 @pytest.fixture
 def file_fixture_gen_remote(file_fixture_server, file_remote_api_client, gen_object_with_cleanup):
-    def _file_fixture_gen_remote(*, fixture_name, policy, **kwargs):
-        url = file_fixture_server.make_url(f"/PULP_MANIFEST")
+    def _file_fixture_gen_remote(*, manifest_path, policy, **kwargs):
+        url = file_fixture_server.make_url(manifest_path)
         kwargs.update({"url": str(url), "policy": policy, "name": str(uuid.uuid4())})
         return gen_object_with_cleanup(file_remote_api_client, kwargs)
 
@@ -137,8 +143,8 @@ def file_fixture_gen_remote_ssl(
     tls_certificate_authority_cert,
     gen_object_with_cleanup,
 ):
-    def _file_fixture_gen_remote_ssl(*, fixture_name, policy, **kwargs):
-        url = file_fixture_server_ssl.make_url(f"/PULP_MANIFEST")
+    def _file_fixture_gen_remote_ssl(*, manifest_path, policy, **kwargs):
+        url = file_fixture_server_ssl.make_url(manifest_path)
         kwargs.update(
             {
                 "url": str(url),
@@ -161,8 +167,8 @@ def file_fixture_gen_remote_client_cert_req(
     client_tls_certificate_key_pem,
     gen_object_with_cleanup,
 ):
-    def _file_fixture_gen_remote_client_cert_req(*, fixture_name, policy, **kwargs):
-        url = file_fixture_server_ssl_client_cert_req.make_url(f"/PULP_MANIFEST")
+    def _file_fixture_gen_remote_client_cert_req(*, manifest_path, policy, **kwargs):
+        url = file_fixture_server_ssl_client_cert_req.make_url(manifest_path)
         kwargs.update(
             {
                 "url": str(url),

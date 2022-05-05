@@ -282,7 +282,7 @@ def generate_iso(name, size=1024):
         fout.write(contents)
         fout.flush()
     digest = hashlib.sha256(contents).hexdigest()
-    return {"name": name.basename, "size": size, "digest": digest}
+    return {"name": name.name, "size": size, "digest": digest}
 
 
 def generate_manifest(name, file_list):
