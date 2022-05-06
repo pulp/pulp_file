@@ -1,4 +1,5 @@
 import logging
+import tempfile
 import uuid
 
 from pathlib import Path
@@ -16,6 +17,8 @@ from pulpcore.client.pulp_file import (
     RemotesFileApi,
     PublicationsFileApi,
 )
+
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulp_file.tests.functional.utils import gen_file_client, generate_iso, generate_manifest
@@ -49,6 +52,16 @@ def file_acs_api_client(file_client):
 @pytest.fixture(scope="session")
 def file_content_api_client(file_client):
     return ContentFilesApi(file_client)
+
+
+@pytest.fixture
+def file_random_content_unit(file_content_api_client, tmp_path):
+    with tempfile.NamedTemporaryFile(dir=tmp_path) as tmp_file:
+        tmp_file.write(b"not empty")
+        tmp_file.flush()
+        return monitor_task(
+            file_content_api_client.create(relative_path=str(uuid.uuid4()), file=tmp_file.name).task
+        )
 
 
 @pytest.fixture(scope="session")

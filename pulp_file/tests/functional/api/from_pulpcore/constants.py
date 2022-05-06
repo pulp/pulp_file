@@ -106,9 +106,6 @@ FILE2_URL = urljoin(FILE2_FIXTURE_URL, "1.iso")
 
 _CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-X509_CERTS_BASE_PATH = os.path.join(_CURRENT_DIR, "artifacts", "x509", "certificates")
-X509_CA_CERT_FILE_PATH = os.path.join(X509_CERTS_BASE_PATH, "ca.pem")
-
 #: All valid task states.
 TASK_STATES = SimpleNamespace(
     WAITING="waiting",
