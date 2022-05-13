@@ -39,17 +39,19 @@ def pytest_check_for_leftover_pulp_objects(config):
             raise Exception(f"This test left over a {type_to_check}.")
 
 
-@pytest.fixture(scope="session")
-def file_client(bindings_cfg):
-    return ApiClient(bindings_cfg)
+@pytest.fixture
+def file_client(cid, bindings_cfg):
+    api_client = ApiClient(bindings_cfg)
+    api_client.default_headers["Correlation-ID"] = cid
+    return api_client
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_acs_api_client(file_client):
     return AcsFileApi(file_client)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_content_api_client(file_client):
     return ContentFilesApi(file_client)
 
@@ -64,22 +66,22 @@ def file_random_content_unit(file_content_api_client, tmp_path):
         )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_distro_api_client(file_client):
     return DistributionsFileApi(file_client)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_pub_api_client(file_client):
     return PublicationsFileApi(file_client)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_repo_api_client(file_client):
     return RepositoriesFileApi(file_client)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_repo_ver_api_client(file_client):
     return RepositoriesFileVersionsApi(file_client)
 
@@ -89,17 +91,17 @@ def file_repo(file_repo_api_client, gen_object_with_cleanup):
     return gen_object_with_cleanup(file_repo_api_client, gen_repo())
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def file_remote_api_client(file_client):
     return RemotesFileApi(file_client)
 
 
-@pytest.fixture()
+@pytest.fixture
 def file_fixtures_root(tmpdir):
     return Path(tmpdir)
 
 
-@pytest.fixture()
+@pytest.fixture
 def basic_manifest_path(file_fixtures_root):
     file_fixtures_root.joinpath("basic").mkdir()
     file1 = generate_iso(file_fixtures_root.joinpath("basic/1.iso"))
