@@ -170,6 +170,7 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Role
                 "parameters": {"roles": "file.filerepository_owner"},
             },
         ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
     LOCKED_ROLES = {
         "file.filerepository_creator": ["file.add_filerepository"],
@@ -253,7 +254,8 @@ class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
                     "has_repository_model_or_obj_perms:file.view_filerepository",
                 ],
             },
-        ]
+        ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
 
 
@@ -320,6 +322,7 @@ class FileRemoteViewSet(RemoteViewSet, RolesMixin):
                 "parameters": {"roles": "file.fileremote_owner"},
             },
         ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
     LOCKED_ROLES = {
         "file.fileremote_creator": ["file.add_fileremote"],
@@ -392,6 +395,7 @@ class FilePublicationViewSet(PublicationViewSet, RolesMixin):
                 "parameters": {"roles": "file.filepublication_owner"},
             },
         ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
     LOCKED_ROLES = {
         "file.filepublication_creator": ["file.add_filepublication"],
@@ -499,6 +503,7 @@ class FileDistributionViewSet(DistributionViewSet, RolesMixin):
                 "parameters": {"roles": "file.filedistribution_owner"},
             },
         ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
     LOCKED_ROLES = {
         "file.filedistribution_creator": ["file.add_filedistribution"],
@@ -589,6 +594,7 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet, RolesMixi
                 "parameters": {"roles": "file.filealternatecontentsource_owner"},
             },
         ],
+        "queryset_scoping": {"function": "scope_queryset"},
     }
     LOCKED_ROLES = {
         "file.filealternatecontentsource_creator": ["file.add_filealternatecontentsource"],
