@@ -40,7 +40,7 @@ def publish(manifest, repository_version_pk):
         with FilePublication.create(repo_version, pass_through=True) as publication:
             publication.manifest = manifest
             manifest = Manifest(manifest)
-            manifest.write(populate(publication))
+            manifest.write(yield_entries_for_version(repo_version))
             PublishedMetadata.create_from_file(
                 file=File(open(manifest.relative_path, "rb")), publication=publication
             )
@@ -50,23 +50,22 @@ def publish(manifest, repository_version_pk):
         return publication
 
 
-def populate(publication):
+def yield_entries_for_version(repo_version):
     """
-    Populate a publication.
-
-    Create published artifacts and yield a Manifest Entry for each.
+    Yield a Manifest Entry for every content in the repository version.
 
     Args:
-        publication (pulpcore.plugin.models.Publication): A Publication to populate.
+        repo_version (pulpcore.plugin.models.RepositoryVersion):
+            A RepositoryVersion to manifest entries for.
 
     Yields:
         Entry: Each manifest entry.
 
     """
 
-    content_artifacts = ContentArtifact.objects.filter(
-        content__in=publication.repository_version.content
-    ).order_by("-content__pulp_created")
+    content_artifacts = ContentArtifact.objects.filter(content__in=repo_version.content).order_by(
+        "-content__pulp_created"
+    )
 
     for content_artifact in content_artifacts.select_related("artifact").iterator():
         if content_artifact.artifact:

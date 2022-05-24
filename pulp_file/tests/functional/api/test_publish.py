@@ -1,4 +1,3 @@
-# coding=utf-8
 """Tests that publish file plugin repositories."""
 import unittest
 from random import choice
