@@ -1,4 +1,3 @@
-# coding=utf-8
 """Tests that CRUD file remotes."""
 import json
 from random import choice

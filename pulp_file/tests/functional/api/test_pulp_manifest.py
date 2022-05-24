@@ -1,4 +1,3 @@
-# coding=utf-8
 """Tests whether Pulp handles PULP_MANIFEST information."""
 import csv
 import requests

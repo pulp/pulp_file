@@ -1,4 +1,3 @@
-# coding=utf-8
 """Utilities for tests for the file plugin."""
 from datetime import datetime
 from functools import partial

@@ -1,4 +1,3 @@
-# coding=utf-8
 """Tests that sync file plugin repositories."""
 import unittest
 

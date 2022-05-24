@@ -1,4 +1,3 @@
-# coding=utf-8
 """Tests for Pulp`s download policies."""
 from random import choice
 import unittest
