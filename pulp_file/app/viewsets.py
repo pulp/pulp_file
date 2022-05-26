@@ -256,7 +256,6 @@ class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
                 ],
             },
         ],
-        "queryset_scoping": {"function": "scope_queryset"},
     }
 
 
