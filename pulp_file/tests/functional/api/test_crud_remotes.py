@@ -1,204 +1,98 @@
 """Tests that CRUD file remotes."""
 import json
-from random import choice
-import unittest
+import uuid
 
-from pulp_smash import utils
+import pytest
 
 from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 
-from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE2_FIXTURE_MANIFEST_URL,
-)
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-)
-
-from pulpcore.client.pulp_file import RemotesFileApi
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 
-class CRUDRemotesTestCase(unittest.TestCase):
-    """CRUD remotes."""
+@pytest.mark.parallel
+def test_remote_crud_workflow(file_remote_api_client, gen_object_with_cleanup):
+    remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com"}
+    remote = gen_object_with_cleanup(file_remote_api_client, remote_data)
+    assert remote.url == remote_data["url"]
+    assert remote.name == remote_data["name"]
 
-    @classmethod
-    def setUpClass(cls):
-        cls.remote_api = RemotesFileApi(gen_file_client())
+    with pytest.raises(ApiException) as exc:
+        gen_object_with_cleanup(file_remote_api_client, remote_data)
+    assert exc.value.status == 400
+    assert json.loads(exc.value.body) == {"name": ["This field must be unique."]}
 
-    def test_workflow(self):
-        self._create_remote()
-        self._create_same_name()
-        self._read_remote()
-        self._read_remotes()
-        self._partially_update()
-        self._fully_update()
-        self._delete()
-
-    def _create_remote(self):
-        """Create a remote."""
-        body = _gen_verbose_remote()
-        self.remote = self.remote_api.create(body)
-        for key in ("username", "password"):
-            del body[key]
-        for key, val in body.items():
-            with self.subTest(key=key):
-                self.assertEqual(self.remote.to_dict()[key], val, key)
-
-    def _create_same_name(self):
-        """Try to create a second remote with an identical name.
-
-        See: `Pulp Smash #1055
-        <https://github.com/pulp/pulp-smash/issues/1055>`_.
-        """
-        body = gen_file_remote()
-        body["name"] = self.remote.name
-        with self.assertRaises(ApiException):
-            self.remote_api.create(body)
-
-    def _read_remote(self):
-        """Read a remote by its href."""
-        remote = self.remote_api.read(self.remote.pulp_href)
-        for key, val in self.remote.to_dict().items():
-            with self.subTest(key=key):
-                self.assertEqual(remote.to_dict()[key], val, key)
-
-    def _read_remotes(self):
-        """Read a remote by its name."""
-        page = self.remote_api.list(name=self.remote.name)
-        self.assertEqual(len(page.results), 1)
-        for key, val in self.remote.to_dict().items():
-            with self.subTest(key=key):
-                self.assertEqual(page.results[0].to_dict()[key], val, key)
-
-    def _partially_update(self):
-        """Update a remote using HTTP PATCH."""
-        body = _gen_verbose_remote()
-        response = self.remote_api.partial_update(self.remote.pulp_href, body)
-        monitor_task(response.task)
-        for key in ("username", "password"):
-            del body[key]
-        self.remote = self.remote_api.read(self.remote.pulp_href)
-        for key, val in body.items():
-            with self.subTest(key=key):
-                self.assertEqual(self.remote.to_dict()[key], val, key)
-
-    def _fully_update(self):
-        """Update a remote using HTTP PUT."""
-        body = _gen_verbose_remote()
-        response = self.remote_api.update(self.remote.pulp_href, body)
-        monitor_task(response.task)
-        for key in ("username", "password"):
-            del body[key]
-        self.remote = self.remote_api.read(self.remote.pulp_href)
-        for key, val in body.items():
-            with self.subTest(key=key):
-                self.assertEqual(self.remote.to_dict()[key], val, key)
-
-    def _delete(self):
-        """Delete a remote."""
-        response = self.remote_api.delete(self.remote.pulp_href)
-        monitor_task(response.task)
-        with self.assertRaises(ApiException):
-            self.remote_api.read(self.remote.pulp_href)
-
-    def test_negative_create_file_remote_with_invalid_parameter(self):
-        """Attempt to create file remote passing invalid parameter."""
-        with self.assertRaises(ApiException) as exc:
-            RemotesFileApi(gen_file_client()).create(gen_file_remote(foo="bar"))
-
-        assert exc.exception.status == 400
-        assert json.loads(exc.exception.body)["foo"] == ["Unexpected field"]
-
-
-class CreateRemoteNoURLTestCase(unittest.TestCase):
-    """Verify whether is possible to create a remote without a URL."""
-
-    def test_all(self):
-        """Verify whether is possible to create a remote without a URL.
-
-        This test targets the following issues:
-
-        * `Pulp #3395 <https://pulp.plan.io/issues/3395>`_
-        * `Pulp Smash #984 <https://github.com/pulp/pulp-smash/issues/984>`_
-        """
-        body = gen_file_remote()
-        del body["url"]
-        with self.assertRaises(ApiException):
-            RemotesFileApi(gen_file_client()).create(body)
-
-
-class RemoteDownloadPolicyTestCase(unittest.TestCase):
-    """Verify download policy behavior for valid and invalid values."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.remote_api = RemotesFileApi(gen_file_client())
-        cls.policies = ON_DEMAND_DOWNLOAD_POLICIES
-
-    def setUp(self):
-        self.remote = {}
-        self.body = _gen_verbose_remote()
-
-    def test_workflow(self):
-        self._no_defined_policy()
-        self._change_policy()
-        self._invalid_policy()
-
-    def _no_defined_policy(self):
-        """Verify the default policy `immediate`."""
-        del self.body["policy"]
-        self.remote = self.remote_api.create(self.body).to_dict()
-        self.addCleanup(self.remote_api.delete, self.remote["pulp_href"])
-        assert self.remote["policy"] == "immediate"
-
-    def _change_policy(self):
-        """Verify ability to change policy to value other than the default.
-
-        Update the remote policy to a valid value other than `immedaite`
-        and verify the new set value.
-        """
-        changed_policy = choice([item for item in self.policies if item != "immediate"])
-        response = self.remote_api.partial_update(
-            self.remote["pulp_href"], {"policy": changed_policy}
-        )
-        monitor_task(response.task)
-        self.remote.update(self.remote_api.read(self.remote["pulp_href"]).to_dict())
-        self.assertEqual(self.remote["policy"], changed_policy, self.remote)
-
-    def _invalid_policy(self):
-        """Verify an invalid policy does not update the remote policy.
-
-        Get the current remote policy.
-        Attempt to update the remote policy to an invalid value.
-        Verify the policy remains the same.
-        """
-        remote = self.remote_api.read(self.remote["pulp_href"]).to_dict()
-        with self.assertRaises(ApiException):
-            self.remote_api.partial_update(self.remote["pulp_href"], {"policy": utils.uuid4()})
-        self.remote.update(self.remote_api.read(self.remote["pulp_href"]).to_dict())
-        self.assertEqual(remote["policy"], self.remote["policy"], self.remote)
-
-
-def _gen_verbose_remote():
-    """Return a semi-random dict for use in defining a remote.
-
-    For most tests, it"s desirable to create remotes with as few attributes
-    as possible, so that the tests can specifically target and attempt to break
-    specific features. This module specifically targets remotes, so it makes
-    sense to provide as many attributes as possible.
-
-    Note that 'username' and 'password' are write-only attributes.
-    """
-    attrs = gen_file_remote(url=choice((FILE_FIXTURE_MANIFEST_URL, FILE2_FIXTURE_MANIFEST_URL)))
-    attrs.update(
-        {
-            "password": utils.uuid4(),
-            "username": utils.uuid4(),
-            "policy": choice(ON_DEMAND_DOWNLOAD_POLICIES),
-        }
+    update_response = file_remote_api_client.partial_update(
+        remote.pulp_href, {"url": "https://example.com"}
     )
-    return attrs
+    task = monitor_task(update_response.task)
+    assert task.created_resources == []
+
+    remote = file_remote_api_client.read(remote.pulp_href)
+    assert remote.url == "https://example.com"
+
+    all_new_remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com"}
+    update_response = file_remote_api_client.update(remote.pulp_href, all_new_remote_data)
+    task = monitor_task(update_response.task)
+    assert task.created_resources == []
+
+    remote = file_remote_api_client.read(remote.pulp_href)
+    assert remote.name == all_new_remote_data["name"]
+    assert remote.url == all_new_remote_data["url"]
+
+
+@pytest.mark.parallel
+def test_create_file_remote_with_invalid_parameter(file_remote_api_client, gen_object_with_cleanup):
+    unexpected_field_remote_data = {
+        "name": str(uuid.uuid4()),
+        "url": "http://example.com",
+        "foo": "bar",
+    }
+
+    with pytest.raises(ApiException) as exc:
+        gen_object_with_cleanup(file_remote_api_client, unexpected_field_remote_data)
+    assert exc.value.status == 400
+    assert json.loads(exc.value.body) == {"foo": ["Unexpected field"]}
+
+
+@pytest.mark.parallel
+def test_create_file_remote_without_url(file_remote_api_client, gen_object_with_cleanup):
+    with pytest.raises(ApiException) as exc:
+        gen_object_with_cleanup(file_remote_api_client, {"name": str(uuid.uuid4())})
+    assert exc.value.status == 400
+    assert json.loads(exc.value.body) == {"url": ["This field is required."]}
+
+
+@pytest.mark.parallel
+def test_default_remote_policy_immediate(file_remote_api_client, gen_object_with_cleanup):
+    remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com"}
+    remote = gen_object_with_cleanup(file_remote_api_client, remote_data)
+    assert remote.policy == "immediate"
+
+
+@pytest.mark.parallel
+def test_specify_remote_policy_streamed(file_remote_api_client, gen_object_with_cleanup):
+    remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com", "policy": "streamed"}
+    remote = gen_object_with_cleanup(file_remote_api_client, remote_data)
+    assert remote.policy == "streamed"
+
+
+@pytest.mark.parallel
+def test_specify_remote_policy_on_demand(file_remote_api_client, gen_object_with_cleanup):
+    remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com", "policy": "on_demand"}
+    remote = gen_object_with_cleanup(file_remote_api_client, remote_data)
+    assert remote.policy == "on_demand"
+
+
+@pytest.mark.parallel
+def test_can_update_remote_policy(file_remote_api_client, gen_object_with_cleanup):
+    initial_remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com"}
+    remote = gen_object_with_cleanup(file_remote_api_client, initial_remote_data)
+    assert remote.policy == "immediate"
+
+    update_response = file_remote_api_client.partial_update(
+        remote.pulp_href, {"policy": "on_demand"}
+    )
+    monitor_task(update_response.task)
+
+    remote = file_remote_api_client.read(remote.pulp_href)
+    assert remote.policy == "on_demand"
