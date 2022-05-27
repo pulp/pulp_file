@@ -105,13 +105,23 @@ def file_fixtures_root(tmpdir):
 
 
 @pytest.fixture
-def basic_manifest_path(file_fixtures_root):
-    file_fixtures_root.joinpath("basic").mkdir()
-    file1 = generate_iso(file_fixtures_root.joinpath("basic/1.iso"))
-    file2 = generate_iso(file_fixtures_root.joinpath("basic/2.iso"))
-    file3 = generate_iso(file_fixtures_root.joinpath("basic/3.iso"))
-    generate_manifest(file_fixtures_root.joinpath("basic/PULP_MANIFEST"), [file1, file2, file3])
-    return "/basic/PULP_MANIFEST"
+def write_3_iso_file_fixture_data_factory(file_fixtures_root):
+    def _write_3_iso_file_fixture_data_factory(name):
+        file_fixtures_root.joinpath(name).mkdir()
+        file1 = generate_iso(file_fixtures_root.joinpath(f"{name}/1.iso"))
+        file2 = generate_iso(file_fixtures_root.joinpath(f"{name}/2.iso"))
+        file3 = generate_iso(file_fixtures_root.joinpath(f"{name}/3.iso"))
+        generate_manifest(
+            file_fixtures_root.joinpath(f"{name}/PULP_MANIFEST"), [file1, file2, file3]
+        )
+        return f"/{name}/PULP_MANIFEST"
+
+    return _write_3_iso_file_fixture_data_factory
+
+
+@pytest.fixture
+def basic_manifest_path(write_3_iso_file_fixture_data_factory):
+    return write_3_iso_file_fixture_data_factory("basic")
 
 
 @pytest.fixture
@@ -121,6 +131,22 @@ def large_manifest_path(file_fixtures_root):
     file1 = generate_iso(file_fixtures_root.joinpath("large/1.iso"), 10 * one_megabyte)
     generate_manifest(file_fixtures_root.joinpath("large/PULP_MANIFEST"), [file1])
     return "/large/PULP_MANIFEST"
+
+
+@pytest.fixture
+def invalid_manifest_path(file_fixtures_root, basic_manifest_path):
+    file_path_to_corrupt = file_fixtures_root / Path("basic/1.iso")
+    with open(file_path_to_corrupt, "w") as f:
+        f.write("this is not the right data")
+    return basic_manifest_path
+
+
+@pytest.fixture
+def duplicate_filename_paths(write_3_iso_file_fixture_data_factory):
+    return (
+        write_3_iso_file_fixture_data_factory("file"),
+        write_3_iso_file_fixture_data_factory("file2"),
+    )
 
 
 @pytest.fixture
