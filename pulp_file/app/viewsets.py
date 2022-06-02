@@ -77,9 +77,18 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
     DEFAULT_ACCESS_POLICY = {
         "statements": [
             {
-                "action": ["list", "retrieve", "create"],
+                "action": ["list", "retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
+            },
+            {
+                "action": ["create"],
+                "principal": "authenticated",
+                "effect": "allow",
+                "condition": [
+                    "has_required_repo_perms_on_upload:file.modify_filerepository",
+                    "has_required_repo_perms_on_upload:file.view_filerepository",
+                ],
             },
         ],
         "queryset_scoping": {"function": "scope_queryset"},
