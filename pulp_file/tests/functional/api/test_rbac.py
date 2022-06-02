@@ -9,7 +9,7 @@ from pulpcore.client.pulp_file import (
 )
 from pulpcore.client.pulp_file import AsyncOperationResponse
 
-from pulp_file.tests.functional.utils import gen_repo, gen_file_remote
+from pulp_file.tests.functional.utils import gen_repo, gen_file_remote, gen_artifact
 
 
 @pytest.fixture()
@@ -113,9 +113,11 @@ def test_content_apis(
     file_content_api_client,
     file_repo_api_client,
     file_remote_api_client,
+    file_fixture_server,
+    basic_manifest_path,
     gen_object_with_cleanup,
 ):
-    """Check that each user can list content and content is scoped by repository."""
+    """Check content listing, scoping and upload APIs."""
     alice, bob, charlie = gen_users()
     aresponse = _try_action(alice, file_content_api_client, "list", 200)
     bresponse = _try_action(bob, file_content_api_client, "list", 200)
@@ -140,6 +142,20 @@ def test_content_apis(
 
     cresponse = _try_action(charlie, file_content_api_client, "list", 200)
     assert cresponse.count > bresponse.count
+
+    file_url = file_fixture_server.make_url("/basic")
+    # This might need to change if we change Artifact's default upload policy
+    artifact1 = gen_artifact(url=file_url + "/1.iso")["pulp_href"]
+
+    body = {"artifact": artifact1}
+    _try_action(alice, file_content_api_client, "create", 403, "1.iso", **body)
+    body["repository"] = repo.pulp_href
+    _try_action(bob, file_content_api_client, "create", 403, "1.iso", **body)
+    _try_action(charlie, file_content_api_client, "create", 403, "1.iso", **body)
+
+    nested_role = {"users": [charlie.username], "role": "file.filerepository_owner"}
+    file_repo_api_client.add_role(repo.pulp_href, nested_role)
+    _try_action(charlie, file_content_api_client, "create", 202, "1.iso", **body)
 
 
 @pytest.mark.parallel

@@ -121,6 +121,7 @@ def gen_artifact(url=FILE_URL, file=None):
         response = requests.get(url)
         with NamedTemporaryFile() as temp_file:
             temp_file.write(response.content)
+            temp_file.flush()
             return ArtifactsApi(core_client).create(file=temp_file.name).to_dict()
 
     return ArtifactsApi(core_client).create(file=file).to_dict()
