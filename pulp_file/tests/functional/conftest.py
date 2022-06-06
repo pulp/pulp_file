@@ -60,13 +60,11 @@ def file_content_api_client(file_client):
 
 
 @pytest.fixture
-def file_random_content_unit(file_content_api_client, tmp_path):
-    with tempfile.NamedTemporaryFile(dir=tmp_path) as tmp_file:
-        tmp_file.write(b"not empty")
-        tmp_file.flush()
-        return monitor_task(
-            file_content_api_client.create(relative_path=str(uuid.uuid4()), file=tmp_file.name).task
-        )
+def file_random_content_unit(
+    file_content_api_client, tmp_path, random_artifact, gen_object_with_cleanup
+):
+    artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
+    gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
 
 
 @pytest.fixture
