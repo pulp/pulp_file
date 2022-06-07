@@ -1,7 +1,9 @@
 """Tests that perform actions over content unit."""
-import uuid
-
+import hashlib
+import os
 import pytest
+import unittest
+import uuid
 
 from pulp_smash.pulp3.bindings import (
     monitor_task,
@@ -124,3 +126,35 @@ def test_cannot_create_repo_version_with_two_relative_paths_the_same(
     with pytest.raises(PulpTaskError):
         response = file_repo_api_client.modify(file_repo.pulp_href, data)
         monitor_task(response.task)
+
+
+@pytest.mark.parallel
+def test_create_file_content_from_chunked_upload(
+    tmp_path, gen_object_with_cleanup, uploads_api_client, file_content_api_client
+):
+    hasher = hashlib.sha256()
+    file_1 = tmp_path / "file.part1"
+    file_1.write_bytes(os.urandom(128))
+    hasher.update(file_1.read_bytes())
+    file_2 = tmp_path / "file.part2"
+    file_2.write_bytes(os.urandom(128))
+    hasher.update(file_2.read_bytes())
+    expected_digest = hasher.hexdigest()
+
+    # Perform the same test twice, because in the second run, the existing artifact should be
+    # reused.
+    for _ in (0, 1):
+        # Upload the file and generate content
+        upload = gen_object_with_cleanup(uploads_api_client, {"size": 256})
+        uploads_api_client.update(
+            upload_href=upload.pulp_href, file=file_1, content_range="bytes 0-127/256"
+        )
+        uploads_api_client.update(
+            upload_href=upload.pulp_href, file=file_2, content_range="bytes 128-255/256"
+        )
+        response = file_content_api_client.create(
+            upload=upload.pulp_href, relative_path=str(uuid.uuid4())
+        )
+        task = monitor_task(response.task)
+        content = file_content_api_client.read(task.created_resources[0])
+        assert content.sha256 == expected_digest
