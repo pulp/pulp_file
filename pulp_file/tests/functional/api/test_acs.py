@@ -20,11 +20,6 @@ from pulpcore.client.pulp_file import (
     RepositorySyncURL,
 )
 from pulpcore.client.pulp_file.exceptions import ApiException
-from pulpcore.tests.functional.api.using_plugin.utils import (
-    gen_file_client,
-    gen_file_remote,
-    gen_repo,
-)
 
 from pulp_file.tests.functional.constants import (
     FILE_FIXTURE_MANIFEST_URL,
@@ -32,7 +27,12 @@ from pulp_file.tests.functional.constants import (
     FILE_MANIFEST_ONLY_FIXTURE_URL,
     PULP_FIXTURES_BASE_URL,
 )
-from pulp_file.tests.functional.utils import get_file_content_paths
+from pulp_file.tests.functional.utils import (
+    gen_file_client,
+    gen_file_remote,
+    gen_repo,
+    get_file_content_paths,
+)
 
 
 class AlternateContentSourceTestCase(unittest.TestCase):
@@ -54,10 +54,6 @@ class AlternateContentSourceTestCase(unittest.TestCase):
         cls.publication_api = PublicationsFileApi(cls.file_client)
         cls.distribution_api = DistributionsFileApi(cls.file_client)
         cls.paths = ["goodpath/PULP_MANIFEST", "test", "whatever/test"]
-
-    @classmethod
-    def tearDownClass(cls):
-        """Run orphan cleanup."""
         delete_orphans()
 
     def _create_acs(self, name="file_acs", paths=None, remote_url=FILE_FIXTURE_MANIFEST_URL):
@@ -89,6 +85,7 @@ class AlternateContentSourceTestCase(unittest.TestCase):
 
     def test_acs_sync(self):
         """Test syncing from an ACS."""
+        delete_orphans()
         repo = self.repo_api.create(gen_repo())
         self.addCleanup(self.repo_api.delete, repo.pulp_href)
 
