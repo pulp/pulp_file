@@ -3,9 +3,9 @@ import pytest
 from pulp_smash.pulp3.utils import gen_repo
 
 
-# Marking test trylast to ensure other tests run even if this fails.
+@pytest.mark.skip(reason="needs to actually pip uninstall and it doesn't do that yet.")
 @pytest.mark.nightly
-@pytest.mark.trylast
+@pytest.mark.trylast  # Marking test trylast to ensure other tests run even if this fails.
 def test_remove_plugin(
     cli_client,
     delete_orphans_pre,
