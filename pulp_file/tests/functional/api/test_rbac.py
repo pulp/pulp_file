@@ -148,7 +148,7 @@ def test_content_apis(
     artifact1 = gen_artifact(url=file_url + "/1.iso")["pulp_href"]
 
     body = {"artifact": artifact1}
-    _try_action(alice, file_content_api_client, "create", 403, "1.iso", **body)
+    _try_action(alice, file_content_api_client, "create", 400, "1.iso", **body)
     body["repository"] = repo.pulp_href
     _try_action(bob, file_content_api_client, "create", 403, "1.iso", **body)
     _try_action(charlie, file_content_api_client, "create", 403, "1.iso", **body)
