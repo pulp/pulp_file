@@ -177,7 +177,7 @@ def create_repo_and_versions(syncd_repo, repo_api, versions_api, content_api):
         modify_response = repo_api.modify(a_repo.pulp_href, {"add_content_units": [href]})
         monitor_task(modify_response.task)
     # get all versions of that repo
-    versions = versions_api.list(a_repo.pulp_href, ordering="number")
+    versions = versions_api.list(a_repo.pulp_href, ordering=["number"])
     return a_repo, versions
 
 
