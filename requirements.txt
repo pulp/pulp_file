@@ -1,1 +1,1 @@
-pulpcore>=3.17.0.dev
+pulpcore>=3.21.0.dev,<3.25
