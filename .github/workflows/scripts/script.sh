@@ -61,40 +61,31 @@ if [[ "$TEST" == "plugin-from-pypi" ]]; then
   git checkout ${COMPONENT_VERSION} -- pulp_file/tests/
 fi
 
-cd ../pulp-openapi-generator
-./generate.sh pulpcore python
-pip install ./pulpcore-client
-rm -rf ./pulpcore-client
-if [[ "$TEST" = 'bindings' ]]; then
-  ./generate.sh pulpcore ruby 0
-  cd pulpcore-client
-  gem build pulpcore_client.gemspec
-  gem install --both ./pulpcore_client-0.gem
-fi
-./generate.sh pulp_certguard python
-pip install ./pulp_certguard-client
-rm -rf ./pulp_certguard-client
-if [[ "$TEST" = 'bindings' ]]; then
-  ./generate.sh pulp-certguard ruby 0
-  cd pulp-certguard-client
-  gem build pulp-certguard_client.gemspec
-  gem install --both ./pulp-certguard_client-0.gem
-  cd ..
-fi
-cd $REPO_ROOT
-
-if [[ "$TEST" = 'bindings' ]]; then
-  if [ -f $REPO_ROOT/.ci/assets/bindings/test_bindings.py ]; then
-    python $REPO_ROOT/.ci/assets/bindings/test_bindings.py
-  fi
-  if [ -f $REPO_ROOT/.ci/assets/bindings/test_bindings.rb ]; then
-    ruby $REPO_ROOT/.ci/assets/bindings/test_bindings.rb
-  fi
-  exit
-fi
+echo "machine pulp
+login admin
+password password
+" | cmd_stdin_prefix bash -c "cat > /root/.netrc"
 
 cat unittest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/unittest_requirements.txt"
+cat functest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/functest_requirements.txt"
 cmd_prefix pip3 install -r /tmp/unittest_requirements.txt
+cmd_prefix pip3 install -r /tmp/functest_requirements.txt
+cmd_prefix pip3 install --upgrade ../pulp-smash
+
+cd ../pulp-openapi-generator
+./generate.sh pulp_file python
+cmd_prefix pip3 install /root/pulp-openapi-generator/pulp_file-client
+sudo rm -rf ./pulp_file-client
+./generate.sh pulpcore python
+cmd_prefix pip3 install /root/pulp-openapi-generator/pulpcore-client
+sudo rm -rf ./pulpcore-client
+./generate.sh pulp_certguard python
+cmd_prefix pip3 install /root/pulp-openapi-generator/pulp_certguard-client
+sudo rm -rf ./pulp_certguard-client
+cd $REPO_ROOT
+
+CERTIFI=$(cmd_prefix python3 -c 'import certifi; print(certifi.where())')
+cmd_prefix bash -c "cat /etc/pulp/certs/pulp_webserver.crt  | tee -a "$CERTIFI" > /dev/null"
 
 # check for any uncommitted migrations
 echo "Checking for uncommitted migrations..."
@@ -106,76 +97,11 @@ if [[ "$TEST" != "upgrade" ]]; then
 fi
 
 # Run functional tests
-export PYTHONPATH=$REPO_ROOT/../pulp-certguard${PYTHONPATH:+:${PYTHONPATH}}
-export PYTHONPATH=$REPO_ROOT${PYTHONPATH:+:${PYTHONPATH}}
-
-
-if [[ "$TEST" == "upgrade" ]]; then
-  # Handle app label change:
-  sed -i "/require_pulp_plugins(/d" pulp_file/tests/functional/utils.py
-
-  # Running pre upgrade tests:
-  pytest -v -r sx --color=yes --pyargs --capture=no pulp_file.tests.upgrade.pre
-
-  # Checking out ci_upgrade_test branch and upgrading plugins
-  cmd_prefix bash -c "cd pulpcore; git checkout -f ci_upgrade_test; pip install --upgrade --force-reinstall ."
-  cmd_prefix bash -c "cd pulp-certguard; git checkout -f ci_upgrade_test; pip install ."
-  cmd_prefix bash -c "cd pulp_file; git checkout -f ci_upgrade_test; pip install ."
-
-  # Migrating
-  cmd_prefix bash -c "django-admin migrate --no-input"
-
-  # Restarting single container services
-  cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-api"
-  cmd_prefix bash -c "s6-svc -r /var/run/s6/services/pulpcore-content"
-  cmd_prefix bash -c "s6-svc -d /var/run/s6/services/pulpcore-resource-manager"
-  cmd_prefix bash -c "s6-svc -d /var/run/s6/services/pulpcore-worker@1"
-  cmd_prefix bash -c "s6-svc -d /var/run/s6/services/pulpcore-worker@2"
-  cmd_prefix bash -c "s6-svc -u /var/run/s6/services/new-pulpcore-resource-manager"
-  cmd_prefix bash -c "s6-svc -u /var/run/s6/services/new-pulpcore-worker@1"
-  cmd_prefix bash -c "s6-svc -u /var/run/s6/services/new-pulpcore-worker@2"
-
-  echo "Restarting in 60 seconds"
-  sleep 60
-
-  # Let's reinstall pulpcore so we can ensure we have the correct dependencies
-  cd ../pulpcore
-  git checkout -f ci_upgrade_test
-  pip install --upgrade --force-reinstall . ../pulp-cli ../pulp-smash
-  # Hack: adding pulp CA to certifi.where()
-  CERTIFI=$(python -c 'import certifi; print(certifi.where())')
-  cat /usr/local/share/ca-certificates/pulp_webserver.crt | sudo tee -a "$CERTIFI" > /dev/null
-  # CLI commands to display plugin versions and content data
-  pulp status
-  pulp content list
-  CONTENT_LENGTH=$(pulp content list | jq length)
-  if [[ "$CONTENT_LENGTH" == "0" ]]; then
-    echo "Empty content list"
-    exit 1
-  fi
-
-  # Rebuilding bindings
-  cd ../pulp-openapi-generator
-  ./generate.sh pulpcore python
-  pip install ./pulpcore-client
-  ./generate.sh pulp_file python
-  pip install ./pulp_file-client
-  ./generate.sh pulp_certguard python
-  pip install ./pulp_certguard-client
-  cd $REPO_ROOT
-
-  # Running post upgrade tests
-  git checkout ci_upgrade_test -- pulp_file/tests/
-  pytest -v -r sx --color=yes --pyargs --capture=no pulp_file.tests.upgrade.post
-  exit
-fi
-
-
 if [[ "$TEST" == "performance" ]]; then
   if [[ -z ${PERFORMANCE_TEST+x} ]]; then
-    pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance
+    cmd_prefix bash -c "pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance"
   else
-    pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance.test_$PERFORMANCE_TEST
+    cmd_prefix bash -c "pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_file.tests.performance.test_$PERFORMANCE_TEST"
   fi
   exit
 fi
@@ -184,21 +110,21 @@ if [ -f $FUNC_TEST_SCRIPT ]; then
   source $FUNC_TEST_SCRIPT
 else
 
-    if [[ "$GITHUB_WORKFLOW" == "File Nightly CI/CD" ]]; then
-        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m parallel -n 8
-        pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m "not parallel"
+    if [[ "$GITHUB_WORKFLOW" == "File Nightly CI/CD" ]] || [[ "${RELEASE_WORKFLOW:-false}" == "true" ]]; then
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m parallel -n 8 --nightly"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m 'not parallel' --nightly"
 
     
-        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m "from_pulpcore_for_all_plugins and parallel" -n  8
-        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m "from_pulpcore_for_all_plugins and not parallel"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and parallel' -n  8 --nightly"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and not parallel'  --nightly"
     
     else
-        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m "parallel and not nightly" -n 8
-        pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m "not parallel and not nightly"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m parallel -n 8"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m 'not parallel'"
 
     
-        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m "from_pulpcore_for_all_plugins and not nightly and parallel" -n  8
-        pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m "from_pulpcore_for_all_plugins and not nightly and not parallel"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and parallel' -n  8"
+        cmd_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and not parallel'"
     
     fi
 
