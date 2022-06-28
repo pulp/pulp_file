@@ -1,4 +1,6 @@
 """Utilities for tests for the file plugin."""
+import aiohttp
+import asyncio
 from datetime import datetime
 from functools import partial
 import hashlib
@@ -292,3 +294,21 @@ def generate_manifest(name, file_list):
             fout.write("{},{},{}\n".format(file["name"], file["digest"], file["size"]))
         fout.flush()
     return name
+
+
+def get_files_in_manifest(url):
+    """
+    Download a File Repository manifest and return content as a list of tuples.
+    [(name,sha256,size),]
+    """
+    files = []
+    r = asyncio.run(_download_manifest(url))
+    for line in r.splitlines():
+        files.append(tuple(line.decode().split(",")))
+    return files
+
+
+async def _download_manifest(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, verify_ssl=False) as response:
+            return await response.read()
