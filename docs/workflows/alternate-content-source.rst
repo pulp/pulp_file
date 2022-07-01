@@ -6,7 +6,7 @@ ACS.
 
 .. code-block:: bash
 
-    pulp file remote create --name remoteForACS --policy on_demand --url http://fixtures.pulpproject.org/
+    pulp file remote create --name remoteForACS --policy on_demand --url https://fixtures.pulpproject.org/file-manifest/PULP_MANIFEST
 
 Create Alternate Content Source
 -------------------------------
