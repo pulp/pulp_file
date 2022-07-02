@@ -1,11 +1,10 @@
 """Tests that sync file plugin repositories."""
-import unittest
+import pytest
 
-from pulp_smash import config
 from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
-from pulp_smash.pulp3.utils import delete_version, download_content_unit, gen_repo
+from pulp_smash.pulp3.utils import gen_repo
 
-from pulp_file.tests.functional.utils import gen_file_client, gen_file_remote
+from pulp_file.tests.functional.utils import gen_file_client, get_files_in_manifest
 
 from pulpcore.client.pulp_file import (
     ContentFilesApi,
@@ -17,94 +16,77 @@ from pulpcore.client.pulp_file import (
 )
 
 
-class AutoPublishDistributeTestCase(unittest.TestCase):
-    """Test auto-publish and auto-distribution"""
+@pytest.fixture
+def file_repo_with_auto_publish(file_repo_api_client, gen_object_with_cleanup):
+    return gen_object_with_cleanup(
+        file_repo_api_client, gen_repo(autopublish=True, manifest="TEST_MANIFEST")
+    )
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = gen_file_client()
 
-        cls.content_api = ContentFilesApi(cls.client)
-        cls.repo_api = RepositoriesFileApi(cls.client)
-        cls.remote_api = RemotesFileApi(cls.client)
-        cls.publications_api = PublicationsFileApi(cls.client)
-        cls.distributions_api = DistributionsFileApi(cls.client)
+@pytest.mark.parallel
+def test_auto_publish_and_distribution(
+    file_repo_with_auto_publish,
+    file_fixture_gen_remote_ssl,
+    file_repo_api_client,
+    file_pub_api_client,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+    file_content_api_client,
+    file_distro_api_client,
+    file_random_content_unit,
+):
+    """Tests auto-publish and auto-distribution"""
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    repo = file_repo_api_client.read(file_repo_with_auto_publish.pulp_href)
+    distribution = gen_object_with_cleanup(
+        file_distro_api_client,
+        {"name": "foo", "base_path": "bar/foo", "repository": repo.pulp_href},
+    )
 
-        cls.CUSTOM_MANIFEST = "TEST_MANIFEST"
+    # Assert that the repository is at version 0 and that there are no publications associated with
+    # this Repository and that the distribution doesn't have a publication associated with it.
+    assert repo.latest_version_href.endswith("/versions/0/")
+    assert file_pub_api_client.list(repository=repo.pulp_href).count == 0
+    assert file_pub_api_client.list(repository_version=repo.latest_version_href).count == 0
+    assert distribution.publication is None
 
-    def setUp(self):
-        """Create remote, repo, and distribution."""
-        delete_orphans()
-        self.remote = self.remote_api.create(gen_file_remote())
-        self.repo = self.repo_api.create(gen_repo(manifest=self.CUSTOM_MANIFEST, autopublish=True))
-        response = self.distributions_api.create(
-            {"name": "foo", "base_path": "bar/foo", "repository": self.repo.pulp_href}
-        )
-        distribution_href = monitor_task(response.task).created_resources[0]
-        self.distribution = self.distributions_api.read(distribution_href)
+    # Check what content and artifacts are in the fixture repository
+    expected_files = get_files_in_manifest(remote.url)
 
-    def tearDown(self):
-        """Clean up."""
-        monitor_task(self.repo_api.delete(self.repo.pulp_href).task)
-        monitor_task(self.remote_api.delete(self.remote.pulp_href).task)
-        monitor_task(self.distributions_api.delete(self.distribution.pulp_href).task)
+    # Sync from the remote
+    body = RepositorySyncURL(remote=remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(repo.pulp_href, body).task)
+    repo = file_repo_api_client.read(repo.pulp_href)
 
-    def test_workflow(self):
-        self._sync()
-        self._modify()
+    # Assert that a new repository version was created and a publication was created
+    assert repo.latest_version_href.endswith("/versions/1/")
+    assert file_pub_api_client.list(repository=repo.pulp_href).count == 1
+    assert file_pub_api_client.list(repository_version=repo.latest_version_href).count == 1
 
-    def _sync(self):
-        """Assert that syncing the repository triggers auto-publish and auto-distribution."""
-        self.assertEqual(self.publications_api.list().count, 0)
-        self.assertTrue(self.distribution.publication is None)
+    # Assert that the publication has a custom manifest
+    publication = file_pub_api_client.list(repository_version=repo.latest_version_href).results[0]
+    assert publication.manifest == "TEST_MANIFEST"
 
-        # Sync the repository.
-        repository_sync_data = RepositorySyncURL(remote=self.remote.pulp_href)
-        sync_response = self.repo_api.sync(self.repo.pulp_href, repository_sync_data)
-        task = monitor_task(sync_response.task)
+    # Download the custom manifest
+    files_in_first_publication = get_files_in_manifest(
+        "{}{}".format(distribution.base_url, publication.manifest)
+    )
+    assert files_in_first_publication == expected_files
 
-        # Check that all the appropriate resources were created
-        self.assertGreater(len(task.created_resources), 1)
-        publications = self.publications_api.list()
-        self.assertEqual(publications.count, 1)
-        download_content_unit(self.cfg, self.distribution.to_dict(), self.CUSTOM_MANIFEST)
-
-        # Check that the publish settings were used
-        publication = publications.results[0]
-        self.assertEqual(publication.manifest, self.CUSTOM_MANIFEST)
-
-        # Sync the repository again. Since there should be no new repository version, there
-        # should be no new publications or distributions either.
-        sync_response = self.repo_api.sync(self.repo.pulp_href, repository_sync_data)
-        task = monitor_task(sync_response.task)
-
-        self.assertEqual(len(task.created_resources), 0)
-        self.assertEqual(self.publications_api.list().count, 1)
-
-        self.publications_api.delete(publication.pulp_href)
-        self.repo = self.repo_api.read(self.repo.pulp_href)
-        delete_version_task = delete_version(self.repo, version_href=self.repo.latest_version_href)
-        monitor_task(delete_version_task[0]["pulp_href"])
-
-    def _modify(self):
-        """Assert that modifying the repository triggers auto-publish and auto-distribution."""
-        self.assertEqual(self.publications_api.list().count, 0)
-        self.assertTrue(self.distribution.publication is None)
-
-        # Modify the repository by adding a content unit
-        content = self.content_api.list().results[0].pulp_href
-        modify_response = self.repo_api.modify(
-            self.repo.pulp_href, {"add_content_units": [content]}
-        )
-        task = monitor_task(modify_response.task)
-
-        # Check that all the appropriate resources were created
-        self.assertGreater(len(task.created_resources), 1)
-        publications = self.publications_api.list()
-        self.assertEqual(publications.count, 1)
-
-        # Check that the publish settings were used
-        publication = publications.results[0]
-        self.assertEqual(publication.manifest, self.CUSTOM_MANIFEST)
+    # Add a new content unit to the repository and assert that a publication gets created and the
+    # new content unit is in it
+    monitor_task(
+        file_repo_api_client.modify(
+            repo.pulp_href, {"add_content_units": [file_random_content_unit.pulp_href]}
+        ).task
+    )
+    repo = file_repo_api_client.read(repo.pulp_href)
+    files_in_second_publication = get_files_in_manifest(
+        "{}{}".format(distribution.base_url, publication.manifest)
+    )
+    files_added = files_in_second_publication - files_in_first_publication
+    assert repo.latest_version_href.endswith("/versions/2/")
+    assert file_pub_api_client.list(repository=repo.pulp_href).count == 2
+    assert file_pub_api_client.list(repository_version=repo.latest_version_href).count == 1
+    assert len(files_added) == 1
+    assert list(files_added)[0][1] == file_random_content_unit.sha256
