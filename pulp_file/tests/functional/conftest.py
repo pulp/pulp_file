@@ -1,6 +1,5 @@
 import aiofiles
 import logging
-import tempfile
 import uuid
 
 from aiohttp import web
@@ -64,7 +63,7 @@ def file_random_content_unit(
     file_content_api_client, tmp_path, random_artifact, gen_object_with_cleanup
 ):
     artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
-    gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
+    return gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
 
 
 @pytest.fixture

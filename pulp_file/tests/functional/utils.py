@@ -301,10 +301,10 @@ def get_files_in_manifest(url):
     Download a File Repository manifest and return content as a list of tuples.
     [(name,sha256,size),]
     """
-    files = []
+    files = set()
     r = asyncio.run(_download_manifest(url))
     for line in r.splitlines():
-        files.append(tuple(line.decode().split(",")))
+        files.add(tuple(line.decode().split(",")))
     return files
 
 
