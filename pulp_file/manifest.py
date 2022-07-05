@@ -52,9 +52,12 @@ class Entry:
         part = [s.strip() for s in line.content.split(",")]
         if len(part) != 3:
             raise ValueError(
-                _("Error: manifest line:{n}: " "must be: <relative_path>,<digest>,<size>").format(
-                    n=line.number
-                )
+                _(
+                    "Error: Parsing of the manifest file failed on line:{n}.\n"
+                    "Please make sure the remote URL is pointing to a valid manifest file.\n"
+                    "The manifest file should be "
+                    "composed of lines in the following format: <relative_path>,<digest>,<size>."
+                ).format(n=line.number)
             )
         return Entry(relative_path=part[0], digest=part[1], size=int(part[2]))
 

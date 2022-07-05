@@ -1,0 +1,1 @@
+Improved the error message shown when a user specifies an invalid path to the manifest file, or the manifest file is in the incorrect format.
