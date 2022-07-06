@@ -1,166 +1,227 @@
 import hashlib
-import unittest
-from random import choice
+import pytest
+import uuid
 from urllib.parse import urljoin
 
-from pulp_smash import config, utils
 from pulp_smash.pulp3.bindings import (
     PulpTaskError,
-    delete_orphans,
     monitor_task,
     monitor_task_group,
 )
-from pulp_smash.pulp3.utils import download_content_unit, gen_distribution
-from pulpcore.client.pulp_file import (
-    AcsFileApi,
-    DistributionsFileApi,
-    PublicationsFileApi,
-    RemotesFileApi,
-    RepositoriesFileApi,
-    RepositorySyncURL,
-)
+from pulp_smash.pulp3.utils import gen_distribution
+
+from pulpcore.client.pulp_file import RepositorySyncURL
 from pulpcore.client.pulp_file.exceptions import ApiException
 
-from pulp_file.tests.functional.constants import (
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE_FIXTURE_URL,
-    FILE_MANIFEST_ONLY_FIXTURE_URL,
-    PULP_FIXTURES_BASE_URL,
-)
 from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-    gen_repo,
-    get_file_content_paths,
+    download_file,
+    get_files_in_manifest,
 )
 
 
-class AlternateContentSourceTestCase(unittest.TestCase):
-    """Test File ACS."""
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Create class-wide variables.
-
-        Variables 'paths' and 'paths_updated' are defined as strings.
-        In same way data are send from user.
-        """
-        cls.cfg = config.get_config()
-        cls.file_client = gen_file_client()
-        cls.repo_api = RepositoriesFileApi(cls.file_client)
-        cls.file_remote_api = RemotesFileApi(cls.file_client)
-        cls.file_acs_api = AcsFileApi(cls.file_client)
-        cls.publication_api = PublicationsFileApi(cls.file_client)
-        cls.distribution_api = DistributionsFileApi(cls.file_client)
-        cls.paths = ["goodpath/PULP_MANIFEST", "test", "whatever/test"]
-        delete_orphans()
-
-    def _create_acs(self, name="file_acs", paths=None, remote_url=FILE_FIXTURE_MANIFEST_URL):
-        remote = self.file_remote_api.create(gen_file_remote(remote_url, policy="on_demand"))
-        self.addCleanup(self.file_remote_api.delete, remote.pulp_href)
-
-        acs_data = {
-            "name": name,
-            "remote": remote.pulp_href,
-        }
-        if paths:
-            acs_data["paths"] = paths
-
-        acs = self.file_acs_api.create(acs_data)
-        self.addCleanup(self.file_acs_api.delete, acs.pulp_href)
-
-        return acs
-
-    def test_path_validation(self):
-        """Test the validation of paths."""
-        # path is wrong, begins with /
-        with self.assertRaises(ApiException) as ctx:
-            self._create_acs(paths=(self.paths + ["/bad_path"]))
-        self.assertEqual(ctx.exception.status, 400)
-
-        # use valid paths
-        acs = self._create_acs(paths=self.paths)
-        self.assertEqual(sorted(acs.paths), sorted(self.paths))
-
-    def test_acs_sync(self):
-        """Test syncing from an ACS."""
-        delete_orphans()
-        repo = self.repo_api.create(gen_repo())
-        self.addCleanup(self.repo_api.delete, repo.pulp_href)
-
-        remote = self.file_remote_api.create(gen_file_remote(FILE_MANIFEST_ONLY_FIXTURE_URL))
-        self.addCleanup(self.file_remote_api.delete, remote.pulp_href)
-
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-
-        # sync should fail as the repo has metadata only (no files)
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
-        with self.assertRaises(PulpTaskError) as ctx:
-            monitor_task(sync_response.task)
-        self.assertIn("404", ctx.exception.task.error["description"])
-
-        # create an acs and pull in its remote artifacts
-        acs = self._create_acs()
-        resp = self.file_acs_api.refresh(acs.pulp_href)
-        monitor_task_group(resp.task_group)
-
-        # the sync should now work as the files are being pulled from ACS remote
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-
-    def test_acs_sync_with_paths(self):
-        """Test syncing from an ACS using different paths."""
-        repo = self.repo_api.create(gen_repo())
-        self.addCleanup(self.repo_api.delete, repo.pulp_href)
-
-        remote = self.file_remote_api.create(gen_file_remote(FILE_MANIFEST_ONLY_FIXTURE_URL))
-        self.addCleanup(self.file_remote_api.delete, remote.pulp_href)
-
-        acs = self._create_acs(
-            paths=("file/PULP_MANIFEST", "file2/PULP_MANIFEST"),
-            remote_url=PULP_FIXTURES_BASE_URL,
+@pytest.fixture
+def generate_server_and_remote(
+    gen_fixture_server, file_fixtures_root, file_remote_api_client, gen_object_with_cleanup
+):
+    def _generate_server_and_remote(*, manifest_path, policy):
+        server = gen_fixture_server(file_fixtures_root, None)
+        url = server.make_url(manifest_path)
+        remote = gen_object_with_cleanup(
+            file_remote_api_client,
+            {"name": str(uuid.uuid4()), "url": str(url), "policy": policy},
         )
-        resp = self.file_acs_api.refresh(acs.pulp_href)
-        task_group = monitor_task_group(resp.task_group)
-        self.assertEquals(len(task_group.tasks), 2)
+        return server, remote
 
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
+    yield _generate_server_and_remote
 
-    def test_serving_acs_content(self):
-        """Test serving of ACS content through the content app."""
-        cfg = config.get_config()
-        acs = self._create_acs()
-        resp = self.file_acs_api.refresh(acs.pulp_href)
-        monitor_task_group(resp.task_group)
 
-        remote = self.file_remote_api.create(
-            gen_file_remote(FILE_MANIFEST_ONLY_FIXTURE_URL, policy="on_demand")
-        )
-        self.addCleanup(self.file_remote_api.delete, remote.pulp_href)
+@pytest.mark.parallel
+def test_acs_path_validation(
+    file_acs_api_client, file_fixture_gen_remote, basic_manifest_path, gen_object_with_cleanup
+):
+    """Test that paths starting with "/" are not accepted by ACS API."""
+    remote = file_fixture_gen_remote(manifest_path=basic_manifest_path, policy="on_demand")
+    acs_data = {"name": "foo", "remote": remote.pulp_href, "paths": ["good/path", "/bad/path"]}
+    with pytest.raises(ApiException) as exc:
+        file_acs_api_client.create(acs_data)
+    assert exc.value.status == 400
+    assert "paths" in exc.value.body
 
-        repo = self.repo_api.create(gen_repo(remote=remote.pulp_href, autopublish=True))
-        self.addCleanup(self.repo_api.delete, repo.pulp_href)
+    # Assert that an ACS can be created with valid paths
+    acs_data["paths"] = ["good/path", "valid"]
+    acs = gen_object_with_cleanup(file_acs_api_client, acs_data)
+    assert set(acs.paths) == set(acs_data["paths"])
 
-        distribution_response = self.distribution_api.create(
-            gen_distribution(repository=repo.pulp_href)
-        )
-        created_resources = monitor_task(distribution_response.task).created_resources
-        distribution = self.distribution_api.read(created_resources[0])
-        self.addCleanup(self.distribution_api.delete, distribution.pulp_href)
 
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-        repo = self.repo_api.read(repo.pulp_href)
+@pytest.mark.parallel
+def test_acs_sync(
+    file_repo,
+    file_repo_api_client,
+    file_acs_api_client,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+    generate_server_and_remote,
+):
+    # Create the main server and remote pointing to it
+    main_server, main_remote = generate_server_and_remote(
+        manifest_path=basic_manifest_path, policy="immediate"
+    )
 
-        unit_path = choice(get_file_content_paths(repo.to_dict()))
-        fixtures_hash = hashlib.sha256(
-            utils.http_get(urljoin(FILE_FIXTURE_URL, unit_path))
-        ).hexdigest()
-        content = download_content_unit(cfg, distribution.to_dict(), unit_path)
-        pulp_hash = hashlib.sha256(content).hexdigest()
+    # Create an ACS server and a remote pointing to it
+    acs_server, acs_remote = generate_server_and_remote(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
 
-        self.assertEqual(fixtures_hash, pulp_hash)
+    # Create the ACS that uses the remote from above
+    acs = gen_object_with_cleanup(
+        file_acs_api_client,
+        {"remote": acs_remote.pulp_href, "paths": [], "name": str(uuid.uuid4())},
+    )
+
+    # Refresh ACS and assert that only the PULP_MANIFEST was downloaded
+    monitor_task_group(file_acs_api_client.refresh(acs.pulp_href).task_group)
+    assert len(acs_server.requests_record) == 1
+    assert acs_server.requests_record[0].path == basic_manifest_path
+
+    # Sync the repository
+    repository_sync_data = RepositorySyncURL(remote=main_remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data).task)
+
+    # Assert that only the PULP_MANIFEST was downloaded from the main remote
+    assert len(main_server.requests_record) == 1
+    assert main_server.requests_record[0].path == basic_manifest_path
+
+    # Assert that the files were downloaded from the ACS remote
+    expected_request_paths = {
+        basic_manifest_path,
+        "/basic/1.iso",
+        "/basic/2.iso",
+        "/basic/3.iso",
+    }
+    actual_requested_paths = set([request.path for request in acs_server.requests_record])
+    assert len(acs_server.requests_record) == 4
+    assert actual_requested_paths == expected_request_paths
+
+
+@pytest.mark.parallel
+def test_acs_sync_with_paths(
+    file_repo,
+    file_repo_api_client,
+    file_acs_api_client,
+    basic_manifest_path,
+    large_manifest_path,
+    gen_object_with_cleanup,
+    generate_server_and_remote,
+):
+    # Create the main server and remote pointing to it
+    main_server, main_remote = generate_server_and_remote(
+        manifest_path=basic_manifest_path, policy="immediate"
+    )
+
+    # Create an ACS server and a remote pointing to it
+    acs_server, acs_remote = generate_server_and_remote(manifest_path="/", policy="on_demand")
+
+    # Create the ACS that uses the remote from above
+    acs = gen_object_with_cleanup(
+        file_acs_api_client,
+        {
+            "remote": acs_remote.pulp_href,
+            "paths": [basic_manifest_path[1:], large_manifest_path[1:]],
+            "name": str(uuid.uuid4()),
+        },
+    )
+
+    # Refresh ACS and assert that only the PULP_MANIFEST was downloaded
+    task_group = monitor_task_group(file_acs_api_client.refresh(acs.pulp_href).task_group)
+    expected_request_paths = {basic_manifest_path, large_manifest_path}
+    actual_requested_paths = set([request.path for request in acs_server.requests_record])
+    assert len(task_group.tasks) == 2
+    assert len(acs_server.requests_record) == 2
+    assert expected_request_paths == actual_requested_paths
+
+    # Sync the repository
+    repository_sync_data = RepositorySyncURL(remote=main_remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data).task)
+
+    # Assert that only the PULP_MANIFEST was downloaded from the main remote
+    assert len(main_server.requests_record) == 1
+    assert main_server.requests_record[0].path == basic_manifest_path
+
+    # Assert that the files were downloaded from the ACS remote
+    expected_request_paths = {
+        basic_manifest_path,
+        large_manifest_path,
+        "/basic/1.iso",
+        "/basic/2.iso",
+        "/basic/3.iso",
+    }
+    actual_requested_paths = set([request.path for request in acs_server.requests_record])
+    assert len(acs_server.requests_record) == 5
+    assert actual_requested_paths == expected_request_paths
+
+
+@pytest.mark.parallel
+def test_serving_acs_content(
+    file_repo,
+    file_repo_api_client,
+    file_acs_api_client,
+    file_distro_api_client,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+    generate_server_and_remote,
+):
+    # Create the main server and remote pointing to it
+    main_server, main_remote = generate_server_and_remote(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
+
+    # Create an ACS server and a remote pointing to it
+    acs_server, acs_remote = generate_server_and_remote(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
+
+    # Create the ACS that uses the remote from above
+    acs = gen_object_with_cleanup(
+        file_acs_api_client,
+        {"remote": acs_remote.pulp_href, "paths": [], "name": str(uuid.uuid4())},
+    )
+
+    # Refresh ACS
+    monitor_task_group(file_acs_api_client.refresh(acs.pulp_href).task_group)
+
+    # Create a distribution
+    distribution_href = monitor_task(
+        file_distro_api_client.create(gen_distribution(repository=file_repo.pulp_href)).task
+    ).created_resources[0]
+    distribution = file_distro_api_client.read(distribution_href)
+
+    # Turn on auto-publish on the repository
+    monitor_task(
+        file_repo_api_client.partial_update(
+            file_repo.pulp_href, {"autopublish": True, "remote": main_remote.pulp_href}
+        ).task
+    )
+
+    # Sync the repository
+    repository_sync_data = RepositorySyncURL(remote=main_remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data).task)
+
+    # Assert that only the PULP_MANIFEST was downloaded from the main remote
+    assert len(main_server.requests_record) == 1
+    assert main_server.requests_record[0].path == basic_manifest_path
+
+    # Check what content and artifacts are in the fixture repository
+    expected_files = get_files_in_manifest(main_remote.url)
+
+    # Download one of the files and assert that it has the right checksum and that it is downloaded
+    # from the ACS server.
+    content_unit = list(expected_files)[0]
+    content_unit_url = urljoin(distribution.base_url, content_unit[0])
+    downloaded_file = download_file(content_unit_url)
+    actual_checksum = hashlib.sha256(downloaded_file).hexdigest()
+    expected_checksum = content_unit[1]
+    assert expected_checksum == actual_checksum
+    for request in main_server.requests_record:
+        assert content_unit[0] not in request.path
+    assert len(acs_server.requests_record) == 2
+    assert content_unit[0] in acs_server.requests_record[1].path

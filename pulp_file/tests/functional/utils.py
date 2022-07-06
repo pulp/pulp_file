@@ -302,13 +302,20 @@ def get_files_in_manifest(url):
     [(name,sha256,size),]
     """
     files = set()
-    r = asyncio.run(_download_manifest(url))
+    r = asyncio.run(_download_file(url))
     for line in r.splitlines():
         files.add(tuple(line.decode().split(",")))
     return files
 
 
-async def _download_manifest(url):
+def download_file(url):
+    """
+    Performs a GET request on a URL.
+    """
+    return asyncio.run(_download_file(url))
+
+
+async def _download_file(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, verify_ssl=False) as response:
             return await response.read()
