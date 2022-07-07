@@ -31,7 +31,6 @@ def test_auto_publish_and_distribution(
     file_pub_api_client,
     basic_manifest_path,
     gen_object_with_cleanup,
-    file_content_api_client,
     file_distro_api_client,
     file_random_content_unit,
 ):
