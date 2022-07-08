@@ -36,12 +36,32 @@ def generate_server_and_remote(
 
 
 @pytest.mark.parallel
-def test_acs_path_validation(
+def test_acs_validation_and_update(
     file_acs_api_client, file_fixture_gen_remote, basic_manifest_path, gen_object_with_cleanup
 ):
-    """Test that paths starting with "/" are not accepted by ACS API."""
-    remote = file_fixture_gen_remote(manifest_path=basic_manifest_path, policy="on_demand")
-    acs_data = {"name": "foo", "remote": remote.pulp_href, "paths": ["good/path", "/bad/path"]}
+    # Test that a remote with "immediate" download policy can't be used with an ACS
+    immediate_remote = file_fixture_gen_remote(
+        manifest_path=basic_manifest_path, policy="immediate"
+    )
+    acs_data = {
+        "name": str(uuid.uuid4()),
+        "remote": immediate_remote.pulp_href,
+        "paths": [],
+    }
+    with pytest.raises(ApiException) as exc:
+        file_acs_api_client.create(acs_data)
+    assert exc.value.status == 400
+    assert "remote" in exc.value.body
+
+    # Assert that paths starting with "/" are not accepted by ACS API.
+    on_demand_remote = file_fixture_gen_remote(
+        manifest_path=basic_manifest_path, policy="on_demand"
+    )
+    acs_data = {
+        "name": str(uuid.uuid4()),
+        "remote": on_demand_remote.pulp_href,
+        "paths": ["good/path", "/bad/path"],
+    }
     with pytest.raises(ApiException) as exc:
         file_acs_api_client.create(acs_data)
     assert exc.value.status == 400
@@ -51,6 +71,28 @@ def test_acs_path_validation(
     acs_data["paths"] = ["good/path", "valid"]
     acs = gen_object_with_cleanup(file_acs_api_client, acs_data)
     assert set(acs.paths) == set(acs_data["paths"])
+
+    # Test that an ACS's name can be updated without clobbering the paths
+    new_name = str(uuid.uuid4())
+    monitor_task(
+        file_acs_api_client.update(acs.pulp_href, {"name": new_name, "remote": acs.remote}).task
+    )
+    acs = file_acs_api_client.read(acs.pulp_href)
+    assert acs.name == new_name
+    assert sorted(acs.paths) == sorted(acs_data["paths"])
+
+    # Test that you can do a partial update of an ACS
+    new_name = str(uuid.uuid4())
+    monitor_task(file_acs_api_client.partial_update(acs.pulp_href, {"name": new_name}).task)
+    acs = file_acs_api_client.read(acs.pulp_href)
+    assert acs.name == new_name
+    assert sorted(acs.paths) == sorted(acs_data["paths"])
+
+    # Test that paths can be updated
+    updated_paths = ["foo"]
+    monitor_task(file_acs_api_client.partial_update(acs.pulp_href, {"paths": updated_paths}).task)
+    acs = file_acs_api_client.read(acs.pulp_href)
+    assert acs.paths == updated_paths
 
 
 @pytest.mark.parallel
