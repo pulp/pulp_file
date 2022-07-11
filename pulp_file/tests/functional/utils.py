@@ -316,7 +316,7 @@ def download_file(url):
 
 
 async def _download_file(url):
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(raise_for_status=True) as session:
         async with session.get(url, verify_ssl=False) as response:
             return await response.read()
 
