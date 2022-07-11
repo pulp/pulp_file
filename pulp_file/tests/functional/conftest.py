@@ -1,5 +1,6 @@
 import aiofiles
 import logging
+import os
 import uuid
 
 from aiohttp import web
@@ -123,6 +124,23 @@ def write_3_iso_file_fixture_data_factory(file_fixtures_root):
 @pytest.fixture
 def basic_manifest_path(write_3_iso_file_fixture_data_factory):
     return write_3_iso_file_fixture_data_factory("basic")
+
+
+@pytest.fixture
+def copy_manifest_only_factory(file_fixtures_root):
+    def _copy_manifest_only(name):
+        file_fixtures_root.joinpath(f"{name}-manifest").mkdir()
+        src = file_fixtures_root.joinpath(f"{name}/PULP_MANIFEST")
+        dst = file_fixtures_root.joinpath(f"{name}-manifest/PULP_MANIFEST")
+        os.symlink(src, dst)
+        return f"/{name}-manifest/PULP_MANIFEST"
+
+    return _copy_manifest_only
+
+
+@pytest.fixture
+def basic_manifest_only_path(copy_manifest_only_factory):
+    return copy_manifest_only_factory("basic")
 
 
 @pytest.fixture
