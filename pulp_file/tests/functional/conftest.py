@@ -153,6 +153,20 @@ def large_manifest_path(file_fixtures_root):
 
 
 @pytest.fixture
+def manifest_path_with_commas(file_fixtures_root):
+    file_fixtures_root.joinpath("comma_test").mkdir()
+    file_fixtures_root.joinpath("comma_test/comma,folder").mkdir()
+    file_fixtures_root.joinpath("comma_test/basic_folder").mkdir()
+    file1 = generate_iso(file_fixtures_root.joinpath("comma_test/comma,folder/,comma,,file,.iso"))
+    file2 = generate_iso(file_fixtures_root.joinpath("comma_test/comma,folder/basic_file.iso"))
+    file3 = generate_iso(file_fixtures_root.joinpath("comma_test/basic_folder/comma,file.iso"))
+    generate_manifest(
+        file_fixtures_root.joinpath("comma_test/PULP_MANIFEST"), [file1, file2, file3]
+    )
+    return "/comma_test/PULP_MANIFEST"
+
+
+@pytest.fixture
 def invalid_manifest_path(file_fixtures_root, basic_manifest_path):
     file_path_to_corrupt = file_fixtures_root / Path("basic/1.iso")
     with open(file_path_to_corrupt, "w") as f:
