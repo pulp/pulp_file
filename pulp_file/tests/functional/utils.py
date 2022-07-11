@@ -319,3 +319,16 @@ async def _download_file(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, verify_ssl=False) as response:
             return await response.read()
+
+
+def get_url(url):
+    """
+    Performs a GET request on a URL and returns an aiohttp.Response object.
+    """
+    return asyncio.run(_get_url(url))
+
+
+async def _get_url(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, verify_ssl=False) as response:
+            return response

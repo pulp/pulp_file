@@ -91,6 +91,11 @@ def file_repo(file_repo_api_client, gen_object_with_cleanup):
 
 
 @pytest.fixture
+def file_repo_with_auto_publish(file_repo_api_client, gen_object_with_cleanup):
+    return gen_object_with_cleanup(file_repo_api_client, gen_repo(autopublish=True))
+
+
+@pytest.fixture
 def file_remote_api_client(file_client):
     return RemotesFileApi(file_client)
 
