@@ -20,7 +20,7 @@ from pulpcore.client.pulp_file import (
     RepositorySyncURL,
 )
 from pulpcore.client.pulp_file.exceptions import ApiException
-from pulpcore.tests.functional.api.using_plugin.utils import (
+from pulp_file.tests.functional.utils import (
     gen_file_client,
     gen_file_remote,
     gen_repo,
