@@ -108,3 +108,19 @@ def test_duplicate_file_sync(
     assert get_content_summary(file_repo.to_dict()) == {"file.file": 3}
     assert get_added_content_summary(file_repo.to_dict()) == {"file.file": 3}
     assert file_repo.latest_version_href.endswith("/2/")
+
+
+@pytest.mark.parallel
+def test_filepath_includes_commas(
+    file_repo, file_fixture_gen_remote, manifest_path_with_commas, file_repo_api_client
+):
+    """Sync a repository using a manifest file with a file whose relative_path includes commas"""
+    remote = file_fixture_gen_remote(manifest_path=manifest_path_with_commas, policy="on_demand")
+
+    body = RepositorySyncURL(remote=remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
+    file_repo = file_repo_api_client.read(file_repo.pulp_href)
+
+    assert get_content_summary(file_repo.to_dict()) == {"file.file": 3}
+    assert get_added_content_summary(file_repo.to_dict()) == {"file.file": 3}
+    assert file_repo.latest_version_href.endswith("/1/")

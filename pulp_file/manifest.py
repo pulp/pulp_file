@@ -2,6 +2,8 @@ from collections import namedtuple
 
 from gettext import gettext as _
 
+from re import fullmatch
+
 
 Line = namedtuple("Line", ("number", "content"))
 
@@ -49,8 +51,15 @@ class Entry:
             ValueError: on parsing error.
 
         """
-        part = [s.strip() for s in line.content.split(",")]
-        if len(part) != 3:
+        all_parts = line.content.count(",") >= 2
+        if all_parts:
+            relative_path, digest, size = [s.strip() for s in line.content.rsplit(",", maxsplit=2)]
+        if (
+            not all_parts
+            or not fullmatch(r"^[^/]+(/[^/]+)*$", relative_path)
+            or not fullmatch(r"^[0-9a-fA-F]+$", digest)
+            or not size.isdigit()
+        ):
             raise ValueError(
                 _(
                     "Error: Parsing of the manifest file failed on line:{n}.\n"
@@ -59,7 +68,7 @@ class Entry:
                     "composed of lines in the following format: <relative_path>,<digest>,<size>."
                 ).format(n=line.number)
             )
-        return Entry(relative_path=part[0], digest=part[1], size=int(part[2]))
+        return Entry(relative_path=relative_path, digest=digest, size=int(size))
 
     def __str__(self):
         """
