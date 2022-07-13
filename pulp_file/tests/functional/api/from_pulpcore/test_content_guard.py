@@ -1,139 +1,92 @@
-import requests
-import unittest
+from aiohttp import BasicAuth
+import pytest
+import uuid
 
-from urllib.parse import urljoin
-
-from pulp_smash import config, utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_distribution
 
-from pulpcore.client.pulpcore import (
-    ApiClient as CoreApiClient,
-    GroupsApi,
-    GroupsUsersApi,
-    ContentguardsRbacApi,
-)
 from pulpcore.client.pulp_file import (
-    DistributionsFileApi,
     PatchedfileFileDistribution,
 )
 
 from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_user_rest,
-    del_user_rest,
+    get_url,
 )
-from .constants import PULP_CONTENT_BASE_URL
 
 
-class RBACContentGuardTestCase(unittest.TestCase):
-    """Test RBAC enabled content guard"""
+@pytest.mark.parallel
+def test_rbac_content_guard_full_workflow(
+    rbac_contentguard_api_client,
+    groups_api_client,
+    groups_users_api_client,
+    file_distro_api_client,
+    admin_user,
+    anonymous_user,
+    gen_user,
+    gen_object_with_cleanup,
+):
+    # Create all of the users and groups
+    creator_user = gen_user(
+        model_roles=["core.rbaccontentguard_creator", "file.filedistribution_creator"]
+    )
+    user_a = gen_user()
+    user_b = gen_user()
 
-    CREATOR_ROLE = "core.rbaccontentguard_creator"
-    DOWNLOAD_ROLE = "core.rbaccontentguard_downloader"
+    all_users = [creator_user, user_a, user_b, admin_user, anonymous_user]
+    group = gen_object_with_cleanup(groups_api_client, {"name": str(uuid.uuid4())})
+    groups_users_api_client.create(group.pulp_href, {"username": user_b.username})
+    groups_users_api_client.create(group.pulp_href, {"username": user_a.username})
 
-    @classmethod
-    def setUpClass(cls):
-        cls.client = gen_file_client()  # This is admin client, following apis are for admin user
-        cls.api_config = config.get_config().get_bindings_config()
-        core_client = CoreApiClient(config.get_config().get_bindings_config())
-        cls.groups_api = GroupsApi(core_client)
-        cls.group_users_api = GroupsUsersApi(core_client)
-        cls.distro_api = DistributionsFileApi(cls.client)
+    # Create a distribution
+    with creator_user:
+        distro = gen_object_with_cleanup(file_distro_api_client, gen_distribution())
 
-    def setUp(self):
-        response = monitor_task(self.distro_api.create(gen_distribution()).task)
-        self.distro = self.distro_api.read(response.created_resources[0])
-        self.rbac_guard_api = ContentguardsRbacApi(self.client)
+    def _assert_access(authorized_users):
+        """Asserts that only authorized users have access to the distribution's base_url."""
+        for user in all_users:
+            if user is not anonymous_user:
+                auth = BasicAuth(login=user.username, password=user.password)
+            else:
+                auth = None
+            response = get_url(distro.base_url, auth=auth)
+            expected_status = 404 if user in authorized_users else 403
+            assert response.status == expected_status, f"Failed on {user.username=}"
 
-        self.admin = {
-            "username": self.client.configuration.username,
-            "password": self.client.configuration.password,
-        }
-        user = gen_user_rest(model_roles=["core.rbaccontentguard_creator"])
-        self.api_config.username = user["username"]
-        self.api_config.password = user["password"]
-        user["rbac_guard_api"] = ContentguardsRbacApi(CoreApiClient(self.api_config))
-        self.creator_user = user
-        self.user_a = gen_user_rest()
-        self.user_b = gen_user_rest()
-        self.all_users = [self.creator_user, self.user_a, self.user_a, self.admin, None]
+    # Make sure all users can access the distribution URL without a content guard
+    _assert_access(all_users)
 
-        self.group = self.groups_api.create({"name": utils.uuid4()})
-        self.group_users_api.create(self.group.pulp_href, {"username": self.user_b["username"]})
-        self.group_users_api.create(self.group.pulp_href, {"username": self.user_a["username"]})
-
-        self.url = urljoin(PULP_CONTENT_BASE_URL, f"{self.distro.base_path}/")
-
-    def tearDown(self):
-        self.distro_api.delete(self.distro.pulp_href)
-        self.rbac_guard_api.delete(self.distro.content_guard)
-        self.groups_api.delete(self.group.pulp_href)
-        del_user_rest(self.creator_user["pulp_href"])
-        del_user_rest(self.user_a["pulp_href"])
-        del_user_rest(self.user_b["pulp_href"])
-
-    def test_workflow(self):
-        self._all_users_access()
-        self._content_guard_creation()
-        self._only_creator_access()
-        self._add_users()
-        self._remove_users()
-        self._add_group()
-        self._remove_group()
-
-    def _all_users_access(self):
-        """Sanity check that all users can access distribution with no content guard"""
-        self._assert_access(self.all_users)
-
-    def _content_guard_creation(self):
-        """Checks that RBAC ContentGuard can be created and assigned to a distribution"""
-        guard = self.creator_user["rbac_guard_api"].create({"name": self.distro.name})
+    # Check that RBAC ContentGuard can be created and assigned to a distribution
+    with creator_user:
+        guard = gen_object_with_cleanup(rbac_contentguard_api_client, {"name": distro.name})
         body = PatchedfileFileDistribution(content_guard=guard.pulp_href)
-        monitor_task(self.distro_api.partial_update(self.distro.pulp_href, body).task)
-        self.distro = self.distro_api.read(self.distro.pulp_href)
-        self.assertEqual(guard.pulp_href, self.distro.content_guard)
+        monitor_task(file_distro_api_client.partial_update(distro.pulp_href, body).task)
+        distro = file_distro_api_client.read(distro.pulp_href)
+        assert guard.pulp_href == distro.content_guard
 
-    def _only_creator_access(self):
-        """Checks that now only the creator and admin user can access the distribution"""
-        self._assert_access([self.creator_user, self.admin])
+    # Check that now only the creator and admin user can access the distribution
+    _assert_access([creator_user, admin_user])
 
-    def _add_users(self):
-        """Use the /add/ endpoint to give the users permission to access distribution"""
-        body = {
-            "users": (self.user_a["username"], self.user_b["username"]),
-            "role": self.DOWNLOAD_ROLE,
-        }
-        self.creator_user["rbac_guard_api"].add_role(self.distro.content_guard, body)
-        self._assert_access([self.creator_user, self.user_b, self.user_a, self.admin])
+    # Use the /add/ endpoint to give the users permission to access distribution
+    body = {
+        "users": (user_a.username, user_b.username),
+        "role": "core.rbaccontentguard_downloader",
+    }
+    with creator_user:
+        rbac_contentguard_api_client.add_role(distro.content_guard, body)
+    _assert_access([creator_user, user_b, user_a, admin_user])
 
-    def _remove_users(self):
-        """Use the /remove/ endpoint to remove users permission to access distribution"""
-        body = {
-            "users": (self.user_a["username"], self.user_b["username"]),
-            "role": self.DOWNLOAD_ROLE,
-        }
-        self.creator_user["rbac_guard_api"].remove_role(self.distro.content_guard, body)
-        self._assert_access([self.creator_user, self.admin])
+    # Use the /remove/ endpoint to remove users permission to access distribution
+    with creator_user:
+        rbac_contentguard_api_client.remove_role(distro.content_guard, body)
+    _assert_access([creator_user, admin_user])
 
-    def _add_group(self):
-        """Use the /add/ endpoint to add group"""
-        body = {"groups": [self.group.name], "role": self.DOWNLOAD_ROLE}
-        self.creator_user["rbac_guard_api"].add_role(self.distro.content_guard, body)
-        self._assert_access([self.creator_user, self.user_b, self.user_a, self.admin])
+    # Use the /add/ endpoint to add group
+    body = {"groups": [group.name], "role": "core.rbaccontentguard_downloader"}
+    with creator_user:
+        rbac_contentguard_api_client.add_role(distro.content_guard, body)
+    _assert_access([creator_user, user_b, user_a, admin_user])
 
-    def _remove_group(self):
-        """Use the /remove/ endpoint to remove group"""
-        body = {"groups": [self.group.name], "role": self.DOWNLOAD_ROLE}
-        self.creator_user["rbac_guard_api"].remove_role(self.distro.content_guard, body)
-        self._assert_access([self.creator_user, self.admin])
-
-    def _assert_access(self, auth_users):
-        """Helper for asserting functionality and correct permissions on the content guard"""
-        for user in self.all_users:
-            auth = (user["username"], user["password"]) if user else None
-            r = requests.session()
-            r.trust_env = False  # Don't read the .netrc file
-            response = r.get(self.url, auth=auth)
-            expected_status = 404 if user in auth_users else 403
-            self.assertEqual(response.status_code, expected_status, f"Failed on {user=}")
+    # Use the /remove/ endpoint to remove group
+    with creator_user:
+        rbac_contentguard_api_client.remove_role(distro.content_guard, body)
+    _assert_access([creator_user, admin_user])

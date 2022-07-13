@@ -308,27 +308,27 @@ def get_files_in_manifest(url):
     return files
 
 
-def download_file(url):
+def download_file(url, auth=None):
     """
     Performs a GET request on a URL.
     """
-    return asyncio.run(_download_file(url))
+    return asyncio.run(_download_file(url, auth=auth))
 
 
-async def _download_file(url):
-    async with aiohttp.ClientSession(raise_for_status=True) as session:
+async def _download_file(url, auth=None):
+    async with aiohttp.ClientSession(auth=auth, raise_for_status=True) as session:
         async with session.get(url, verify_ssl=False) as response:
             return await response.read()
 
 
-def get_url(url):
+def get_url(url, auth=None):
     """
     Performs a GET request on a URL and returns an aiohttp.Response object.
     """
-    return asyncio.run(_get_url(url))
+    return asyncio.run(_get_url(url, auth=auth))
 
 
-async def _get_url(url):
-    async with aiohttp.ClientSession() as session:
+async def _get_url(url, auth=None):
+    async with aiohttp.ClientSession(auth=auth) as session:
         async with session.get(url, verify_ssl=False) as response:
             return response
