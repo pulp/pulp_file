@@ -1,101 +1,68 @@
 """Tests related to content promotion."""
 import hashlib
-import unittest
+import pytest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_distribution, gen_remote, gen_repo, get_added_content, sync
+from pulp_smash.pulp3.bindings import monitor_task
+from pulp_smash.pulp3.utils import gen_distribution
 
-from pulp_file.tests.functional.utils import create_file_publication
-from .constants import (
-    FILE_CONTENT_NAME,
-    FILE_DISTRIBUTION_PATH,
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-    PULP_CONTENT_BASE_URL,
+from pulp_file.tests.functional.utils import (
+    get_files_in_manifest,
+    get_url,
+    download_file,
 )
 
+from pulpcore.client.pulp_file import RepositorySyncURL
 
-class ContentPromotionTestCase(unittest.TestCase):
-    """Test content promotion."""
 
-    def test_all(self):
-        """Test content promotion for a distribution.
+@pytest.mark.parallel
+def test_content_promotion(
+    file_repo_with_auto_publish,
+    file_fixture_gen_remote_ssl,
+    file_repo_api_client,
+    file_pub_api_client,
+    file_distro_api_client,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+):
+    # Create a repository, publication, and 2 distributions
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    file_repo = file_repo_api_client.read(file_repo_with_auto_publish.pulp_href)
 
-        This test targets the following issue:
+    # Check what content and artifacts are in the fixture repository
+    expected_files = get_files_in_manifest(remote.url)
 
-        * `Pulp #4186 <https://pulp.plan.io/issues/4186>`_
-        * `Pulp #8475 <https://pulp.plan.io/issues/8475>`_
-        * `Pulp #8760 <https://pulp.plan.io/issues/8760>`_
+    # Sync from the remote and assert that a new repository version is created
+    body = RepositorySyncURL(remote=remote.pulp_href)
+    created = monitor_task(
+        file_repo_api_client.sync(file_repo.pulp_href, body).task
+    ).created_resources
+    pub = file_pub_api_client.read(created[1])
 
-        Do the following:
+    # Create two Distributions pointing to the publication
+    distribution1 = gen_object_with_cleanup(
+        file_distro_api_client, gen_distribution(publication=pub.pulp_href)
+    )
+    distribution2 = gen_object_with_cleanup(
+        file_distro_api_client, gen_distribution(publication=pub.pulp_href)
+    )
+    assert distribution1.publication == pub.pulp_href
+    assert distribution2.publication == pub.pulp_href
 
-        1. Create a repository that has at least one repository version.
-        2. Create a publication.
-        3. Create 2 distributions - using the same publication. Those
-           distributions will have different ``base_path``.
-        4. Assert that distributions have the same publication.
-        5. Create another distribution using same repository version.
-        5. Assert that distributions are viewable from base url
-        6. Assert that content in distributions are viewable
-        7. Select a content unit. Download that content unit from Pulp using
-           the three different distributions.
-           Assert that content unit has the same checksum when fetched from
-           different distributions.
-        """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+    # Create a Distribution using the repository
+    distribution3 = gen_object_with_cleanup(
+        file_distro_api_client, gen_distribution(repository=file_repo.pulp_href)
+    )
 
-        repo = client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo["pulp_href"])
-
-        remote = client.post(FILE_REMOTE_PATH, gen_remote(FILE_FIXTURE_MANIFEST_URL))
-        self.addCleanup(client.delete, remote["pulp_href"])
-
-        sync(cfg, remote, repo)
-        repo = client.get(repo["pulp_href"])
-
-        publication = create_file_publication(cfg, repo)
-        self.addCleanup(client.delete, publication["pulp_href"])
-
-        distributions = []
-        for _ in range(2):
-            body = gen_distribution()
-            body["publication"] = publication["pulp_href"]
-            distribution = client.using_handler(api.task_handler).post(FILE_DISTRIBUTION_PATH, body)
-            distributions.append(distribution)
-            self.addCleanup(client.delete, distribution["pulp_href"])
-
-        self.assertEqual(
-            distributions[0]["publication"], distributions[1]["publication"], distributions
-        )
-
-        body = gen_distribution()
-        body["repository"] = repo["pulp_href"]
-        distribution = client.using_handler(api.task_handler).post(FILE_DISTRIBUTION_PATH, body)
-        distributions.append(distribution)
-        self.addCleanup(client.delete, distribution["pulp_href"])
-
-        client.response_handler = api.safe_handler
-        self.assertEqual(client.get(PULP_CONTENT_BASE_URL).status_code, 200)
-
-        for distribution in distributions:
-            self.assertEqual(client.get(distribution["base_url"]).status_code, 200)
-
-        unit_urls = []
-        unit_path = get_added_content(repo)[FILE_CONTENT_NAME][0]["relative_path"]
-        for distribution in distributions:
-            unit_url = distribution["base_url"]
-            unit_urls.append(urljoin(unit_url, unit_path))
-
-        self.assertEqual(
-            hashlib.sha256(client.get(unit_urls[0]).content).hexdigest(),
-            hashlib.sha256(client.get(unit_urls[1]).content).hexdigest(),
-            unit_urls,
-        )
-        self.assertEqual(
-            hashlib.sha256(client.get(unit_urls[0]).content).hexdigest(),
-            hashlib.sha256(client.get(unit_urls[2]).content).hexdigest(),
-            unit_urls,
-        )
+    for distro in [distribution1, distribution2, distribution3]:
+        # Assert that all 3 distributions can be accessed
+        r = get_url(distro.base_url)
+        assert r.status == 200
+        # Download one of the files from the distribution and assert that it has the correct checksum
+        expected_files_list = list(expected_files)
+        content_unit = expected_files_list[0]
+        content_unit_url = urljoin(distro.base_url, content_unit[0])
+        downloaded_file = download_file(content_unit_url)
+        actual_checksum = hashlib.sha256(downloaded_file).hexdigest()
+        expected_checksum = content_unit[1]
+        assert expected_checksum == actual_checksum
