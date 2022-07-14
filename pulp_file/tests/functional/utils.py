@@ -332,3 +332,16 @@ async def _get_url(url, auth=None):
     async with aiohttp.ClientSession(auth=auth) as session:
         async with session.get(url, verify_ssl=False) as response:
             return response
+
+
+def post_url(url, data=None, auth=None, return_body=False):
+    """Performs a POST request on a URL and returns an aiohttp.Response object."""
+    return asyncio.run(_post_url(url, data, return_body, auth=auth))
+
+
+async def _post_url(url, data, return_body, auth=None):
+    async with aiohttp.ClientSession(auth=auth) as session:
+        async with session.post(url, data=data, verify_ssl=False) as response:
+            if return_body:
+                return await response.read()
+            return response

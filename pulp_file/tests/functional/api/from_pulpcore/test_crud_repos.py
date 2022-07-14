@@ -1,216 +1,136 @@
 """Tests that CRUD repositories."""
 import json
+import pytest
 import re
-import time
-import unittest
+from aiohttp import BasicAuth
 from itertools import permutations
+from subprocess import run
 from urllib.parse import urljoin
 
-from pulp_smash import api, cli, config, utils
+from pulp_smash import utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
-from requests.exceptions import HTTPError
-import pytest
-
 from pulpcore.client.pulp_file.exceptions import ApiException
-from pulpcore.client.pulp_file import (
-    ApiClient as FileApiClient,
-    FileFileRemote,
-    RemotesFileApi,
-)
-
-from pulp_file.tests.functional.utils import gen_file_remote
-from .constants import (
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-)
+from pulp_file.tests.functional.utils import gen_file_remote, download_file, post_url
 
 
-class CRUDRepoTestCase(unittest.TestCase):
-    """CRUD repositories."""
+def test_crud_repo_full_workflow(
+    file_repo_api_client, file_remote_api_client, gen_object_with_cleanup
+):
+    # Create repository
+    repo = file_repo_api_client.create(gen_repo())
+    print(dir(repo))
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.json_handler)
+    # Try to create another with the same name
+    with pytest.raises(ApiException) as e:
+        file_repo_api_client.create(gen_repo(name=repo.name))
+        assert e.value.status == 400
+        assert e.value.reason == "This field must be unique."
 
-    def setUp(self):
-        self.repo = {}
+    # Test reading the repository
+    read_repo = file_repo_api_client.read(repo.pulp_href).to_dict()
+    for key, val in repo.to_dict().items():
+        assert key in read_repo
+        assert getattr(repo, key) == read_repo[key]
 
-    def test_workflow(self):
-        self._create_repo()
-        self._create_same_name()
-        self._read_repo()
-        self._read_repo_with_specific_fields()
-        self._read_repo_without_specific_fields()
-        self._read_repos()
-        self._read_all_repos()
-        self._fully_update_name()
-        self._fully_update_desc()
-        self._partially_update_name()
-        self._partially_update_desc()
-        self._set_remote_on_repository()
-        self._delete_repo()
+    # Read a repository by its href providing specific field list.
+    # Permutate field list to ensure different combinations on result.
+    fields = (
+        "pulp_href",
+        "pulp_created",
+        "versions_href",
+        "latest_version_href",
+        "name",
+        "description",
+    )
+    config = file_repo_api_client.api_client.configuration
+    auth = BasicAuth(login=config.username, password=config.password)
+    full_href = urljoin(config.host, repo.pulp_href)
+    for field_pair in permutations(fields, 2):
+        # ex: field_pair = ('pulp_href', 'created')
+        response = download_file(f"{full_href}?fields={','.join(field_pair)}", auth=auth)
+        assert sorted(field_pair) == sorted(json.loads(response).keys())
 
-    def _create_repo(self):
-        """Create repository."""
-        self.repo = self.client.post(FILE_REPO_PATH, gen_repo())
+    # Read a repo by its href excluding specific fields.
+    response = download_file(f"{full_href}?exclude_fields=created,name", auth=auth)
+    response_fields = json.loads(response).keys()
+    assert "created" not in response_fields
+    assert "name" not in response_fields
 
-    def _create_same_name(self):
-        """Try to create a second reIpository with an identical name."""
-        with self.assertRaises(HTTPError) as exc:
-            self.client.post(FILE_REPO_PATH, gen_repo(name=self.repo["name"]))
-        self.assertIn("unique", exc.exception.response.text)
-        self.assertEqual(exc.exception.response.status_code, 400)
+    # Read the repository by its name.
+    page = file_repo_api_client.list(name=repo.name)
+    assert len(page.results) == 1
+    for key, val in repo.to_dict().items():
+        assert getattr(page.results[0], key) == val
 
-    def _read_repo(self):
-        """Read a repository by its href."""
-        repo = self.client.get(self.repo["pulp_href"])
-        for key, val in self.repo.items():
-            with self.subTest(key=key):
-                self.assertEqual(repo[key], val)
+    # Ensure name is displayed when listing repositories.
+    for read_repo in file_repo_api_client.list().results:
+        assert read_repo.name is not None
 
-    def _read_repo_with_specific_fields(self):
-        """Read a repository by its href providing specific field list.
-
-        Permutate field list to ensure different combinations on result.
-        """
-        fields = (
-            "pulp_href",
-            "pulp_created",
-            "versions_href",
-            "latest_version_href",
-            "name",
-            "description",
-        )
-        for field_pair in permutations(fields, 2):
-            # ex: field_pair = ('pulp_href', 'created')
-            with self.subTest(field_pair=field_pair):
-                repo = self.client.get(
-                    self.repo["pulp_href"], params={"fields": ",".join(field_pair)}
-                )
-                self.assertEqual(sorted(field_pair), sorted(repo.keys()))
-
-    def _read_repo_without_specific_fields(self):
-        """Read a repo by its href excluding specific fields."""
-        # requests doesn't allow the use of != in parameters.
-        url = "{}?exclude_fields=created,name".format(self.repo["pulp_href"])
-        repo = self.client.get(url)
-        response_fields = repo.keys()
-        self.assertNotIn("created", response_fields)
-        self.assertNotIn("name", response_fields)
-
-    def _read_repos(self):
-        """Read the repository by its name."""
-        page = self.client.get(FILE_REPO_PATH, params={"name": self.repo["name"]})
-        self.assertEqual(len(page["results"]), 1)
-        for key, val in self.repo.items():
-            with self.subTest(key=key):
-                self.assertEqual(page["results"][0][key], val)
-
-    def _read_all_repos(self):
-        """Ensure name is displayed when listing repositories."""
-        for repo in self.client.get(FILE_REPO_PATH)["results"]:
-            self.assertIsNotNone(repo["name"])
-
-    def _fully_update_name(self):
-        """Update a repository's name using HTTP PUT."""
-        self._do_fully_update_attr("name")
-
-    def _fully_update_desc(self):
-        """Update a repository's description using HTTP PUT."""
-        self._do_fully_update_attr("description")
-
-    def _do_fully_update_attr(self, attr):
-        """Update a repository attribute using HTTP PUT.
-
-        :param attr: The name of the attribute to update. For example,
-            "description." The attribute to update must be a string.
-        """
-        repo = self.client.get(self.repo["pulp_href"])
+    def _do_update_attr(attr, partial=False):
+        """Update a repository attribute."""
+        body = {} if partial else repo.to_dict()
+        function = getattr(file_repo_api_client, "partial_update" if partial else "update")
         string = utils.uuid4()
-        repo[attr] = string
-        self.client.put(repo["pulp_href"], repo)
-
+        body[attr] = string
+        response = function(repo.pulp_href, body)
+        monitor_task(response.task)
         # verify the update
-        repo = self.client.get(repo["pulp_href"])
-        self.assertEqual(string, repo[attr])
+        read_repo = file_repo_api_client.read(repo.pulp_href)
+        assert string == getattr(read_repo, attr)
 
-    def _partially_update_name(self):
-        """Update a repository's name using HTTP PATCH."""
-        self._do_partially_update_attr("name")
+    # Update a repository's name using HTTP PUT.
+    _do_update_attr("name")
 
-    def _partially_update_desc(self):
-        """Update a repository's description using HTTP PATCH."""
-        self._do_partially_update_attr("description")
+    # Update a repository's description using HTTP PUT.
+    _do_update_attr("description")
 
-    def _do_partially_update_attr(self, attr):
-        """Update a repository attribute using HTTP PATCH.
+    # Update a repository's name using HTTP PATCH.
+    _do_update_attr("name", partial=True)
 
-        :param attr: The name of the attribute to update. For example,
-            "description." The attribute to update must be a string.
-        """
-        string = utils.uuid4()
-        self.client.patch(self.repo["pulp_href"], {attr: string})
+    # Update a repository's description using HTTP PATCH.
+    _do_update_attr("description", partial=True)
 
-        # verify the update
-        repo = self.client.get(self.repo["pulp_href"])
-        self.assertEqual(repo[attr], string)
+    # Test setting remotes on repositories.
+    remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
 
-    def _set_remote_on_repository(self):
-        """Test setting remotes on repositories."""
-        body = gen_file_remote()
-        remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote["pulp_href"])
+    # verify that syncing with no remote raises an error
+    with pytest.raises(ApiException):
+        file_repo_api_client.sync(repo.pulp_href, {})
 
-        # verify that syncing with no remote raises an error
-        with self.assertRaises(HTTPError):
-            self.client.post(urljoin(self.repo["pulp_href"], "sync/"))
+    # test setting the remote on the repo
+    response = file_repo_api_client.partial_update(repo.pulp_href, {"remote": remote.pulp_href})
+    monitor_task(response.task)
 
-        # test setting the remote on the repo
-        self.client.patch(self.repo["pulp_href"], {"remote": remote["pulp_href"]})
+    # test syncing without a remote
+    response = file_repo_api_client.sync(repo.pulp_href, {})
+    monitor_task(response.task)
 
-        # test syncing without a remote
-        self.client.post(urljoin(self.repo["pulp_href"], "sync/"))
+    read_repo = file_repo_api_client.read(repo.pulp_href)
+    assert read_repo.latest_version_href == f"{repo.pulp_href}versions/1/"
 
-        repo = self.client.get(self.repo["pulp_href"])
-        self.assertEqual(repo["latest_version_href"], f"{repo['pulp_href']}versions/1/")
+    # Delete a repository.
+    response = file_repo_api_client.delete(repo.pulp_href)
+    monitor_task(response.task)
 
-    def _delete_repo(self):
-        """Delete a repository."""
-        self.client.delete(self.repo["pulp_href"])
+    # verify the delete
+    with pytest.raises(ApiException):
+        file_repo_api_client.read(repo.pulp_href)
 
-        # verify the delete
-        with self.assertRaises(HTTPError):
-            self.client.get(self.repo["pulp_href"])
-
-    def test_negative_create_repo_with_invalid_parameter(self):
-        """Attempt to create repository passing extraneous invalid parameter.
-
-        Assert response returns an error 400 including ["Unexpected field"].
-        """
-        response = api.Client(self.cfg, api.echo_handler).post(FILE_REPO_PATH, gen_repo(foo="bar"))
-        assert response.status_code == 400
-        assert response.json()["foo"] == ["Unexpected field"]
+    # Attempt to create repository passing extraneous invalid parameter.
+    # Assert response returns an error 400 including ["Unexpected field"].
+    with pytest.raises(ApiException) as e:
+        file_repo_api_client.create(gen_repo(foo="bar"))
+        assert e.value.status == 400
+        assert e.value.body["foo"] == ["Unexpected field"]
 
 
-class CRUDRemoteTestCase(unittest.TestCase):
-    """CRUD remotes."""
-
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = FileApiClient(cls.cfg.get_bindings_config())
-        cls.remotes_api = RemotesFileApi(cls.client)
-
-    def setUp(self):
-        self.remote_attrs = {
+@pytest.mark.parallel
+def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_cleanup):
+    remote_attrs = gen_file_remote(
+        **{
             "name": utils.uuid4(),
-            "url": FILE_FIXTURE_MANIFEST_URL,
             "ca_cert": None,
             "client_cert": None,
             "client_key": None,
@@ -225,19 +145,11 @@ class CRUDRemoteTestCase(unittest.TestCase):
             "sock_connect_timeout": None,
             "sock_read_timeout": None,
         }
-        self.remote = self.remotes_api.create(self.remote_attrs)
+    )
+    remote = file_remote_api_client.create(remote_attrs)
 
-    def tearDown(self):
-        try:
-            response = self.remotes_api.delete(self.remote.pulp_href)
-        except ApiException as exc:
-            # The test_delete test will cause this to not be here
-            assert exc.status == 404
-        else:
-            monitor_task(response.task)
-
-    def _compare_results(self, data, received):
-        self.assertFalse(hasattr(received, "password"))
+    def _compare_results(data, received):
+        assert not hasattr(received, "password")
 
         # handle write only fields
         data.pop("username", None)
@@ -245,214 +157,173 @@ class CRUDRemoteTestCase(unittest.TestCase):
         data.pop("client_key", None)
 
         for k in data:
-            self.assertEqual(getattr(received, k), data[k])
+            assert getattr(received, k) == data[k]
 
-    def test_read(self):
-        # Compare initial-attrs vs remote created in setUp
-        self._compare_results(self.remote_attrs, self.remote)
+    # Compare initial-attrs vs remote created in setUp
+    _compare_results(remote_attrs, remote)
 
-    def test_update(self):
-        data = {"download_concurrency": 23, "policy": "immediate"}
-        self.remotes_api.partial_update(self.remote.pulp_href, data)
-        time.sleep(1)  # without this, the read returns the pre-patch values
-        new_remote = self.remotes_api.read(self.remote.pulp_href)
-        self._compare_results(data, new_remote)
+    # Test updating remote
+    data = {"download_concurrency": 23, "policy": "immediate"}
+    response = file_remote_api_client.partial_update(remote.pulp_href, data)
+    monitor_task(response.task)
+    new_remote = file_remote_api_client.read(remote.pulp_href)
+    _compare_results(data, new_remote)
 
-    def test_password_writeable(self):
-        """Test that a password can be updated with a PUT request."""
-        cli_client = cli.Client(self.cfg)
-        remote = self.remotes_api.create({"name": "test_pass", "url": "http://", "password": "new"})
-        href = remote.pulp_href
-        uuid = re.search(r"/api/v3/remotes/file/file/([\w-]+)/", href).group(1)
-        shell_cmd = (
-            f"import pulpcore; print(pulpcore.app.models.Remote.objects.get(pk='{uuid}').password)"
-        )
+    # Test that a password can be updated with a PUT request.
+    temp_remote = gen_object_with_cleanup(
+        file_remote_api_client, gen_file_remote(url="http://", password="new")
+    )
+    href = temp_remote.pulp_href
+    uuid = re.search(r"/api/v3/remotes/file/file/([\w-]+)/", href).group(1)
+    shell_cmd = (
+        f"import pulpcore; print(pulpcore.app.models.Remote.objects.get(pk='{uuid}').password)"
+    )
 
-        self.addCleanup(self.remotes_api.delete, href)
+    # test a PUT request with a new password
+    remote_update = gen_file_remote(name=temp_remote.name, url="http://", password="changed")
+    response = file_remote_api_client.update(href, remote_update)
+    monitor_task(response.task)
+    exc = run(["pulpcore-manager", "shell", "-c", shell_cmd], text=True, capture_output=True)
+    assert exc.stdout.rstrip("\n") == "changed"
 
-        # test a PUT request with a new password
-        remote_update = FileFileRemote(name="test_pass", url="http://", password="changed")
-        response = self.remotes_api.update(href, remote_update)
-        monitor_task(response.task)
-        exc = cli_client.run(["pulpcore-manager", "shell", "-c", shell_cmd])
-        self.assertEqual(exc.stdout.rstrip("\n"), "changed")
+    # Test that password doesn't get unset when not passed with a PUT request.
+    temp_remote = gen_object_with_cleanup(
+        file_remote_api_client, gen_file_remote(url="http://", password="new")
+    )
+    href = temp_remote.pulp_href
+    uuid = re.search(r"/api/v3/remotes/file/file/([\w-]+)/", href).group(1)
+    shell_cmd = (
+        f"import pulpcore; print(pulpcore.app.models.Remote.objects.get(pk='{uuid}').password)"
+    )
 
-    def test_password_not_unset(self):
-        """Test that password doesn't get unset when not passed with a PUT request."""
-        cli_client = cli.Client(self.cfg)
-        remote = self.remotes_api.create({"name": "test_pass", "url": "http://", "password": "new"})
-        href = remote.pulp_href
-        uuid = re.search(r"/api/v3/remotes/file/file/([\w-]+)/", href).group(1)
-        shell_cmd = (
-            f"import pulpcore; print(pulpcore.app.models.Remote.objects.get(pk='{uuid}').password)"
-        )
+    # test a PUT request without a password
+    remote_update = gen_file_remote(name=temp_remote.name, url="http://")
+    response = file_remote_api_client.update(href, remote_update)
+    monitor_task(response.task)
+    exc = run(["pulpcore-manager", "shell", "-c", shell_cmd], text=True, capture_output=True)
+    assert exc.stdout.rstrip("\n") == "new"
 
-        self.addCleanup(self.remotes_api.delete, href)
+    # Test valid timeout settings (float >= 0)
+    data = {
+        "total_timeout": 1.0,
+        "connect_timeout": 66.0,
+        "sock_connect_timeout": 0.0,
+        "sock_read_timeout": 3.1415926535,
+    }
+    response = file_remote_api_client.partial_update(remote.pulp_href, data)
+    monitor_task(response.task)
+    new_remote = file_remote_api_client.read(remote.pulp_href)
+    _compare_results(data, new_remote)
 
-        # test a PUT request without a password
-        remote_update = FileFileRemote(name="pass_test", url="http://")
-        response = self.remotes_api.update(href, remote_update)
-        monitor_task(response.task)
-        exc = cli_client.run(["pulpcore-manager", "shell", "-c", shell_cmd])
-        self.assertEqual(exc.stdout.rstrip("\n"), "new")
+    # Test invalid float < 0
+    data = {
+        "total_timeout": -1.0,
+    }
+    with pytest.raises(ApiException):
+        file_remote_api_client.partial_update(remote.pulp_href, data)
 
-    def test_timeout_attributes(self):
-        # Test valid timeout settings (float >= 0)
-        data = {
-            "total_timeout": 1.0,
-            "connect_timeout": 66.0,
-            "sock_connect_timeout": 0.0,
-            "sock_read_timeout": 3.1415926535,
-        }
-        self.remotes_api.partial_update(self.remote.pulp_href, data)
-        time.sleep(1)
-        new_remote = self.remotes_api.read(self.remote.pulp_href)
-        self._compare_results(data, new_remote)
+    # Test invalid non-float
+    data = {
+        "connect_timeout": "abc",
+    }
+    with pytest.raises(ApiException):
+        file_remote_api_client.partial_update(remote.pulp_href, data)
 
-    def test_timeout_attributes_float_lt_zero(self):
-        # Test invalid float < 0
-        data = {
-            "total_timeout": -1.0,
-        }
-        with self.assertRaises(ApiException):
-            self.remotes_api.partial_update(self.remote.pulp_href, data)
+    # Test reset to empty
+    data = {
+        "total_timeout": False,
+        "connect_timeout": None,
+        "sock_connect_timeout": False,
+        "sock_read_timeout": None,
+    }
+    response = file_remote_api_client.partial_update(remote.pulp_href, data)
+    monitor_task(response.task)
+    new_remote = file_remote_api_client.read(remote.pulp_href)
+    _compare_results(data, new_remote)
 
-    def test_timeout_attributes_non_float(self):
-        # Test invalid non-float
-        data = {
-            "connect_timeout": "abc",
-        }
-        with self.assertRaises(ApiException):
-            self.remotes_api.partial_update(self.remote.pulp_href, data)
+    # Test that headers value must be a list of dicts
+    data = {"headers": {"Connection": "keep-alive"}}
+    with pytest.raises(ApiException):
+        file_remote_api_client.partial_update(remote.pulp_href, data)
+    data = {"headers": [1, 2, 3]}
+    with pytest.raises(ApiException):
+        file_remote_api_client.partial_update(remote.pulp_href, data)
+    data = {"headers": [{"Connection": "keep-alive"}]}
+    response = file_remote_api_client.partial_update(remote.pulp_href, data)
+    monitor_task(response.task)
 
-    def test_timeout_attributes_reset_to_empty(self):
-        # Test reset to empty
-        data = {
-            "total_timeout": False,
-            "connect_timeout": None,
-            "sock_connect_timeout": False,
-            "sock_read_timeout": None,
-        }
-        response = self.remotes_api.partial_update(self.remote.pulp_href, data)
-        monitor_task(response.task)
-        new_remote = self.remotes_api.read(self.remote.pulp_href)
-        self._compare_results(data, new_remote)
-
-    def test_delete(self):
-        response = self.remotes_api.delete(self.remote.pulp_href)
-        monitor_task(response.task)
-        # verify the delete
-        with self.assertRaises(ApiException):
-            self.remotes_api.read(self.remote.pulp_href)
-
-    def test_headers(self):
-        # Test that headers value must be a list of dicts
-        data = {"headers": {"Connection": "keep-alive"}}
-        with self.assertRaises(ApiException):
-            self.remotes_api.partial_update(self.remote.pulp_href, data)
-        data = {"headers": [1, 2, 3]}
-        with self.assertRaises(ApiException):
-            self.remotes_api.partial_update(self.remote.pulp_href, data)
-        data = {"headers": [{"Connection": "keep-alive"}]}
-        self.remotes_api.partial_update(self.remote.pulp_href, data)
+    # Test deleting a remote
+    response = file_remote_api_client.delete(remote.pulp_href)
+    monitor_task(response.task)
+    # verify the delete
+    with pytest.raises(ApiException):
+        file_remote_api_client.read(remote.pulp_href)
 
 
 @pytest.mark.parallel
-class CreatePulpLabelsRemoteTestCase(unittest.TestCase):
+def test_remote_pulp_labels(file_remote_api_client, gen_object_with_cleanup):
     """A test case for verifying whether pulp_labels are correctly assigned to a new remote."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Initialize class-wide variables"""
-        cls.cfg = config.get_config()
+    pulp_labels = {"environment": "dev"}
 
-        cls.api_client = api.Client(cls.cfg, api.json_handler)
-        cls.file_client = FileApiClient(cls.cfg.get_bindings_config())
-        cls.remotes_api = RemotesFileApi(cls.file_client)
+    # Test if a created remote contains pulp_labels when passing JSON data.
+    remote = gen_object_with_cleanup(
+        file_remote_api_client, gen_file_remote(pulp_labels=pulp_labels)
+    )
 
-        cls.pulp_labels = {"environment": "dev"}
+    assert remote.pulp_labels == pulp_labels
 
-    def test_create_remote(self):
-        """Test if a created remote contains pulp_labels when passing JSON data."""
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": FILE_FIXTURE_MANIFEST_URL,
-            "pulp_labels": self.pulp_labels,
-        }
-        remote = self.remotes_api.create(remote_attrs)
-        self.addCleanup(self.remotes_api.delete, remote.pulp_href)
+    # Test if a created remote contains pulp_labels when passing form data.
+    config = file_remote_api_client.api_client.configuration
+    auth = BasicAuth(login=config.username, password=config.password)
+    url = urljoin(config.host, remote.pulp_href[:-37])  # Cut off the UUID
+    remote = post_url(
+        url, gen_file_remote(pulp_labels=json.dumps(pulp_labels)), return_body=True, auth=auth
+    )
 
-        self.assertEqual(remote.pulp_labels, self.pulp_labels)
-
-    def test_create_remote_using_form(self):
-        """Test if a created remote contains pulp_labels when passing form data."""
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": FILE_FIXTURE_MANIFEST_URL,
-            "pulp_labels": json.dumps(self.pulp_labels),
-        }
-        remote = self.api_client.post(FILE_REMOTE_PATH, data=remote_attrs)
-        self.addCleanup(self.remotes_api.delete, remote["pulp_href"])
-        self.assertEqual(remote["pulp_labels"], self.pulp_labels)
+    assert json.loads(remote)["pulp_labels"] == pulp_labels
 
 
 @pytest.mark.parallel
-class RemoteFileURLsValidationTestCase(unittest.TestCase):
+def test_file_remote_url_validation(file_remote_api_client, gen_object_with_cleanup):
     """A test case that verifies the validation of remotes' URLs."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Initialize class-wide variables"""
-        cls.cfg = config.get_config()
-
-        cls.api_client = api.Client(cls.cfg, api.json_handler)
-        cls.file_client = FileApiClient(cls.cfg.get_bindings_config())
-        cls.remotes_api = RemotesFileApi(cls.file_client)
-
-    def test_invalid_absolute_pathname(self):
-        """Test the validation of an invalid absolute pathname."""
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": "file://error/path/name",
-        }
-        self.raise_for_invalid_request(remote_attrs)
-
-    def test_invalid_import_path(self):
-        """Test the validation of an invalid import pathname."""
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": "file:///error/path/name",
-        }
-        self.raise_for_invalid_request(remote_attrs)
-
-    def raise_for_invalid_request(self, remote_attrs):
+    def raise_for_invalid_request(remote_attrs):
         """Check if Pulp returns HTTP 400 after issuing an invalid request."""
-        with self.assertRaises(ApiException) as ae:
-            remote = self.remotes_api.create(remote_attrs)
-            self.addCleanup(self.remotes_api.delete, remote.pulp_href)
+        with pytest.raises(ApiException) as ae:
+            file_remote_api_client.create(remote_attrs)
+            assert ae.value.status == 400
 
-        self.assertEqual(ae.exception.status, 400)
+    # Test the validation of an invalid absolute pathname.
+    remote_attrs = {
+        "name": utils.uuid4(),
+        "url": "file://tmp/good",
+    }
+    raise_for_invalid_request(remote_attrs)
 
-    def test_valid_import_path(self):
-        """Test the creation of a remote after passing a valid URL."""
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": "file:///tmp/good",
-        }
+    # Test the validation of an invalid import pathname.
+    remote_attrs = {
+        "name": utils.uuid4(),
+        "url": "file:///error/path/name",
+    }
+    raise_for_invalid_request(remote_attrs)
 
-        remote = self.remotes_api.create(remote_attrs)
-        self.addCleanup(self.remotes_api.delete, remote.pulp_href)
+    # Test the creation of a remote after passing a valid URL.
+    remote_attrs = {
+        "name": utils.uuid4(),
+        "url": "file:///tmp/good",
+    }
+    gen_object_with_cleanup(file_remote_api_client, remote_attrs)
 
-    def test_no_username_password(self):
-        """Test that the remote url can't contain username/password."""
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": "http://elladan@rivendell.org",
-        }
-        self.raise_for_invalid_request(remote_attrs)
+    # Test that the remote url can't contain username/password.
+    remote_attrs = {
+        "name": utils.uuid4(),
+        "url": "http://elladan@rivendell.org",
+    }
+    raise_for_invalid_request(remote_attrs)
 
-        remote_attrs = {
-            "name": utils.uuid4(),
-            "url": "http://elladan:pass@rivendell.org",
-        }
-        self.raise_for_invalid_request(remote_attrs)
+    remote_attrs = {
+        "name": utils.uuid4(),
+        "url": "http://elladan:pass@rivendell.org",
+    }
+    raise_for_invalid_request(remote_attrs)
