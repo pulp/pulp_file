@@ -13,6 +13,7 @@ from pulp_smash.pulp3.utils import gen_repo
 
 from pulpcore.client.pulp_file.exceptions import ApiException
 from pulp_file.tests.functional.utils import gen_file_remote, download_file, post_url
+from pulp_file.tests.functional.api.from_pulpcore.constants import FILE_REMOTE_PATH
 
 
 def test_crud_repo_full_workflow(
@@ -327,3 +328,50 @@ def test_file_remote_url_validation(file_remote_api_client, gen_object_with_clea
         "url": "http://elladan:pass@rivendell.org",
     }
     raise_for_invalid_request(remote_attrs)
+
+
+@pytest.mark.parallel
+def test_repository_remote_filter(
+    file_repo_api_client, file_remote_api_client, gen_object_with_cleanup
+):
+    """Test repository's remote filter and full functionality of a HREF filter."""
+
+    remote1 = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    remote2 = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    remote3 = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+
+    repo1 = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo2 = gen_object_with_cleanup(file_repo_api_client, gen_repo(remote=remote1.pulp_href))
+    repo3 = gen_object_with_cleanup(file_repo_api_client, gen_repo(remote=remote2.pulp_href))
+    repo4 = gen_object_with_cleanup(file_repo_api_client, gen_repo(remote=remote2.pulp_href))
+    name_in = [repo1.name, repo2.name, repo3.name, repo4.name]
+
+    # Check that name__in filter is working
+    response = file_repo_api_client.list(name__in=name_in)
+    assert response.count == 4
+
+    # Test that supplying a specific remote only returns repositories with that remote
+    response = file_repo_api_client.list(remote=remote1.pulp_href)
+    assert response.count == 1
+    assert response.results[0].pulp_href == repo2.pulp_href
+
+    response = file_repo_api_client.list(remote=remote2.pulp_href)
+    assert response.count == 2
+    assert {r.pulp_href for r in response.results} == {repo3.pulp_href, repo4.pulp_href}
+
+    response = file_repo_api_client.list(remote=remote3.pulp_href)
+    assert response.count == 0
+
+    # Test that supplying 'null' will only show repositories without a remote
+    response = file_repo_api_client.list(remote="null", name__in=name_in)
+    assert response.count == 1
+    assert response.results[0].pulp_href == repo1.pulp_href
+
+    # Test that supplying a base URI of a remote will show all repositories with similar remotes
+    response = file_repo_api_client.list(remote=FILE_REMOTE_PATH, name__in=name_in)
+    assert response.count == 3
+    assert {r.pulp_href for r in response.results} == {
+        repo2.pulp_href,
+        repo3.pulp_href,
+        repo4.pulp_href,
+    }
