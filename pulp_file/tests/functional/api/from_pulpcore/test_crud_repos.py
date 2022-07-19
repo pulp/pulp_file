@@ -20,7 +20,6 @@ def test_crud_repo_full_workflow(
 ):
     # Create repository
     repo = file_repo_api_client.create(gen_repo())
-    print(dir(repo))
 
     # Try to create another with the same name
     with pytest.raises(ApiException) as e:
