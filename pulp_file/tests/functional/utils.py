@@ -76,15 +76,6 @@ def gen_file_content_attrs(artifact):
     return {"artifact": artifact["pulp_href"], "relative_path": utils.uuid4()}
 
 
-def gen_file_content_upload_attrs():
-    """Generate a dict with content unit attributes without artifact for upload.
-
-    :param artifact: A dict of info about the artifact.
-    :returns: A semi-random dict for use in creating a content unit.
-    """
-    return {"relative_path": utils.uuid4()}
-
-
 def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
     """Add file contents to Pulp.
 

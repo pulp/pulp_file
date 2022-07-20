@@ -6,10 +6,12 @@ from uuid import uuid4
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import (
     gen_distribution,
+    gen_repo,
 )
 
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,
+    FileFileDistribution,
     FileFilePublication,
 )
 from pulpcore.client.pulp_file.exceptions import ApiException
@@ -162,3 +164,115 @@ def test_distribution_base_path(
 
     base_path = "/".join((distribution.base_path, str(uuid4()).replace("-", "/")))
     _create_distribution_and_assert(file_distro_api_client, gen_distribution(base_path=base_path))
+
+
+@pytest.mark.parallel
+def test_distribution_filtering(
+    file_content_api_client,
+    file_distro_api_client,
+    file_fixture_gen_remote,
+    file_random_content_unit,
+    file_repo_api_client,
+    file_pub_api_client,
+    gen_object_with_cleanup,
+    write_3_iso_file_fixture_data_factory,
+):
+    """Test distribution filtering based on the content exposed from the distribution."""
+
+    def generate_repo_with_content():
+        repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+        repo_manifest_path = write_3_iso_file_fixture_data_factory(str(uuid4()))
+        remote = file_fixture_gen_remote(manifest_path=repo_manifest_path, policy="on_demand")
+        body = RepositorySyncURL(remote=remote.pulp_href)
+        task_response = file_repo_api_client.sync(repo.pulp_href, body).task
+        version_href = monitor_task(task_response).created_resources[0]
+        content = file_content_api_client.list(repository_version_added=version_href).results[0]
+        return repo, content
+
+    repo1, content1 = generate_repo_with_content()
+
+    publish_data = FileFilePublication(repository=repo1.pulp_href)
+    publication = gen_object_with_cleanup(file_pub_api_client, publish_data)
+
+    # test if a publication attached to a distribution exposes the published content
+    data = FileFileDistribution(
+        name=str(uuid4()), base_path=str(uuid4()), publication=publication.pulp_href
+    )
+    distribution_pub1 = gen_object_with_cleanup(file_distro_api_client, data)
+
+    results = file_distro_api_client.list(with_content=content1.pulp_href).results
+    assert [distribution_pub1] == results
+
+    # test if a publication pointing to repository version no. 0 does not expose any content
+    publish_data = FileFilePublication(repository_version=repo1.versions_href + "0/")
+    publication_version_0 = gen_object_with_cleanup(file_pub_api_client, publish_data)
+    data = FileFileDistribution(
+        name=str(uuid4()), base_path=str(uuid4()), publication=publication_version_0.pulp_href
+    )
+    gen_object_with_cleanup(file_distro_api_client, data)
+
+    results = file_distro_api_client.list(with_content=content1.pulp_href).results
+    assert [distribution_pub1] == results
+
+    # test if a repository assigned to a distribution exposes the content available in the latest
+    # publication for that repository's versions
+    data = FileFileDistribution(
+        name=str(uuid4()), base_path=str(uuid4()), repository=repo1.pulp_href
+    )
+    distribution_repopub = gen_object_with_cleanup(file_distro_api_client, data)
+    results = set(
+        d.pulp_href for d in file_distro_api_client.list(with_content=content1.pulp_href).results
+    )
+    assert {distribution_pub1.pulp_href, distribution_repopub.pulp_href} == results
+
+    repo2, content2 = generate_repo_with_content()
+
+    # add new content to the first repository to see whether the distribution filtering correctly
+    # traverses to the latest publication concerning the repository under the question that should
+    # contain the content
+    response = file_repo_api_client.modify(
+        repo1.pulp_href,
+        {"remove_content_units": [], "add_content_units": [content2.pulp_href]},
+    )
+    monitor_task(response.task)
+    assert [] == file_distro_api_client.list(with_content=content2.pulp_href).results
+
+    publish_data = FileFilePublication(repository=repo1.pulp_href)
+    new_publication = gen_object_with_cleanup(file_pub_api_client, publish_data)
+
+    # test later (20 lines below) if the publication now exposes the recently added content in the
+    # affected distributions (i.e., the distribution with the reference to a repository and the
+    # new one)
+    data = FileFileDistribution(
+        name="pub3", base_path="pub3", publication=new_publication.pulp_href
+    )
+    distribution_pub3 = gen_object_with_cleanup(file_distro_api_client, data)
+
+    # test if a repository without any attached publication does not expose any kind of content
+    # to a user even though the content is still present in the latest repository version
+    data = FileFileDistribution(
+        name=str(uuid4()), base_path=str(uuid4()), repository=repo2.pulp_href
+    )
+    distribution_repo_only = gen_object_with_cleanup(file_distro_api_client, data)
+
+    results = set(
+        d.pulp_href for d in file_distro_api_client.list(with_content=content2.pulp_href).results
+    )
+    assert {distribution_pub3.pulp_href, distribution_repopub.pulp_href} == results
+
+    # create a publication to see whether the content of the second repository is now served or not
+    publish_data = FileFilePublication(repository=repo2.pulp_href)
+    gen_object_with_cleanup(file_pub_api_client, publish_data)
+
+    results = set(
+        d.pulp_href for d in file_distro_api_client.list(with_content=content2.pulp_href).results
+    )
+    assert {
+        distribution_pub3.pulp_href,
+        distribution_repopub.pulp_href,
+        distribution_repo_only.pulp_href,
+    } == results
+
+    # test if a random content unit is not accessible from any distribution
+    results = file_distro_api_client.list(with_content=file_random_content_unit.pulp_href).results
+    assert [] == results
