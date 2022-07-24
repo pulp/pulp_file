@@ -1,18 +1,13 @@
 """Tests that sync file plugin repositories."""
 import pytest
 
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
-from pulp_file.tests.functional.utils import gen_file_client, get_files_in_manifest
+from pulp_file.tests.functional.utils import get_files_in_manifest
 
 from pulpcore.client.pulp_file import (
-    ContentFilesApi,
-    DistributionsFileApi,
-    PublicationsFileApi,
-    RepositoriesFileApi,
     RepositorySyncURL,
-    RemotesFileApi,
 )
 
 

@@ -2,7 +2,6 @@
 import hashlib
 import os
 import pytest
-import unittest
 import uuid
 
 from pulp_smash.pulp3.bindings import (

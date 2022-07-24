@@ -46,7 +46,7 @@ def _try_action(user, client, action, outcome, *args, **kwargs):
 def test_basic_actions(gen_users, file_repo_api_client, gen_object_with_cleanup):
     """Test list, read, create, update and delete apis."""
     alice, bob, charlie = gen_users("filerepository")
-    admin_repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    gen_object_with_cleanup(file_repo_api_client, gen_repo())
 
     a_list = _try_action(alice, file_repo_api_client, "list", 200)
     assert a_list.count >= 1

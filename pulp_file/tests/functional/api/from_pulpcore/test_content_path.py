@@ -1,19 +1,11 @@
 """Tests related to content path."""
 import pytest
-import unittest
 
-from pulp_smash import api, config, utils
-from pulp_smash.pulp3.bindings import delete_orphans
-from pulp_smash.pulp3.utils import gen_remote, gen_repo, sync, gen_distribution
+from pulp_smash import utils
+from pulp_smash.pulp3.utils import gen_distribution
 from urllib.parse import urljoin
 
-from pulp_file.tests.functional.utils import create_file_publication
-from .constants import (
-    FILE_FIXTURE_MANIFEST_URL,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-    PULP_CONTENT_BASE_URL,
-)
+from .constants import PULP_CONTENT_BASE_URL
 
 
 @pytest.mark.parallel
