@@ -58,7 +58,7 @@ def test_content_promotion(
         # Assert that all 3 distributions can be accessed
         r = get_url(distro.base_url)
         assert r.status == 200
-        # Download one of the files from the distribution and assert that it has the correct checksum
+        # Download one of the files from the distribution and assert it has the correct checksum
         expected_files_list = list(expected_files)
         content_unit = expected_files_list[0]
         content_unit_url = urljoin(distro.base_url, content_unit[0])

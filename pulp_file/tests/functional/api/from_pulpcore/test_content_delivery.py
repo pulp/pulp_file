@@ -10,11 +10,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulpcore.client.pulp_file import (
-    PublicationsFileApi,
-    RemotesFileApi,
-    RepositoriesFileApi,
     RepositorySyncURL,
-    DistributionsFileApi,
 )
 
 from pulp_file.tests.functional.utils import (

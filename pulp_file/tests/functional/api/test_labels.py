@@ -1,17 +1,9 @@
-import json
-import unittest
-
 from uuid import uuid4
 
 import pytest
 
-from pulp_smash import config
 from pulp_smash.pulp3.bindings import monitor_task
 
-from pulpcore.client.pulp_file import (
-    ApiClient as FileApiClient,
-    RepositoriesFileApi,
-)
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 

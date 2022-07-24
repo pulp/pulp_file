@@ -4,7 +4,6 @@ import uuid
 from urllib.parse import urljoin
 
 from pulp_smash.pulp3.bindings import (
-    PulpTaskError,
     monitor_task,
     monitor_task_group,
 )

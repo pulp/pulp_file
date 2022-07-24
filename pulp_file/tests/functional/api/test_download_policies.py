@@ -84,14 +84,14 @@ def test_download_policy(
     assert expected_checksum == actual_checksum
 
     # Assert that artifacts were not downloaded if policy is not immediate
-    if download_policy is not "immediate":
+    if download_policy != "immediate":
         # Assert that artifacts were not downloaded
         for f in expected_files_list[1:]:
             assert artifacts_api_client.list(sha256=f[1]).results == []
 
         # Assert that an artifact was saved for the "on_demand" policy and not saved for the
         # "streamed" policy.
-        if download_policy is "on_demand":
+        if download_policy == "on_demand":
             assert len(artifacts_api_client.list(sha256=content_unit[1]).results) == 1
         else:
             assert len(artifacts_api_client.list(sha256=content_unit[1]).results) == 0
