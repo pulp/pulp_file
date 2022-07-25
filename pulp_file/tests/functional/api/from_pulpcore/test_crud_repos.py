@@ -3,7 +3,6 @@ import json
 import pytest
 import re
 from aiohttp import BasicAuth
-from itertools import permutations
 from subprocess import run
 from urllib.parse import urljoin
 
@@ -15,6 +14,7 @@ from pulpcore.client.pulp_file.exceptions import ApiException
 from pulp_file.tests.functional.utils import gen_file_remote, download_file, post_url
 
 
+@pytest.mark.parallel
 def test_crud_repo_full_workflow(
     file_repo_api_client, file_remote_api_client, gen_object_with_cleanup
 ):
@@ -34,22 +34,16 @@ def test_crud_repo_full_workflow(
         assert getattr(repo, key) == read_repo[key]
 
     # Read a repository by its href providing specific field list.
-    # Permutate field list to ensure different combinations on result.
-    fields = (
-        "pulp_href",
-        "pulp_created",
-        "versions_href",
-        "latest_version_href",
-        "name",
-        "description",
-    )
     config = file_repo_api_client.api_client.configuration
     auth = BasicAuth(login=config.username, password=config.password)
     full_href = urljoin(config.host, repo.pulp_href)
-    for field_pair in permutations(fields, 2):
-        # ex: field_pair = ('pulp_href', 'created')
-        response = download_file(f"{full_href}?fields={','.join(field_pair)}", auth=auth)
-        assert sorted(field_pair) == sorted(json.loads(response).keys())
+    for fields in [
+        ("pulp_href", "pulp_created"),
+        ("pulp_href", "name"),
+        ("pulp_created", "versions_href", "name"),
+    ]:
+        response = download_file(f"{full_href}?fields={','.join(fields)}", auth=auth)
+        assert sorted(fields) == sorted(json.loads(response).keys())
 
     # Read a repo by its href excluding specific fields.
     response = download_file(f"{full_href}?exclude_fields=created,name", auth=auth)
