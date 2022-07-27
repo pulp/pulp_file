@@ -62,8 +62,8 @@ pulp_settings:
   allowed_import_paths:
   - /tmp
   orphan_protection_time: 0
-pulpcore_branch: main
-pulpcore_pip_version_specifier: null
+pulpcore_branch: "3.20"
+pulpcore_pip_version_specifier: ">=3.20.0,<3.25"
 pulpcore_revision: null
 pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
@@ -91,9 +91,5 @@ test_reroute: true
 test_s3: true
 test_stream: true
 update_github: true
-upgrade_range:
-- pulp-certguard_branch: 1.2
-  pulp_file_branch: 1.6
-  pulpcore_branch: 3.11
 use_issue_template: true
 
