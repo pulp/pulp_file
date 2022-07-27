@@ -88,7 +88,6 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
                 "condition": [
                     "has_required_repo_perms_on_upload:file.modify_filerepository",
                     "has_required_repo_perms_on_upload:file.view_filerepository",
-                    "has_upload_param_model_or_obj_perms:core.change_upload",
                 ],
             },
         ],
