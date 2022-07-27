@@ -14,6 +14,7 @@ from pulp_file.tests.functional.utils import (
 )
 
 
+@pytest.mark.skip("Skip, because `admin_user` fixture collides with pytest-django")
 @pytest.mark.parallel
 def test_rbac_content_guard_full_workflow(
     rbac_contentguard_api_client,
