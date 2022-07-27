@@ -8,6 +8,7 @@ from urllib.parse import urljoin
 from .constants import PULP_CONTENT_BASE_URL
 
 
+@pytest.mark.skip("Skip for pulpcore 3.20")
 @pytest.mark.parallel
 def test_content_directory_listing(file_distro_api_client, gen_object_with_cleanup):
     """Checks that distributions are grouped by base-path when listing content directories."""
