@@ -20,7 +20,7 @@ def test_rbac_content_guard_full_workflow(
     groups_api_client,
     groups_users_api_client,
     file_distro_api_client,
-    admin_user,
+    pulp_admin_user,
     anonymous_user,
     gen_user,
     gen_object_with_cleanup,
@@ -32,7 +32,7 @@ def test_rbac_content_guard_full_workflow(
     user_a = gen_user()
     user_b = gen_user()
 
-    all_users = [creator_user, user_a, user_b, admin_user, anonymous_user]
+    all_users = [creator_user, user_a, user_b, pulp_admin_user, anonymous_user]
     group = gen_object_with_cleanup(groups_api_client, {"name": str(uuid.uuid4())})
     groups_users_api_client.create(group.pulp_href, {"username": user_b.username})
     groups_users_api_client.create(group.pulp_href, {"username": user_a.username})
@@ -64,7 +64,7 @@ def test_rbac_content_guard_full_workflow(
         assert guard.pulp_href == distro.content_guard
 
     # Check that now only the creator and admin user can access the distribution
-    _assert_access([creator_user, admin_user])
+    _assert_access([creator_user, pulp_admin_user])
 
     # Use the /add/ endpoint to give the users permission to access distribution
     body = {
@@ -73,20 +73,20 @@ def test_rbac_content_guard_full_workflow(
     }
     with creator_user:
         rbac_contentguard_api_client.add_role(distro.content_guard, body)
-    _assert_access([creator_user, user_b, user_a, admin_user])
+    _assert_access([creator_user, user_b, user_a, pulp_admin_user])
 
     # Use the /remove/ endpoint to remove users permission to access distribution
     with creator_user:
         rbac_contentguard_api_client.remove_role(distro.content_guard, body)
-    _assert_access([creator_user, admin_user])
+    _assert_access([creator_user, pulp_admin_user])
 
     # Use the /add/ endpoint to add group
     body = {"groups": [group.name], "role": "core.rbaccontentguard_downloader"}
     with creator_user:
         rbac_contentguard_api_client.add_role(distro.content_guard, body)
-    _assert_access([creator_user, user_b, user_a, admin_user])
+    _assert_access([creator_user, user_b, user_a, pulp_admin_user])
 
     # Use the /remove/ endpoint to remove group
     with creator_user:
         rbac_contentguard_api_client.remove_role(distro.content_guard, body)
-    _assert_access([creator_user, admin_user])
+    _assert_access([creator_user, pulp_admin_user])
