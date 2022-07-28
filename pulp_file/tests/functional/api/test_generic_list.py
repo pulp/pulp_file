@@ -22,6 +22,7 @@ def test_read_all_content_generic(file_content_api_client, file_random_content_u
         assert content.pulp_href is not None
 
 
+@pytest.mark.skip("'x9c4_content_guard_api_client' fixture is not yet released.")
 @pytest.mark.parallel
 def test_read_all_content_guards_generic(
     content_guards_api_client, tls_certificate_authority_cert, x509_content_guards_api_client
