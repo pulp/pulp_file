@@ -1,1 +1,0 @@
-The relative_path field of PULP_MANIFEST can now contain commas, since they are valid filename characters in both Linux and Windows filesystems.

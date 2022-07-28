@@ -13,6 +13,45 @@ Changelog
 
 .. towncrier release notes start
 
+1.11.0 (2022-07-28)
+===================
+
+
+Features
+--------
+
+- Added Role Based Access Control for each endpoint.
+  * New default roles (creator, owner, viewer) have been added for ``FileRepository``, ``FileRemote``,
+  ``FileDistribution``, ``FilePublication``, and ``FileAlternateContentSource``.
+  * New detail role management endpoints (``my_permissions``, ``list_roles``, ``add_role``,
+  ``remove_role``) have been added to each endpoint.
+  `#626 <https://github.com/pulp/pulp_file/issues/626>`__
+- File Content is now scoped based on repositories the user has permission to see.
+  `#724 <https://github.com/pulp/pulp_file/issues/724>`__
+- Added new condition on file uploads to require ``repository`` field if user is not an admin.
+  `#729 <https://github.com/pulp/pulp_file/issues/729>`__
+
+
+Bugfixes
+--------
+
+- Improved the error message shown when a user specifies an invalid path to the manifest file, or the manifest file is in the incorrect format.
+  `#605 <https://github.com/pulp/pulp_file/issues/605>`__
+- The relative_path field of PULP_MANIFEST can now contain commas, since they are valid filename characters in both Linux and Windows filesystems.
+  `#630 <https://github.com/pulp/pulp_file/issues/630>`__
+- Fixed a bug where publish used /tmp/ instead of the worker working directory.
+  `#676 <https://github.com/pulp/pulp_file/issues/676>`__
+
+
+Misc
+----
+
+- `#691 <https://github.com/pulp/pulp_file/issues/691>`__
+
+
+----
+
+
 1.10.3 (2022-06-22)
 ===================
 
