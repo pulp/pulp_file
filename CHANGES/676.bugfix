@@ -1,1 +1,0 @@
-Fixed a bug where publish used /tmp/ instead of the worker working directory.
