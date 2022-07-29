@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0013_repository_pulp_type'),
+        ('core', '0091_systemid'),
         ('file', '0004_filefilesystemexporter'),
     ]
 

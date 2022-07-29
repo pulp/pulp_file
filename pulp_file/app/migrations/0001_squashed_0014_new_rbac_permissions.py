@@ -11,12 +11,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('core', '0062_add_new_distribution_mastermodel'),
-        ('core', '0001_initial'),
-        ('core', '0012_auto_20191104_2000'),
-        ('core', '0074_acs'),
-        ('core', '0013_repository_pulp_type'),
-        ('core', '0023_change_exporter_models'),
+        ('core', '0091_systemid'),
     ]
 
     operations = [
@@ -72,7 +67,7 @@ class Migration(migrations.Migration):
             name='FilePublication',
             fields=[
                 ('publication_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, related_name='file_filepublication', serialize=False, to='core.publication')),
-                ('manifest', models.TextField(default='PULP_MANIFEST')),
+                ('manifest', models.TextField()),
             ],
             options={
                 'abstract': False,

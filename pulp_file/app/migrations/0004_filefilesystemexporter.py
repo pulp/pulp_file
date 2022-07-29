@@ -9,7 +9,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0012_auto_20191104_2000'),
+        ('core', '0091_systemid'),
         ('file', '0003_auto_20191014_1721'),
     ]
 
