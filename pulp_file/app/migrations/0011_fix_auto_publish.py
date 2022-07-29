@@ -29,7 +29,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(
-            remove_publications_from_auto_distributed,
-            reverse_code=add_publications_to_auto_distributed
+            code=remove_publications_from_auto_distributed,
+            reverse_code=add_publications_to_auto_distributed,
+            elidable=True,
         )
     ]
