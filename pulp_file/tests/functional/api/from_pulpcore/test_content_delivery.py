@@ -60,7 +60,7 @@ def test_delete_remote_on_demand(
     # Assert that files can now be downloaded from the distribution
     content_unit_url = urljoin(distribution.base_url, expected_file_list[0][0])
     downloaded_file = download_file(content_unit_url)
-    actual_checksum = hashlib.sha256(downloaded_file).hexdigest()
+    actual_checksum = hashlib.sha256(downloaded_file.body).hexdigest()
     expected_checksum = expected_file_list[0][1]
     assert expected_checksum == actual_checksum
 
@@ -105,6 +105,6 @@ def test_remote_artifact_url_update(
     monitor_task(file_repo_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
     content_unit_url = urljoin(distribution.base_url, expected_file_list[0][0])
     downloaded_file = download_file(content_unit_url)
-    actual_checksum = hashlib.sha256(downloaded_file).hexdigest()
+    actual_checksum = hashlib.sha256(downloaded_file.body).hexdigest()
     expected_checksum = expected_file_list[0][1]
     assert expected_checksum == actual_checksum

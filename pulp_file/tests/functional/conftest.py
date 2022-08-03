@@ -153,6 +153,27 @@ def large_manifest_path(file_fixtures_root):
 
 
 @pytest.fixture
+def range_header_manifest_path(file_fixtures_root):
+    """A path to a File repository manifest that contains 8 unique files each 4mb in size."""
+    one_megabyte = 1048576
+    file_fixtures_root.joinpath("range").mkdir()
+    file1 = generate_iso(file_fixtures_root.joinpath("range/1.iso"), 4 * one_megabyte)
+    file2 = generate_iso(file_fixtures_root.joinpath("range/2.iso"), 4 * one_megabyte)
+    file3 = generate_iso(file_fixtures_root.joinpath("range/3.iso"), 4 * one_megabyte)
+    file4 = generate_iso(file_fixtures_root.joinpath("range/4.iso"), 4 * one_megabyte)
+    file5 = generate_iso(file_fixtures_root.joinpath("range/5.iso"), 4 * one_megabyte)
+    file6 = generate_iso(file_fixtures_root.joinpath("range/6.iso"), 4 * one_megabyte)
+    file7 = generate_iso(file_fixtures_root.joinpath("range/7.iso"), 4 * one_megabyte)
+    file8 = generate_iso(file_fixtures_root.joinpath("range/8.iso"), 4 * one_megabyte)
+
+    generate_manifest(
+        file_fixtures_root.joinpath("range/PULP_MANIFEST"),
+        [file1, file2, file3, file4, file5, file6, file7, file8],
+    )
+    return "/range/PULP_MANIFEST"
+
+
+@pytest.fixture
 def manifest_path_with_commas(file_fixtures_root):
     file_fixtures_root.joinpath("comma_test").mkdir()
     file_fixtures_root.joinpath("comma_test/comma,folder").mkdir()
