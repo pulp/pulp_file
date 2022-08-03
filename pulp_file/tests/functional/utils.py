@@ -1,6 +1,7 @@
 """Utilities for tests for the file plugin."""
 import aiohttp
 import asyncio
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 import hashlib
@@ -296,6 +297,18 @@ def generate_manifest(name, file_list):
     return name
 
 
+@dataclass
+class Download:
+    """Class for representing a downloaded file."""
+
+    body: bytes
+    response_obj: aiohttp.ClientResponse
+
+    def __init__(self, body, response_obj):
+        self.body = body
+        self.response_obj = response_obj
+
+
 def get_files_in_manifest(url):
     """
     Download a File Repository manifest and return content as a list of tuples.
@@ -303,34 +316,38 @@ def get_files_in_manifest(url):
     """
     files = set()
     r = asyncio.run(_download_file(url))
-    for line in r.splitlines():
+    for line in r.body.splitlines():
         files.add(tuple(line.decode().split(",")))
     return files
 
 
-def download_file(url, auth=None):
+def download_file(url, auth=None, headers=None):
+    """Download a file.
+
+    :param url: str URL to the file to download
+    :param auth: `aiohttp.BasicAuth` containing basic auth credentials
+    :param headers: dict of headers to send with the GET request
+    :return: Download
     """
-    Performs a GET request on a URL.
-    """
-    return asyncio.run(_download_file(url, auth=auth))
+    return asyncio.run(_download_file(url, auth=auth, headers=headers))
 
 
-async def _download_file(url, auth=None):
+async def _download_file(url, auth=None, headers=None):
     async with aiohttp.ClientSession(auth=auth, raise_for_status=True) as session:
-        async with session.get(url, verify_ssl=False) as response:
-            return await response.read()
+        async with session.get(url, verify_ssl=False, headers=headers) as response:
+            return Download(body=await response.read(), response_obj=response)
 
 
-def get_url(url, auth=None):
+def get_url(url, auth=None, headers=None):
     """
     Performs a GET request on a URL and returns an aiohttp.Response object.
     """
-    return asyncio.run(_get_url(url, auth=auth))
+    return asyncio.run(_get_url(url, auth=auth, headers=headers))
 
 
-async def _get_url(url, auth=None):
+async def _get_url(url, auth=None, headers=None):
     async with aiohttp.ClientSession(auth=auth) as session:
-        async with session.get(url, verify_ssl=False) as response:
+        async with session.get(url, verify_ssl=False, headers=headers) as response:
             return response
 
 

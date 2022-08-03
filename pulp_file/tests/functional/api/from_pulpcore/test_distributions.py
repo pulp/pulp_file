@@ -1,52 +1,27 @@
 """Tests that perform actions over distributions."""
-import csv
-import hashlib
-import pytest
-from time import sleep
 import unittest
-from urllib.parse import urljoin
 
-from pulp_smash import api, cli, config, utils
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
+from pulp_smash import api, config, utils
+from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import (
-    download_content_unit,
-    download_content_unit_return_requests_response,
     gen_distribution,
     gen_repo,
     get_content,
     get_versions,
     modify_repo,
     sync,
-    utils as pulp3_utils,
 )
 from requests.exceptions import HTTPError
-
-from pulpcore.client.pulpcore import ApiException, StatusApi
-
-from pulpcore.client.pulp_file import (
-    ContentFilesApi,
-    DistributionsFileApi,
-    FileFilePublication,
-    PublicationsFileApi,
-    RemotesFileApi,
-    RepositoriesFileApi,
-    RepositorySyncURL,
-)
 
 from pulp_file.tests.functional.utils import (
     create_file_publication,
     gen_file_remote,
-    gen_file_client,
-    gen_pulpcore_client,
 )
 from .constants import (
     BASE_DISTRIBUTION_PATH,
-    FILE_CHUNKED_FIXTURE_MANIFEST_URL,
     FILE_CONTENT_NAME,
     FILE_DISTRIBUTION_PATH,
-    FILE_FIXTURE_COUNT,
     FILE_REMOTE_PATH,
-    FILE_URL,
     FILE_REPO_PATH,
 )
 
@@ -272,242 +247,4 @@ class DistributionBasePathTestCase(unittest.TestCase):
 
         self.assertIsNotNone(
             ctx.exception.response.json()["base_path"], ctx.exception.response.json()
-        )
-
-
-class ContentServePublicationDistributionTestCase(unittest.TestCase):
-    """Verify that content is served from a publication distribution.
-
-    Assert that published metadata and content is served from a publication
-    distribution.
-
-    This test targets the following issue:
-
-    `Pulp #4847 <https://pulp.plan.io/issues/4847>`_
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = gen_file_client()
-
-        cls.content_api = ContentFilesApi(cls.client)
-        cls.repo_api = RepositoriesFileApi(cls.client)
-        cls.remote_api = RemotesFileApi(cls.client)
-        cls.publications_api = PublicationsFileApi(cls.client)
-        cls.distributions_api = DistributionsFileApi(cls.client)
-
-    def setUp(self):
-        delete_orphans()
-
-    def test_nonpublished_content_not_served(self):
-        """Verify content that hasn't been published is not served."""
-        self.setup_download_test("immediate", publish=False)
-        files = ["", "1.iso", "2.iso", "3.iso"]
-        for file in files:
-            with self.assertRaises(HTTPError, msg=f"{file}") as cm:
-                download_content_unit(self.cfg, self.distribution.to_dict(), file)
-            self.assertEqual(cm.exception.response.status_code, 404, f"{file}")
-
-    def test_content_served_on_demand(self):
-        """Assert that on_demand content can be properly downloaded."""
-        self.setup_download_test("on_demand")
-        self.do_test_content_served()
-
-    def test_content_served_immediate(self):
-        """Assert that downloaded content can be properly downloaded."""
-        self.setup_download_test("immediate")
-        self.do_test_content_served()
-
-    def test_content_served_streamed(self):
-        """Assert that streamed content can be properly downloaded."""
-        self.setup_download_test("streamed")
-        self.do_test_content_served()
-
-    def test_content_served_immediate_with_range_request_inside_one_chunk(self):
-        """Assert that downloaded content can be properly downloaded with range requests."""
-        self.setup_download_test("immediate", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        range_headers = {"Range": "bytes=1048586-1049586"}
-        num_bytes = 1001
-        self.do_range_request_download_test(range_headers, num_bytes)
-
-    def test_content_served_immediate_with_range_request_over_three_chunks(self):
-        """Assert that downloaded content can be properly downloaded with range requests."""
-        self.setup_download_test("immediate", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        range_headers = {"Range": "bytes=1048176-2248576"}
-        num_bytes = 1200401
-        self.do_range_request_download_test(range_headers, num_bytes)
-
-    def test_content_served_on_demand_with_range_request_over_three_chunks(self):
-        """Assert that on_demand content can be properly downloaded with range requests."""
-        self.setup_download_test("on_demand", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        range_headers = {"Range": "bytes=1048176-2248576"}
-        num_bytes = 1200401
-        self.do_range_request_download_test(range_headers, num_bytes)
-
-    def test_content_served_streamed_with_range_request_over_three_chunks(self):
-        """Assert that streamed content can be properly downloaded with range requests."""
-        self.setup_download_test("streamed", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        range_headers = {"Range": "bytes=1048176-2248576"}
-        num_bytes = 1200401
-        self.do_range_request_download_test(range_headers, num_bytes)
-
-    def test_content_served_immediate_with_multiple_different_range_requests(self):
-        """Assert that multiple requests with different Range header values work as expected."""
-        self.setup_download_test("immediate", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        range_headers = {"Range": "bytes=1048176-2248576"}
-        num_bytes = 1200401
-        self.do_range_request_download_test(range_headers, num_bytes)
-        range_headers = {"Range": "bytes=2042176-3248576"}
-        num_bytes = 1206401
-        self.do_range_request_download_test(range_headers, num_bytes)
-
-    def test_content_served_immediate_with_range_request_invalid_start_value(self):
-        """Assert that range requests with a negative start value errors as expected."""
-        cfg = config.get_config()
-        cli_client = cli.Client(cfg)
-        storage = utils.get_pulp_setting(cli_client, "DEFAULT_FILE_STORAGE")
-        if storage != "pulpcore.app.models.storage.FileSystem":
-            self.skipTest("The S3 test API project doesn't handle invalid Range values correctly")
-        self.setup_download_test("immediate", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        with self.assertRaises(HTTPError) as cm:
-            download_content_unit_return_requests_response(
-                self.cfg, self.distribution.to_dict(), "1.iso", headers={"Range": "bytes=-1-11"}
-            )
-        self.assertEqual(cm.exception.response.status_code, 416)
-
-    def test_content_served_immediate_with_range_request_too_large_end_value(self):
-        """Assert that a range request with a end value that is larger than the data works still."""
-        self.setup_download_test("immediate", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        range_headers = {"Range": "bytes=10485260-10485960"}
-        num_bytes = 500
-        self.do_range_request_download_test(range_headers, num_bytes)
-
-    def test_content_served_immediate_with_range_request_start_value_larger_than_content(self):
-        """Assert that a range request with a start value larger than the content errors."""
-        self.setup_download_test("immediate", url=FILE_CHUNKED_FIXTURE_MANIFEST_URL)
-        with self.assertRaises(HTTPError) as cm:
-            download_content_unit_return_requests_response(
-                self.cfg,
-                self.distribution.to_dict(),
-                "1.iso",
-                headers={"Range": "bytes=10485860-10485870"},
-            )
-        self.assertEqual(cm.exception.response.status_code, 416)
-
-    @pytest.mark.skip("Sometimes PostgreSQL doesn't restart properly in CI.")
-    def test_content_served_after_db_restart(self):
-        """
-        Assert that content can be downloaded after the database has been restarted.
-        This test also check that the HTML page with a list of distributions is also
-        available after the connection to the database has been closed.
-        """
-        cfg = config.get_config()
-        pulp_host = cfg.hosts[0]
-        svc_mgr = cli.ServiceManager(cfg, pulp_host)
-        if svc_mgr._svc_mgr == "s6":
-            postgresql_service_name = "postgresql"
-        else:
-            postgresql_service_name = "*postgresql*"
-        postgresql_found = svc_mgr.is_active([postgresql_service_name])
-        self.assertTrue(
-            postgresql_found, "PostgreSQL service not found or is not active. Can't restart it."
-        )
-        svc_mgr.restart([postgresql_service_name])
-        # Wait for postgres to come back and pulpcore-api to recover
-        status_api = StatusApi(gen_pulpcore_client())
-        for i in range(5):
-            sleep(2)
-            try:
-                status_api.status_read()
-                break
-            except ApiException:
-                if i == 4:
-                    raise
-        self.setup_download_test("immediate")
-        self.do_test_content_served()
-        url_fragments = [
-            cfg.get_content_host_base_url(),
-            "pulp/content",
-        ]
-        content_app_root = "/".join(url_fragments)
-        pulp3_utils.http_get(content_app_root)
-
-    def setup_download_test(self, policy, url=None, publish=True):
-        # Create a repository
-        self.repo = self.repo_api.create(gen_repo())
-        self.addCleanup(self.repo_api.delete, self.repo.pulp_href)
-
-        # Create a remote
-        remote_options = {"policy": policy}
-        if url:
-            remote_options["url"] = url
-
-        self.remote = self.remote_api.create(gen_file_remote(**remote_options))
-        self.addCleanup(self.remote_api.delete, self.remote.pulp_href)
-
-        # Sync the repository.
-        repository_sync_data = RepositorySyncURL(remote=self.remote.pulp_href)
-        sync_response = self.repo_api.sync(self.repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-
-        if publish:
-            # Create a publication.
-            publish_data = FileFilePublication(repository=self.repo.pulp_href)
-            publish_response = self.publications_api.create(publish_data)
-            publication_href = monitor_task(publish_response.task).created_resources[0]
-            self.addCleanup(self.publications_api.delete, publication_href)
-            serve, served_href = "publication", publication_href
-        else:
-            serve, served_href = "repository", self.repo.pulp_href
-
-        # Create a distribution.
-        response = self.distributions_api.create(gen_distribution(**{serve: served_href}))
-        distribution_href = monitor_task(response.task).created_resources[0]
-        self.distribution = self.distributions_api.read(distribution_href)
-        self.addCleanup(self.distributions_api.delete, self.distribution.pulp_href)
-
-    def do_test_content_served(self):
-        file_path = "1.iso"
-
-        req1 = download_content_unit(self.cfg, self.distribution.to_dict(), file_path)
-        req2 = download_content_unit(self.cfg, self.distribution.to_dict(), file_path)
-        fixtures_hash = hashlib.sha256(utils.http_get(urljoin(FILE_URL, file_path))).hexdigest()
-
-        first_dl_hash = hashlib.sha256(req1).hexdigest()
-        second_dl_hash = hashlib.sha256(req2).hexdigest()
-
-        self.assertEqual(first_dl_hash, fixtures_hash)
-        self.assertEqual(first_dl_hash, second_dl_hash)
-
-        manifest = download_content_unit(self.cfg, self.distribution.to_dict(), "PULP_MANIFEST")
-        pulp_manifest = list(
-            csv.DictReader(manifest.decode("utf-8").splitlines(), ("name", "checksum", "size"))
-        )
-
-        self.assertEqual(len(pulp_manifest), FILE_FIXTURE_COUNT, pulp_manifest)
-
-    def do_range_request_download_test(self, range_header, expected_bytes):
-        file_path = "1.iso"
-
-        req1_reponse = download_content_unit_return_requests_response(
-            self.cfg, self.distribution.to_dict(), file_path, headers=range_header
-        )
-        req2_response = download_content_unit_return_requests_response(
-            self.cfg, self.distribution.to_dict(), file_path, headers=range_header
-        )
-
-        self.assertEqual(expected_bytes, len(req1_reponse.content))
-        self.assertEqual(expected_bytes, len(req2_response.content))
-        self.assertEqual(req1_reponse.content, req2_response.content)
-
-        self.assertEqual(req1_reponse.status_code, 206)
-        self.assertEqual(req1_reponse.status_code, req2_response.status_code)
-
-        self.assertEqual(str(expected_bytes), req1_reponse.headers["Content-Length"])
-        self.assertEqual(str(expected_bytes), req2_response.headers["Content-Length"])
-
-        self.assertEqual(
-            req1_reponse.headers["Content-Range"], req2_response.headers["Content-Range"]
         )

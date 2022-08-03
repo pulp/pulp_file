@@ -80,11 +80,11 @@ def test_crd_publications(
         ("pulp_created", "repository", "distributions"),
     ]:
         response = download_file(f"{full_href}?fields={','.join(fields)}", auth=auth)
-        assert sorted(fields) == sorted(json.loads(response).keys())
+        assert sorted(fields) == sorted(json.loads(response.body).keys())
 
     # Read a publication by its href excluding specific fields.
     response = download_file(f"{full_href}?exclude_fields=created,repository", auth=auth)
-    response_fields = json.loads(response).keys()
+    response_fields = json.loads(response.body).keys()
     assert "created" not in response_fields
     assert "repository" not in response_fields
 

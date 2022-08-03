@@ -259,7 +259,7 @@ def test_serving_acs_content(
     content_unit = list(expected_files)[0]
     content_unit_url = urljoin(distribution.base_url, content_unit[0])
     downloaded_file = download_file(content_unit_url)
-    actual_checksum = hashlib.sha256(downloaded_file).hexdigest()
+    actual_checksum = hashlib.sha256(downloaded_file.body).hexdigest()
     expected_checksum = content_unit[1]
     assert expected_checksum == actual_checksum
     for request in main_server.requests_record:
