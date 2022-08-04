@@ -45,11 +45,11 @@ class TestFileContentSerializer(TestCase):
         self.assertFalse(serializer.is_valid())
 
     def test_duplicate_data(self):
-        """Test that the FileContentSerializer does not accept data."""
+        """Test that the FileContentSerializer accepts duplicate valid data."""
         FileContent.objects.create(relative_path="foo", digest=self.artifact.sha256)
         data = {
             "artifact": f"{V3_API_ROOT}artifacts/{self.artifact.pk}/",
             "relative_path": "foo",
         }
         serializer = FileContentSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
+        self.assertTrue(serializer.is_valid())

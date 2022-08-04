@@ -35,21 +35,13 @@ class FileContentSerializer(SingleArtifactContentUploadSerializer, ContentChecks
 
         data["digest"] = data["artifact"].sha256
 
-        content = FileContent.objects.filter(
-            digest=data["digest"], relative_path=data["relative_path"]
-        )
-
-        if content.exists():
-            content.get().touch()
-
-            raise serializers.ValidationError(
-                _(
-                    "There is already a file content with relative path '{path}' and digest "
-                    "'{digest}'."
-                ).format(path=data["relative_path"], digest=data["digest"])
-            )
-
         return data
+
+    def retrieve(self, validated_data):
+        content = FileContent.objects.filter(
+            digest=validated_data["digest"], relative_path=validated_data["relative_path"]
+        )
+        return content.first()
 
     class Meta:
         fields = (

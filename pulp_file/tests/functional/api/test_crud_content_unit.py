@@ -8,6 +8,9 @@ from pulp_smash.pulp3.bindings import (
     monitor_task,
     PulpTaskError,
 )
+from pulp_smash.pulp3.utils import get_content_summary, get_added_content_summary
+
+from pulpcore.client.pulpcore.exceptions import ApiException as coreApiException
 
 
 @pytest.mark.parallel
@@ -38,14 +41,62 @@ def test_crud_content_unit(
 
 
 @pytest.mark.parallel
-def test_same_sha256_same_relative_path_not_allowed(
+def test_same_sha256_same_relative_path_no_repo(
     random_artifact, file_content_api_client, gen_object_with_cleanup
 ):
     artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
-    gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
 
-    with pytest.raises(PulpTaskError):
-        gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
+    content1 = file_content_api_client.read(
+        monitor_task(file_content_api_client.create(**artifact_attrs).task).created_resources[0]
+    )
+    content2 = file_content_api_client.read(
+        monitor_task(file_content_api_client.create(**artifact_attrs).task).created_resources[0]
+    )
+    assert content1.pulp_href == content2.pulp_href
+    assert file_content_api_client.read(content1.pulp_href).pulp_href == content2.pulp_href
+
+
+@pytest.mark.parallel
+def test_same_sha256_same_relative_path_repo_specified(
+    random_artifact,
+    file_content_api_client,
+    file_repo_api_client,
+    gen_user,
+    file_fixture_gen_file_repo,
+):
+    max = gen_user(model_roles=["file.filerepository_creator"])
+    john = gen_user(model_roles=["file.filerepository_creator"])
+
+    with max:
+        repo1 = file_fixture_gen_file_repo(name=str(uuid.uuid4()))
+    with john:
+        repo2 = file_fixture_gen_file_repo(name=str(uuid.uuid4()))
+
+    artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
+
+    artifact_attrs["repository"] = repo1.pulp_href
+    with max:
+        response1 = file_content_api_client.create(**artifact_attrs)
+        response2 = file_content_api_client.create(**artifact_attrs)
+
+    content1 = file_content_api_client.read(monitor_task(response1.task).created_resources[1])
+    content2 = file_content_api_client.read(monitor_task(response2.task).created_resources[0])
+    assert content1.pulp_href == content2.pulp_href
+    repo1 = file_repo_api_client.read(repo1.pulp_href)
+    assert repo1.latest_version_href.endswith("/versions/1/")
+    assert get_content_summary(repo1.to_dict()) == {"file.file": 1}
+    assert get_added_content_summary(repo1.to_dict()) == {"file.file": 1}
+
+    artifact_attrs["repository"] = repo2.pulp_href
+    with john:
+        ctask3 = file_content_api_client.create(**artifact_attrs).task
+
+    content3 = file_content_api_client.read(monitor_task(ctask3).created_resources[1])
+    assert content3.pulp_href == content1.pulp_href
+    repo2 = file_repo_api_client.read(repo2.pulp_href)
+    assert repo2.latest_version_href.endswith("/versions/1/")
+    assert get_content_summary(repo2.to_dict()) == {"file.file": 1}
+    assert get_added_content_summary(repo2.to_dict()) == {"file.file": 1}
 
 
 @pytest.mark.parallel
@@ -151,9 +202,31 @@ def test_create_file_content_from_chunked_upload(
         uploads_api_client.update(
             upload_href=upload.pulp_href, file=file_2, content_range="bytes 128-255/256"
         )
+        most_recent_path = str(uuid.uuid4())
         response = file_content_api_client.create(
-            upload=upload.pulp_href, relative_path=str(uuid.uuid4())
+            upload=upload.pulp_href, relative_path=most_recent_path
         )
         task = monitor_task(response.task)
         content = file_content_api_client.read(task.created_resources[0])
         assert content.sha256 == expected_digest
+        # Upload gets deleted if the content gets created
+        with pytest.raises(coreApiException):
+            uploads_api_client.read(upload.pulp_href)
+
+    # Attempt to create a duplicate content by re-using the most recent relative path
+    upload = gen_object_with_cleanup(uploads_api_client, {"size": 256})
+    uploads_api_client.update(
+        upload_href=upload.pulp_href, file=file_1, content_range="bytes 0-127/256"
+    )
+    uploads_api_client.update(
+        upload_href=upload.pulp_href, file=file_2, content_range="bytes 128-255/256"
+    )
+    response = file_content_api_client.create(
+        upload=upload.pulp_href, relative_path=most_recent_path
+    )
+    task = monitor_task(response.task)
+    content = file_content_api_client.read(task.created_resources[0])
+    assert content.sha256 == expected_digest
+    # Upload gets deleted even though no new content got created
+    with pytest.raises(coreApiException):
+        uploads_api_client.read(upload.pulp_href)
