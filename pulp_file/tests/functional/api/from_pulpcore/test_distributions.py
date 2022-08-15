@@ -1,250 +1,164 @@
 """Tests that perform actions over distributions."""
-import unittest
+import pytest
+import json
+from uuid import uuid4
 
-from pulp_smash import api, config, utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import (
     gen_distribution,
-    gen_repo,
-    get_content,
-    get_versions,
-    modify_repo,
-    sync,
-)
-from requests.exceptions import HTTPError
-
-from pulp_file.tests.functional.utils import (
-    create_file_publication,
-    gen_file_remote,
-)
-from .constants import (
-    BASE_DISTRIBUTION_PATH,
-    FILE_CONTENT_NAME,
-    FILE_DISTRIBUTION_PATH,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
 )
 
+from pulpcore.client.pulp_file import (
+    RepositorySyncURL,
+    FileFilePublication,
+)
+from pulpcore.client.pulp_file.exceptions import ApiException
 
-class CRUDPublicationDistributionTestCase(unittest.TestCase):
-    """CRUD Publication Distribution."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg)
+@pytest.mark.parallel
+def test_crud_publication_distribution(
+    file_content_api_client,
+    file_repo,
+    file_fixture_gen_remote_ssl,
+    file_repo_api_client,
+    file_repo_ver_api_client,
+    file_pub_api_client,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+    file_distro_api_client,
+):
+    # Create a remote and sync from it to create the first repository version
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    body = RepositorySyncURL(remote=remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
 
-    def setUp(self):
-        """Arrange the test."""
-        self.attr = (
-            "name",
-            "base_path",
-        )
-        self.distribution = {}
-        self.publication = {}
-        self.remote = {}
-        self.repo = {}
+    # Remove content to create two more repository versions
+    first_repo_version_href = file_repo_api_client.read(file_repo.pulp_href).latest_version_href
+    v1_content = file_content_api_client.list(repository_version=first_repo_version_href).results
 
-    def tearDown(self):
-        """Clean variables."""
-        for resource in (self.publication, self.remote, self.repo):
-            if resource:
-                self.client.delete(resource["pulp_href"])
-
-    def test_crud_workflow(self):
-        self._create()
-        self._read()
-        self._partially_update()
-        self._fully_update()
-        self._list()
-        self._delete_distribution()
-
-    def _create(self):
-        """Create a publication distribution.
-
-        Do the following:
-
-        1. Create a repository and 3 repository versions with at least 1 file
-           content in it. Create a publication using the second repository
-           version.
-        2. Create a distribution with 'publication' field set to
-           the publication from step (1).
-        3. Assert the distribution got created correctly with the correct
-           base_path, name, and publication. Assert that content guard is
-           unset.
-        4. Assert that publication has a 'distributions' reference to the
-           distribution (it's backref).
-
-        """
-        self.repo.update(self.client.post(FILE_REPO_PATH, gen_repo()))
-        self.remote.update(self.client.post(FILE_REMOTE_PATH, gen_file_remote()))
-        # create 3 repository versions
-        sync(self.cfg, self.remote, self.repo)
-        self.repo = self.client.get(self.repo["pulp_href"])
-        for file_content in get_content(self.repo)[FILE_CONTENT_NAME]:
-            modify_repo(self.cfg, self.repo, remove_units=[file_content])
-
-        self.repo = self.client.get(self.repo["pulp_href"])
-
-        versions = get_versions(self.repo)
-
-        self.publication.update(
-            create_file_publication(self.cfg, self.repo, versions[1]["pulp_href"])
+    for i in range(2):
+        monitor_task(
+            file_repo_api_client.modify(
+                file_repo.pulp_href, {"remove_content_units": [v1_content[i].pulp_href]}
+            ).task
         )
 
-        self.distribution.update(
-            self.client.post(
-                FILE_DISTRIBUTION_PATH, gen_distribution(publication=self.publication["pulp_href"])
-            )
-        )
+    # Create a publication from version 2
+    repo_versions = file_repo_ver_api_client.list(file_repo.pulp_href).results
+    publish_data = FileFilePublication(repository_version=repo_versions[2].pulp_href)
+    publication = gen_object_with_cleanup(file_pub_api_client, publish_data)
+    distribution_data = gen_distribution(publication=publication.pulp_href)
+    distribution = gen_object_with_cleanup(file_distro_api_client, distribution_data)
 
-        self.publication = self.client.get(self.publication["pulp_href"])
+    # Refresh the publication data
+    publication = file_pub_api_client.read(publication.pulp_href)
 
-        # content_guard and repository parameters unset.
-        for key, val in self.distribution.items():
-            if key in ["content_guard", "repository"]:
-                self.assertIsNone(val, self.distribution)
-            else:
-                self.assertIsNotNone(val, self.distribution)
+    # Assert on all the field values
+    assert distribution.content_guard is None
+    assert distribution.repository is None
+    assert distribution.publication == publication.pulp_href
+    assert distribution.base_path == distribution_data["base_path"]
+    assert distribution.name == distribution_data["name"]
 
-        self.assertEqual(
-            self.distribution["publication"], self.publication["pulp_href"], self.distribution
-        )
+    # Assert that the publication has a reference to the distribution
+    assert publication.distributions[0] == distribution.pulp_href
 
-        self.assertEqual(
-            self.publication["distributions"][0], self.distribution["pulp_href"], self.publication
-        )
+    # Test updating name with 'partial_update'
+    new_name = str(uuid4())
+    monitor_task(
+        file_distro_api_client.partial_update(distribution.pulp_href, {"name": new_name}).task
+    )
+    distribution = file_distro_api_client.read(distribution.pulp_href)
+    assert distribution.name == new_name
 
-    def _read(self):
-        """Read distribution by its href."""
-        distribution = self.client.get(self.distribution["pulp_href"])
-        for key, val in self.distribution.items():
-            with self.subTest(key=key):
-                self.assertEqual(distribution[key], val)
+    # Test updating base_path with 'partial_update'
+    new_base_path = str(uuid4())
+    monitor_task(
+        file_distro_api_client.partial_update(
+            distribution.pulp_href, {"base_path": new_base_path}
+        ).task
+    )
+    distribution = file_distro_api_client.read(distribution.pulp_href)
+    assert distribution.base_path == new_base_path
 
-    def _partially_update(self):
-        """Update a distribution using PATCH."""
-        for key in self.attr:
-            with self.subTest(key=key):
-                self._do_partially_update_attr(key)
+    # Test updating name with 'update'
+    new_name = str(uuid4())
+    distribution.name = new_name
+    monitor_task(file_distro_api_client.update(distribution.pulp_href, distribution).task)
+    distribution = file_distro_api_client.read(distribution.pulp_href)
+    assert distribution.name == new_name
 
-    def _fully_update(self):
-        """Update a distribution using PUT."""
-        for key in self.attr:
-            with self.subTest(key=key):
-                self._do_fully_update_attr(key)
+    # Test updating base_path with 'update'
+    new_base_path = str(uuid4())
+    distribution.base_path = new_base_path
+    monitor_task(file_distro_api_client.update(distribution.pulp_href, distribution).task)
+    distribution = file_distro_api_client.read(distribution.pulp_href)
+    assert distribution.base_path == new_base_path
 
-    def _list(self):
-        """Test the generic distribution list endpoint."""
-        distributions = self.client.get(BASE_DISTRIBUTION_PATH)
-        assert self.distribution["pulp_href"] in [distro["pulp_href"] for distro in distributions]
+    # Test the generic distribution list endpoint.
+    distributions = file_distro_api_client.list()
+    assert distribution.pulp_href in [distro.pulp_href for distro in distributions.results]
 
-    def _delete_distribution(self):
-        """Delete a distribution."""
-        self.client.delete(self.distribution["pulp_href"])
-        with self.assertRaises(HTTPError):
-            self.client.get(self.distribution["pulp_href"])
-
-    def _do_fully_update_attr(self, attr):
-        """Update a distribution attribute using HTTP PUT.
-
-        :param attr: The name of the attribute to update.
-        """
-        distribution = self.client.get(self.distribution["pulp_href"])
-        string = utils.uuid4()
-        distribution[attr] = string
-        self.client.put(distribution["pulp_href"], distribution)
-
-        # verify the update
-        distribution = self.client.get(distribution["pulp_href"])
-        self.assertEqual(string, distribution[attr], distribution)
-
-    def _do_partially_update_attr(self, attr):
-        """Update a distribution using HTTP PATCH.
-
-        :param attr: The name of the attribute to update.
-        """
-        string = utils.uuid4()
-        self.client.patch(self.distribution["pulp_href"], {attr: string})
-
-        # Verify the update
-        distribution = self.client.get(self.distribution["pulp_href"])
-        self.assertEqual(string, distribution[attr], self.distribution)
+    # Delete a distribution.
+    file_distro_api_client.delete(distribution.pulp_href)
+    with pytest.raises(ApiException):
+        file_distro_api_client.read(distribution.pulp_href)
 
 
-class DistributionBasePathTestCase(unittest.TestCase):
-    """Test possible values for ``base_path`` on a distribution."""
+def _create_distribution_and_assert(client, data):
+    with pytest.raises(ApiException) as exc:
+        client.create(data)
+    assert json.loads(exc.value.body)["base_path"] is not None
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg)
 
-    def setUp(self):
-        """Set up resources."""
-        body = gen_distribution()
-        body["base_path"] = body["base_path"].replace("-", "/")
-        self.distribution = self.client.post(FILE_DISTRIBUTION_PATH, body)
+def _update_distribution_and_assert(client, distribution_href, data):
+    with pytest.raises(ApiException) as exc:
+        client.update(distribution_href, data)
+    assert json.loads(exc.value.body)["base_path"] is not None
 
-    def tearDown(self):
-        """Clean up resources."""
-        response = self.client.delete(self.distribution["pulp_href"])
-        monitor_task(response["pulp_href"])
 
-    def test_negative_create_using_spaces(self):
-        """Test that spaces can not be part of ``base_path``."""
-        self.try_create_distribution(base_path=utils.uuid4().replace("-", " "))
-        self.try_update_distribution(base_path=utils.uuid4().replace("-", " "))
+@pytest.mark.parallel
+def test_distribution_base_path(
+    gen_object_with_cleanup,
+    file_distro_api_client,
+):
+    distribution_data = gen_distribution(base_path=str(uuid4()).replace("-", "/"))
+    distribution = gen_object_with_cleanup(file_distro_api_client, distribution_data)
 
-    def test_negative_create_using_begin_slash(self):
-        """Test that slash cannot be in the begin of ``base_path``."""
-        self.try_create_distribution(base_path="/" + utils.uuid4())
-        self.try_update_distribution(base_path="/" + utils.uuid4())
+    # Test that spaces can not be part of ``base_path``.
+    _create_distribution_and_assert(
+        file_distro_api_client, gen_distribution(base_path=str(uuid4()).replace("-", " "))
+    )
 
-    def test_negative_create_using_end_slash(self):
-        """Test that slash cannot be in the end of ``base_path``."""
-        self.try_create_distribution(base_path=utils.uuid4() + "/")
-        self.try_update_distribution(base_path=utils.uuid4() + "/")
+    # Test that slash cannot be in the begin of ``base_path``.
+    _create_distribution_and_assert(
+        file_distro_api_client, gen_distribution(base_path=f"/{str(uuid4())}")
+    )
+    _update_distribution_and_assert(
+        file_distro_api_client,
+        distribution.pulp_href,
+        gen_distribution(base_path=f"/{str(uuid4())}"),
+    )
 
-    def test_negative_create_using_non_unique_base_path(self):
-        """Test that ``base_path`` can not be duplicated."""
-        self.try_create_distribution(base_path=self.distribution["base_path"])
+    # Test that slash cannot be in the end of ``base_path``."""
+    _create_distribution_and_assert(
+        file_distro_api_client, gen_distribution(base_path=f"{str(uuid4())}/")
+    )
 
-    def test_negative_create_using_overlapping_base_path(self):
-        """Test that distributions can't have overlapping ``base_path``.
+    _update_distribution_and_assert(
+        file_distro_api_client,
+        distribution.pulp_href,
+        gen_distribution(base_path=f"{str(uuid4())}/"),
+    )
 
-        See: `Pulp #2987`_.
-        """
-        base_path = self.distribution["base_path"].rsplit("/", 1)[0]
-        self.try_create_distribution(base_path=base_path)
+    # Test that ``base_path`` can not be duplicated.
+    _create_distribution_and_assert(
+        file_distro_api_client, gen_distribution(base_path=distribution.base_path)
+    )
 
-        base_path = "/".join((self.distribution["base_path"], utils.uuid4().replace("-", "/")))
-        self.try_create_distribution(base_path=base_path)
+    # Test that distributions can't have overlapping ``base_path``.
+    base_path = distribution.base_path.rsplit("/", 1)[0]
+    _create_distribution_and_assert(file_distro_api_client, gen_distribution(base_path=base_path))
 
-    def try_create_distribution(self, **kwargs):
-        """Unsuccessfully create a distribution.
-
-        Merge the given kwargs into the body of the request.
-        """
-        body = gen_distribution()
-        body.update(kwargs)
-        with self.assertRaises(HTTPError) as ctx:
-            self.client.post(FILE_DISTRIBUTION_PATH, body)
-
-        self.assertIsNotNone(
-            ctx.exception.response.json()["base_path"], ctx.exception.response.json()
-        )
-
-    def try_update_distribution(self, **kwargs):
-        """Unsuccessfully update a distribution with HTTP PATCH.
-
-        Use the given kwargs as the body of the request.
-        """
-        with self.assertRaises(HTTPError) as ctx:
-            self.client.patch(self.distribution["pulp_href"], kwargs)
-
-        self.assertIsNotNone(
-            ctx.exception.response.json()["base_path"], ctx.exception.response.json()
-        )
+    base_path = "/".join((distribution.base_path, str(uuid4()).replace("-", "/")))
+    _create_distribution_and_assert(file_distro_api_client, gen_distribution(base_path=base_path))
