@@ -18,9 +18,9 @@ def urljoin(*args):
 def measureit(func, *args, **kwargs):
     """Measure execution time of passed function."""
     logging.debug("Measuring duration of %s %s %s" % (func.__name__, args, kwargs))
-    before = time.clock()
+    before = time.perf_counter()
     out = func(*args, **kwargs)
-    after = time.clock()
+    after = time.perf_counter()
     return after - before, out
 
 
