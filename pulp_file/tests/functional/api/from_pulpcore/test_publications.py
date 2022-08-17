@@ -47,7 +47,6 @@ class ContentInPublicationViewTestCase(unittest.TestCase):
         self.addCleanup(self.repo_api.delete, repo.pulp_href)
 
         remote = self.remote_api.create(gen_file_remote())
-        self.addCleanup(self.remote_api.delete, remote.pulp_href)
 
         # Sync and update repository data.
         repo_sync_data = RepositorySyncURL(remote=remote.pulp_href)
@@ -80,7 +79,6 @@ class ContentInPublicationViewTestCase(unittest.TestCase):
 
         body = gen_file_remote(url=FILE_MANY_FIXTURE_MANIFEST_URL)
         remote_second = self.remote_api.create(body)
-        self.addCleanup(self.remote_api.delete, remote_second.pulp_href)
 
         repo_second_sync_data = RepositorySyncURL(remote=remote_second.pulp_href)
         sync_response = self.repo_api.sync(repo_second.pulp_href, repo_second_sync_data)

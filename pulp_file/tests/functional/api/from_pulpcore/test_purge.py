@@ -93,8 +93,6 @@ class TaskPurgeTestCase(PulpTestCase):
 
     def tearDown(self):
         """Cleanup repos and remotes. Do the best we can, ignore any errors."""
-        self.remote_api.delete(self.bad_remote.pulp_href)
-        self.remote_api.delete(self.good_remote.pulp_href)
         self.repo_api.delete(self.bad_repo.pulp_href)
         self.repo_api.delete(self.good_repo.pulp_href)
 
@@ -273,9 +271,7 @@ class TaskPurgeUserPermsTestCase(PulpTestCase):
         self.user_info["sync_data"] = RepositorySyncURL(remote=self.user_info["a_remote"].pulp_href)
 
     def tearDown(self):
-        self.admin_info["remote_api"].delete(self.admin_info["a_remote"].pulp_href)
         self.admin_info["repo_api"].delete(self.admin_info["a_repo"].pulp_href)
-        self.user_info["remote_api"].delete(self.user_info["a_remote"].pulp_href)
         self.user_info["repo_api"].delete(self.user_info["a_repo"].pulp_href)
         del_user_rest(self.new_user["pulp_href"])
 

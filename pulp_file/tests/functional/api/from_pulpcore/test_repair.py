@@ -59,7 +59,6 @@ class ArtifactRepairTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = self.api_client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.api_client.delete, remote["pulp_href"])
 
         sync(self.cfg, remote, repo)
         repo = self.api_client.get(repo["pulp_href"])

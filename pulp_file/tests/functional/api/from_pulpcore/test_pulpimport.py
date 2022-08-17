@@ -191,8 +191,6 @@ class PulpImportTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Clean up."""
-        for remote in cls.remotes:
-            cls.remote_api.delete(remote.pulp_href)
         for repo in cls.export_repos:
             cls.repo_api.delete(repo.pulp_href)
         for repo in cls.import_repos:

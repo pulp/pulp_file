@@ -19,15 +19,12 @@ from pulp_file.tests.functional.utils import (
 
 
 @pytest.fixture
-def generate_server_and_remote(
-    gen_fixture_server, file_fixtures_root, file_remote_api_client, gen_object_with_cleanup
-):
+def generate_server_and_remote(gen_fixture_server, file_fixtures_root, file_remote_api_client):
     def _generate_server_and_remote(*, manifest_path, policy):
         server = gen_fixture_server(file_fixtures_root, None)
         url = server.make_url(manifest_path)
-        remote = gen_object_with_cleanup(
-            file_remote_api_client,
-            {"name": str(uuid.uuid4()), "url": str(url), "policy": policy},
+        remote = file_remote_api_client.create(
+            {"name": str(uuid.uuid4()), "url": str(url), "policy": policy}
         )
         return server, remote
 

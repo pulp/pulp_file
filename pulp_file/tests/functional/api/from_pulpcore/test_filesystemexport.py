@@ -93,8 +93,6 @@ class BaseExporterCase(unittest.TestCase):
 
     def tearDown(self):
         """Clean up after ourselves."""
-        for remote in self.remotes:
-            self.remote_api.delete(remote.pulp_href)
         for repo in self.repos:
             self.repo_api.delete(repo.pulp_href)
 

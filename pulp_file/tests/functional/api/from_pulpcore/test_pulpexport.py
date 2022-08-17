@@ -94,9 +94,6 @@ class BaseExporterCase(unittest.TestCase):
 
     def tearDown(self):
         responses = []
-        for remote in self.remotes:
-            response = self.remote_api.delete(remote.pulp_href)
-            responses.append(response)
         for repo in self.repos:
             response = self.repo_api.delete(repo.pulp_href)
             responses.append(response)

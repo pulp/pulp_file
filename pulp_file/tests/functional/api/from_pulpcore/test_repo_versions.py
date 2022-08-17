@@ -92,8 +92,6 @@ class AddRemoveContentTestCase(unittest.TestCase):
         self.content = {}
 
     def tearDown(self):
-        if self.remote:
-            self.client.delete(self.remote["pulp_href"])
         if self.repo:
             self.client.delete(self.repo["pulp_href"])
 
@@ -276,7 +274,6 @@ class SyncChangeRepoVersionTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
 
         sync(cfg, remote, repo)
         repo = client.get(repo["pulp_href"])
@@ -548,7 +545,6 @@ class ContentImmutableRepoVersionTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
 
         sync(cfg, remote, repo)
 
@@ -708,7 +704,6 @@ class CreatedResourcesTaskTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
 
         call_report = sync(cfg, remote, repo)
         for key in ("repositories", "versions"):
@@ -890,7 +885,6 @@ class CreateRepoBaseVersionTestCase(unittest.TestCase):
 
         body = gen_file_remote(url=FILE_FIXTURE_MANIFEST_URL)
         remote = self.client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         sync(self.cfg, remote, repo)
         return self.client.get(repo["pulp_href"])
@@ -915,7 +909,6 @@ class UpdateRepoVersionTestCase(unittest.TestCase):
     def test_http_error(self):
         """Test partial update repository version."""
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
@@ -974,7 +967,6 @@ class FilterArtifactsTestCase(unittest.TestCase):
 
         for url in [FILE2_FIXTURE_MANIFEST_URL, FILE_FIXTURE_MANIFEST_URL]:
             remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote(url=url))
-            self.addCleanup(self.client.delete, remote["pulp_href"])
             sync(self.cfg, remote, repo)
             repo = self.client.get(repo["pulp_href"])
 
@@ -1000,7 +992,6 @@ class FilterArtifactsTestCase(unittest.TestCase):
     def test_filter_valid_repo_version(self):
         """Filter by valid repository version."""
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
         repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
         sync(self.cfg, remote, repo)
@@ -1071,7 +1062,6 @@ class DeleteRepoVersionResourcesTestCase(unittest.TestCase):
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
 
         for _ in range(number_syncs):
             sync(self.cfg, remote, repo)
@@ -1100,7 +1090,6 @@ class ClearAllUnitsRepoVersionTestCase(unittest.TestCase):
         self.repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, self.repo["pulp_href"])
         remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
         sync(self.cfg, remote, self.repo)
         self.repo = self.client.get(self.repo["pulp_href"])
 
@@ -1349,11 +1338,9 @@ class ContentInRepositoryVersionViewTestCase(unittest.TestCase):
         self.addCleanup(self.repo_api.delete, repo_second.pulp_href)
 
         remote = self.remote_api.create(gen_file_remote())
-        self.addCleanup(self.remote_api.delete, remote.pulp_href)
 
         body = gen_file_remote(url=FILE2_FIXTURE_MANIFEST_URL)
         remote_second = self.remote_api.create(body)
-        self.addCleanup(self.remote_api.delete, remote_second.pulp_href)
 
         repo_sync_data = RepositorySyncURL(remote=remote.pulp_href)
         repo_sync_data_second = RepositorySyncURL(remote=remote_second.pulp_href)

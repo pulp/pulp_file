@@ -71,7 +71,6 @@ class ReclaimSpaceTestCase(PulpTestCase):
         self.addCleanup(self.repo_api.delete, repo.pulp_href)
 
         remote = self.remote_api.create(gen_file_remote())
-        self.addCleanup(self.remote_api.delete, remote.pulp_href)
 
         # sync the repository with immediate policy
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
@@ -167,7 +166,6 @@ class ReclaimSpaceTestCase(PulpTestCase):
         # sync the repository with passed in policy
         body = gen_file_remote(**{"policy": policy})
         remote = self.remote_api.create(body)
-        self.addCleanup(self.remote_api.delete, remote.pulp_href)
 
         # sync repo
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)

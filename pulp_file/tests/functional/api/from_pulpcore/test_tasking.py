@@ -48,7 +48,6 @@ class MultiResourceLockingTestCase(unittest.TestCase):
 
         body = gen_file_remote(url=FILE_LARGE_FIXTURE_MANIFEST_URL)
         remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
 
         url = {"url": FILE_FIXTURE_MANIFEST_URL}
         client.patch(remote["pulp_href"], url)

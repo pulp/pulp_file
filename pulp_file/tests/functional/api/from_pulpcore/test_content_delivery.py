@@ -10,6 +10,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulpcore.client.pulp_file import (
+    ApiException,
     RepositorySyncURL,
 )
 
@@ -30,10 +31,10 @@ def test_delete_remote_on_demand(
     gen_object_with_cleanup,
 ):
     # Create a remote with on_demand download policy
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    remote1 = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
 
     # Sync from the remote
-    body = RepositorySyncURL(remote=remote.pulp_href)
+    body = RepositorySyncURL(remote=remote1.pulp_href)
     monitor_task(file_repo_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
     repo = file_repo_api_client.read(file_repo_with_auto_publish.pulp_href)
 
@@ -43,19 +44,20 @@ def test_delete_remote_on_demand(
     )
 
     # Download the manifest from the remote
-    expected_file_list = list(get_files_in_manifest(remote.url))
+    expected_file_list = list(get_files_in_manifest(remote1.url))
 
-    # Delete the remote and assert that downloading content returns a 404
-    monitor_task(file_remote_api_client.delete(remote.pulp_href).task)
-    with pytest.raises(ClientResponseError) as exc:
-        url = urljoin(distribution.base_url, expected_file_list[0][0])
-        download_file(url)
-    assert exc.value.status == 404
+    with pytest.raises(ApiException) as e:
+        # Delete the remote currently used by a repository version
+        monitor_task(file_remote_api_client.delete(remote1.pulp_href).task)
+        assert e.value.status == 406
 
     # Recreate the remote and sync into the repository using it
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
-    body = RepositorySyncURL(remote=remote.pulp_href)
+    remote2 = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    body = RepositorySyncURL(remote=remote2.pulp_href)
     monitor_task(file_repo_api_client.sync(repo.pulp_href, body).task)
+
+    # Remove the old remote since it is considered redundant; the task should succeed now
+    monitor_task(file_remote_api_client.delete(remote1.pulp_href).task)
 
     # Assert that files can now be downloaded from the distribution
     content_unit_url = urljoin(distribution.base_url, expected_file_list[0][0])

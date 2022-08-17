@@ -65,7 +65,6 @@ class DeleteOrphansTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
 
         # Sync the repository.
         self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")
@@ -167,7 +166,6 @@ class OrphansCleanUpTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
 
         # Sync the repository.
         self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")
@@ -257,7 +255,6 @@ class OrphansCleanUpTestCase(unittest.TestCase):
 
         body = gen_file_remote()
         remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
 
         # Sync the repository.
         self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")

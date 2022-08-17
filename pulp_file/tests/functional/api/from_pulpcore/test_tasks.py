@@ -193,7 +193,6 @@ class FilterTaskResourcesTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.client.delete(self.repository["pulp_href"])
-        self.client.delete(self.remote["pulp_href"])
         self.client.delete(self.repo_update_task["pulp_href"])
 
     def test_01_filter_tasks_by_reserved_resources(self):

@@ -92,8 +92,6 @@ def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
         repo.update(client.post(FILE_REPO_PATH, gen_repo()))
         sync(cfg, remote, repo)
     finally:
-        if remote:
-            client.delete(remote["pulp_href"])
         if repo:
             client.delete(repo["pulp_href"])
     return client.get(FILE_CONTENT_PATH)["results"]
