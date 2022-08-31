@@ -67,6 +67,17 @@ def file_random_content_unit(
 
 
 @pytest.fixture
+def file_content_unit_with_name_factory(
+    file_content_api_client, tmp_path, random_artifact, gen_object_with_cleanup
+):
+    def _file_content_unit_with_name_factory(name):
+        artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": name}
+        return gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
+
+    return _file_content_unit_with_name_factory
+
+
+@pytest.fixture
 def file_distro_api_client(file_client):
     return DistributionsFileApi(file_client)
 
