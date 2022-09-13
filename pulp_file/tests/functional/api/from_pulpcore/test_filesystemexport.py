@@ -5,10 +5,9 @@ NOTE: assumes ALLOWED_EXPORT_PATHS setting contains "/tmp" - all tests will fail
 the case.
 """
 import unittest
-from pulp_smash import api, cli, config
-from pulp_smash.utils import uuid4
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_repo
+from pulpcore.tests.suite import api, cli, config
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import gen_repo, uuid4
 
 from pulpcore.client.pulpcore.exceptions import ApiException
 

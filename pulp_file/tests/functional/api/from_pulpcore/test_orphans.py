@@ -3,10 +3,9 @@ import os
 import unittest
 from random import choice
 
-from pulp_smash import cli, config, utils
-from pulp_smash.exceptions import CalledProcessError
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite import cli, config, utils
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import (
     delete_version,
     gen_repo,
     get_content,
@@ -106,7 +105,7 @@ class DeleteOrphansTestCase(unittest.TestCase):
 
             if self.storage == "pulpcore.app.models.storage.FileSystem":
                 # Verify that the artifact was removed from disk.
-                with self.assertRaises(CalledProcessError):
+                with self.assertRaises(cli.CalledProcessError):
                     self.cli_client.run(cmd)
 
     def test_clean_orphan_artifact(self):
@@ -130,7 +129,7 @@ class DeleteOrphansTestCase(unittest.TestCase):
                 artifacts_api.read(artifact.pulp_href)
 
             if self.storage == "pulpcore.app.models.storage.FileSystem":
-                with self.assertRaises(CalledProcessError):
+                with self.assertRaises(cli.CalledProcessError):
                     self.cli_client.run(cmd)
 
 
@@ -214,7 +213,7 @@ class OrphansCleanUpTestCase(unittest.TestCase):
 
         if self.storage == "pulpcore.app.models.storage.FileSystem":
             # Verify that the artifact was removed from disk.
-            with self.assertRaises(CalledProcessError):
+            with self.assertRaises(cli.CalledProcessError):
                 self.cli_client.run(cmd)
 
     def test_clean_orphan_artifact(self):
@@ -244,7 +243,7 @@ class OrphansCleanUpTestCase(unittest.TestCase):
             artifacts_api.read(artifact.pulp_href)
 
         if self.storage == "pulpcore.app.models.storage.FileSystem":
-            with self.assertRaises(CalledProcessError):
+            with self.assertRaises(cli.CalledProcessError):
                 self.cli_client.run(cmd)
 
     def test_clean_specific_orphans(self):

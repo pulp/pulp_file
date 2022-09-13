@@ -3,11 +3,11 @@ import pytest
 import uuid
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import (
+from pulpcore.tests.suite.bindings import (
     monitor_task,
     monitor_task_group,
 )
-from pulp_smash.pulp3.utils import gen_distribution
+from pulpcore.tests.suite.utils import gen_distribution
 
 from pulpcore.client.pulp_file import RepositorySyncURL
 from pulpcore.client.pulp_file.exceptions import ApiException

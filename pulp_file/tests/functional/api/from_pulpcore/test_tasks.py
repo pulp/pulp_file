@@ -1,14 +1,15 @@
 """Test that operations can be performed over tasks."""
 import unittest
 
-from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import (
+from aiohttp.client_exceptions import ClientResponseError
+
+from pulpcore.tests.suite import api, config, utils
+from pulpcore.tests.suite.constants import (
     BASE_DISTRIBUTION_PATH,
     P3_TASK_END_STATES,
     TASKS_PATH,
 )
-from pulp_smash.pulp3.utils import gen_repo, gen_distribution, get_content, modify_repo, sync
-from requests import HTTPError
+from pulpcore.tests.suite.utils import gen_repo, gen_distribution, get_content, modify_repo, sync
 
 from pulp_file.tests.functional.utils import gen_file_remote, skip_if
 from .constants import (
@@ -74,7 +75,7 @@ class TasksTestCase(unittest.TestCase):
     @skip_if(bool, "task", False)
     def test_02_read_task_with_minimal_fields(self):
         """Read a task by its href filtering minimal fields."""
-        task = self.client.get(self.task["pulp_href"], params={"minimal": True})
+        task = self.client.get(self.task["pulp_href"], params={"minimal": "True"})
         response_fields = task.keys()
         self.assertNotIn("progress_reports", response_fields)
         self.assertNotIn("parent_task", response_fields)
@@ -83,7 +84,7 @@ class TasksTestCase(unittest.TestCase):
     @skip_if(bool, "task", False)
     def test_02_read_invalid_worker(self):
         """Read a task using an invalid worker name."""
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.filter_tasks({"worker": utils.uuid4()})
 
     @skip_if(bool, "task", False)
@@ -94,7 +95,7 @@ class TasksTestCase(unittest.TestCase):
 
     def test_02_read_invalid_date(self):
         """Read a task by an invalid date."""
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.filter_tasks({"finished_at": utils.uuid4(), "started_at": utils.uuid4()})
 
     @skip_if(bool, "task", False)
@@ -137,7 +138,7 @@ class TasksTestCase(unittest.TestCase):
         # Smash's code for interacting with the tasking system has a bug.
         self.assertIn(self.task["state"], P3_TASK_END_STATES)
         self.client.delete(self.task["pulp_href"])
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.client.get(self.task["pulp_href"])
 
     def filter_tasks(self, criteria):
@@ -208,7 +209,7 @@ class FilterTaskResourcesTestCase(unittest.TestCase):
     def test_02_filter_tasks_by_non_existing_resources(self):
         """Filter all tasks by a non-existing reserved resource."""
         filter_params = {"reserved_resources_record": "a_resource_should_be_never_named_like_this"}
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.client.get(TASKS_PATH, params=filter_params)
 
     def test_03_filter_tasks_by_created_resources(self):
@@ -221,5 +222,5 @@ class FilterTaskResourcesTestCase(unittest.TestCase):
     def test_04_filter_tasks_by_non_existing_resources(self):
         """Filter all tasks by a non-existing reserved resource."""
         filter_params = {"created_resources": "a_resource_should_be_never_named_like_this"}
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.client.get(TASKS_PATH, params=filter_params)

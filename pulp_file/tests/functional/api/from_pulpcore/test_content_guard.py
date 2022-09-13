@@ -2,8 +2,8 @@ from aiohttp import BasicAuth
 import pytest
 import uuid
 
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_distribution
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import gen_distribution
 
 from pulpcore.client.pulp_file import (
     PatchedfileFileDistribution,

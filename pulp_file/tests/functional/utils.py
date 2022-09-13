@@ -1,19 +1,19 @@
 """Utilities for tests for the file plugin."""
 import aiohttp
 import asyncio
+import os
+import hashlib
+
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-import hashlib
-import os
-import requests
 from unittest import SkipTest
 from tempfile import NamedTemporaryFile
 
-from pulp_smash import api, cli, config, selectors, utils
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.constants import STATUS_PATH
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite import api, cli, config, selectors, utils
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.constants import STATUS_PATH
+from pulpcore.tests.suite.utils import (
     gen_remote,
     gen_repo,
     get_content,
@@ -111,9 +111,15 @@ def gen_artifact(url=FILE_URL, file=None):
     """Creates an artifact."""
     core_client = gen_pulpcore_client()
     if not file:
-        response = requests.get(url)
+
+        async def send_request():
+            async with aiohttp.ClientSession(raise_for_status=True) as session:
+                async with session.get(url) as response:
+                    return await response.content.read()
+
+        response = asyncio.run(send_request())
         with NamedTemporaryFile() as temp_file:
-            temp_file.write(response.content)
+            temp_file.write(response)
             temp_file.flush()
             return ArtifactsApi(core_client).create(file=temp_file.name).to_dict()
 

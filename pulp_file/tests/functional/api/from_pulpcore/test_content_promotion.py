@@ -3,8 +3,8 @@ import hashlib
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_distribution
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import gen_distribution
 
 from pulp_file.tests.functional.utils import (
     get_files_in_manifest,

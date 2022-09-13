@@ -6,11 +6,12 @@ will fail if this is not the case.
 """
 import json
 import unittest
+import uuid
 
-from pulp_smash import api, cli, config
-from pulp_smash.utils import uuid4, get_pulp_setting
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task, monitor_task_group
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite import api, cli, config
+from pulpcore.tests.suite.utils import get_pulp_setting
+from pulpcore.tests.suite.bindings import delete_orphans, monitor_task, monitor_task_group
+from pulpcore.tests.suite.utils import (
     gen_repo,
 )
 
@@ -74,9 +75,9 @@ class PulpImportTestCase(unittest.TestCase):
     @classmethod
     def _create_exporter(cls, cleanup=True):
         body = {
-            "name": uuid4(),
+            "name": str(uuid.uuid4()),
             "repositories": [r.pulp_href for r in cls.export_repos],
-            "path": "/tmp/{}".format(uuid4()),
+            "path": "/tmp/{}".format(str(uuid.uuid4())),
         }
         exporter = cls.exporter_api.create(body)
         return exporter
@@ -205,7 +206,7 @@ class PulpImportTestCase(unittest.TestCase):
         """Create an importer."""
         mapping = {}
         if not name:
-            name = uuid4()
+            name = str(uuid.uuid4())
         if not exported_repos:
             exported_repos = self.export_repos
 
@@ -266,7 +267,7 @@ class PulpImportTestCase(unittest.TestCase):
 
     def _importer_create(self):
         """Test creating an importer."""
-        name = uuid4()
+        name = str(uuid.uuid4())
         importer = self._create_importer(name)
 
         self.assertEqual(importer.name, name)
@@ -447,9 +448,9 @@ class PulpImportTestCase(unittest.TestCase):
 
     def _export_first_version(self, a_repo, versions):
         body = {
-            "name": uuid4(),
+            "name": str(uuid.uuid4()),
             "repositories": [a_repo.pulp_href],
-            "path": "/tmp/{}".format(uuid4()),
+            "path": "/tmp/{}".format(str(uuid.uuid4())),
         }
         exporter = self.exporter_api.create(body)
         self.addCleanup(delete_exporter, exporter)

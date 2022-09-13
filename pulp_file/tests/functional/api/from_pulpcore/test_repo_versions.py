@@ -1,4 +1,5 @@
 """Tests related to repository versions."""
+import json
 import unittest
 import pytest
 from random import choice, randint, sample
@@ -7,11 +8,10 @@ from urllib.parse import urlsplit
 from tempfile import NamedTemporaryFile
 from hashlib import sha256
 
-from pulp_smash import api, config, utils
-from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
-from pulp_smash.pulp3.constants import ARTIFACTS_PATH
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite import api, config, utils
+from pulpcore.tests.suite.bindings import delete_orphans, monitor_task
+from pulpcore.tests.suite.constants import ARTIFACTS_PATH
+from pulpcore.tests.suite.utils import (
     download_content_unit,
     delete_version,
     gen_repo,
@@ -27,7 +27,7 @@ from pulp_smash.pulp3.utils import (
     modify_repo,
     sync,
 )
-from requests.exceptions import HTTPError
+from aiohttp.client_exceptions import ClientResponseError
 
 from pulpcore.client.pulpcore import ApiClient as CoreApiClient
 from pulpcore.client.pulpcore import RepositoryVersionsApi
@@ -339,7 +339,7 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase):
         """
         # Delete the last repo version.
         delete_version(self.repo, self.repo_version_hrefs[-1])
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             get_content(self.repo, self.repo_version_hrefs[-1])
 
         # Make new repo version from new last repo version.
@@ -358,7 +358,7 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase):
         index = randint(1, len(self.repo_version_hrefs) - 3)
         delete_version(self.repo, self.repo_version_hrefs[index])
 
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             get_content(self.repo, self.repo_version_hrefs[index])
 
         # Check added count is updated properly
@@ -374,7 +374,7 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase):
         for repo_version_href in self.repo_version_hrefs[:-1]:
             delete_version(self.repo, repo_version_href)
 
-        with self.assertRaises(TaskReportError) as ctx:
+        with self.assertRaises(api.TaskReportError) as ctx:
             delete_version(self.repo, self.repo_version_hrefs[-1])
 
         self.assertIn(
@@ -390,7 +390,7 @@ class AddRemoveRepoVersionTestCase(unittest.TestCase):
         publication = create_file_publication(self.cfg, self.repo)
         delete_version(self.repo)
 
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.client.get(publication["pulp_href"])
 
 
@@ -553,7 +553,7 @@ class ContentImmutableRepoVersionTestCase(unittest.TestCase):
         sync(cfg, remote, repo)
 
         latest_version_href = client.get(repo["pulp_href"])["latest_version_href"]
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             client.post(latest_version_href)
         repo = client.get(repo["pulp_href"])
         self.assertEqual(latest_version_href, repo["latest_version_href"])
@@ -595,7 +595,7 @@ class FilterRepoVersionTestCase(unittest.TestCase):
 
     def test_filter_invalid_content(self):
         """Filter repository version by invalid content."""
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             get_versions(self.repo, {"content": utils.uuid4()})
 
     def test_filter_valid_content(self):
@@ -618,7 +618,7 @@ class FilterRepoVersionTestCase(unittest.TestCase):
             {"pulp_created__range": ",".join((criteria, criteria))},
         ):
             with self.subTest(params=params):
-                with self.assertRaises(HTTPError):
+                with self.assertRaises(ClientResponseError):
                     get_versions(self.repo, params)
 
     def test_filter_valid_date(self):
@@ -657,7 +657,7 @@ class FilterRepoVersionTestCase(unittest.TestCase):
             {"number__range": ",".join((criteria, criteria))},
         ):
             with self.subTest(params=params):
-                with self.assertRaises(HTTPError):
+                with self.assertRaises(ClientResponseError):
                     get_versions(self.repo, params)
 
     def test_filter_valid_version(self):
@@ -880,7 +880,7 @@ class CreateRepoBaseVersionTestCase(unittest.TestCase):
         repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             modify_repo(self.cfg, repo, base_version=utils.uuid4())
 
     def create_sync_repo(self):
@@ -930,7 +930,7 @@ class UpdateRepoVersionTestCase(unittest.TestCase):
     def assert_patch(self, repo):
         """Assert PATCH method raises an HTTP exception."""
         previous_repo_name = repo["name"]
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.client.patch(repo["latest_version_href"], {"name": utils.uuid4()})
         repo = self.client.get(repo["pulp_href"])
         self.assertEqual(previous_repo_name, repo["name"], repo)
@@ -938,7 +938,7 @@ class UpdateRepoVersionTestCase(unittest.TestCase):
     def assert_put(self, repo):
         """Assert PUT method raises an HTTP exception."""
         previous_repo_name = repo["name"]
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             repo["name"] = utils.uuid4()
             self.client.put(repo["latest_version_href"], repo)
         repo = self.client.get(repo["pulp_href"])
@@ -990,12 +990,13 @@ class FilterArtifactsTestCase(unittest.TestCase):
         """Filter by invalid repository version."""
         repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
-        with self.assertRaises(HTTPError) as ctx:
+        with self.assertRaises(ClientResponseError) as ctx:
             self.client.using_handler(api.json_handler).get(
                 ARTIFACTS_PATH, params={"repository_version": repo["pulp_href"]}
             )
         for key in ("uri", "repositoryversion", "not", "found"):
-            self.assertIn(key, ctx.exception.response.json()[0].lower(), ctx.exception.response)
+            response = json.loads(ctx.exception.message.text)
+            self.assertIn(key, response[0].lower(), response)
 
     def test_filter_valid_repo_version(self):
         """Filter by valid repository version."""
@@ -1037,12 +1038,14 @@ class DeleteRepoVersionResourcesTestCase(unittest.TestCase):
         # delete repo version used to create publication
         self.client.delete(version_href)
 
-        with self.assertRaises(HTTPError) as ctx:
+        with self.assertRaises(ClientResponseError) as ctx:
             self.client.get(publication["pulp_href"])
 
         for key in ("not", "found"):
             self.assertIn(
-                key, ctx.exception.response.json()["detail"].lower(), ctx.exception.response
+                key,
+                json.loads(ctx.exception.message.text)["detail"].lower(),
+                ctx.exception.message.text,
             )
 
     def test_delete_distribution(self):
@@ -1147,7 +1150,7 @@ class ClearAllUnitsRepoVersionTestCase(unittest.TestCase):
     def test_http_error(self):
         """Test http error is raised."""
         added_content = choice(get_added_content(self.repo)[FILE_CONTENT_NAME])
-        with self.assertRaises(HTTPError) as ctx:
+        with self.assertRaises(ClientResponseError) as ctx:
             self.client.post(
                 self.repo["pulp_href"] + "modify/",
                 {"remove_content_units": ["*", added_content["pulp_href"]]},
@@ -1155,8 +1158,8 @@ class ClearAllUnitsRepoVersionTestCase(unittest.TestCase):
         for key in ("content", "units", "*"):
             self.assertIn(
                 key,
-                ctx.exception.response.json()["remove_content_units"][0].lower(),
-                ctx.exception.response,
+                json.loads(ctx.exception.message.text)["remove_content_units"][0].lower(),
+                ctx.exception.message,
             )
 
 
@@ -1186,8 +1189,8 @@ class BaseVersionTestCase(unittest.TestCase):
         repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
-        files = {"file": utils.http_get(FILE_URL)}
-        artifact = self.client.post(ARTIFACTS_PATH, files=files)
+        data = {"file": utils.http_get(FILE_URL)}
+        artifact = self.client.post(ARTIFACTS_PATH, data=data)
 
         # create first content unit.
         content_attrs = {"artifact": artifact["pulp_href"], "relative_path": utils.uuid4()}
@@ -1197,8 +1200,8 @@ class BaseVersionTestCase(unittest.TestCase):
 
         self.assertEqual(get_content(repo)[FILE_CONTENT_NAME][0], content)
 
-        files = {"file": utils.http_get(FILE2_URL)}
-        artifact = self.client.post(ARTIFACTS_PATH, files=files)
+        data = {"file": utils.http_get(FILE2_URL)}
+        artifact = self.client.post(ARTIFACTS_PATH, data=data)
 
         # create second content unit.
         second_content_attrs = {

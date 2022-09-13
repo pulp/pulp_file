@@ -5,7 +5,7 @@ import uuid
 
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
+from pulpcore.tests.suite.bindings import monitor_task
 
 from pulpcore.client.pulp_file import FileFileDistribution, RepositoryAddRemoveContent
 

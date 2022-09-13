@@ -3,8 +3,8 @@ import uuid
 
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite.bindings import monitor_task, PulpTaskError
+from pulpcore.tests.suite.utils import (
     get_added_content_summary,
     get_content_summary,
     wget_download_on_host,

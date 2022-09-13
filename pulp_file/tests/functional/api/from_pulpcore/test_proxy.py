@@ -1,5 +1,5 @@
 import pytest
-from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
+from pulpcore.tests.suite.bindings import monitor_task, PulpTaskError
 
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,

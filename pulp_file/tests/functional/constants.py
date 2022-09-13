@@ -1,8 +1,8 @@
 """Constants for Pulp File plugin tests."""
 from urllib.parse import urljoin
 
-from pulp_smash import config
-from pulp_smash.pulp3.constants import (
+from pulpcore.tests.suite import config
+from pulpcore.tests.suite.constants import (
     API_DOCS_PATH,
     BASE_DISTRIBUTION_PATH,
     BASE_PUBLICATION_PATH,

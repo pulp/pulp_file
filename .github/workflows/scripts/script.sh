@@ -67,11 +67,12 @@ password password
 " | cmd_stdin_prefix bash -c "cat > /root/.netrc"
 cmd_stdin_prefix bash -c "chmod og-rw /root/.netrc"
 
+cat ../pulpcore/functest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/pulpcore_functest_requirements.txt"
 cat unittest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/unittest_requirements.txt"
 cat functest_requirements.txt | cmd_stdin_prefix bash -c "cat > /tmp/functest_requirements.txt"
 cmd_prefix pip3 install -r /tmp/unittest_requirements.txt
 cmd_prefix pip3 install -r /tmp/functest_requirements.txt
-cmd_prefix pip3 install --upgrade ../pulp-smash
+cmd_prefix pip3 install -r /tmp/pulpcore_functest_requirements.txt
 
 cd ../pulp-openapi-generator
 ./generate.sh pulp_file python

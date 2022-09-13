@@ -3,8 +3,8 @@ import os
 from urllib.parse import urljoin
 from types import SimpleNamespace
 
-from pulp_smash import config
-from pulp_smash.pulp3.constants import (
+from pulpcore.tests.suite import config
+from pulpcore.tests.suite.constants import (
     BASE_DISTRIBUTION_PATH,
     BASE_PATH,
     BASE_PUBLICATION_PATH,

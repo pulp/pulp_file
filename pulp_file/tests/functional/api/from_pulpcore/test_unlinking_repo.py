@@ -2,8 +2,8 @@
 
 import unittest
 
-from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_repo, get_content, sync
+from pulpcore.tests.suite import api, config
+from pulpcore.tests.suite.utils import gen_repo, get_content, sync
 
 from pulp_file.tests.functional.utils import gen_file_remote
 from .constants import (

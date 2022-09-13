@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
+from pulpcore.tests.suite.bindings import monitor_task
 
 from pulpcore.client.pulp_file.exceptions import ApiException
 

@@ -4,11 +4,11 @@ import os
 import pytest
 import uuid
 
-from pulp_smash.pulp3.bindings import (
+from pulpcore.tests.suite.bindings import (
     monitor_task,
     PulpTaskError,
 )
-from pulp_smash.pulp3.utils import get_content_summary, get_added_content_summary
+from pulpcore.tests.suite.utils import get_content_summary, get_added_content_summary
 
 from pulpcore.client.pulpcore.exceptions import ApiException as coreApiException
 

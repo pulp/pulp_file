@@ -3,8 +3,8 @@ import pytest
 import json
 from uuid import uuid4
 
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import (
     gen_distribution,
     gen_repo,
 )

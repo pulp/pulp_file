@@ -3,7 +3,7 @@ import requests
 import tempfile
 import time
 
-from pulp_smash import config
+from pulpcore.tests.suite import config
 
 from .utils import measureit, urljoin
 

@@ -2,8 +2,8 @@
 import pytest
 import uuid
 
-from pulp_smash import utils
-from pulp_smash.pulp3.utils import gen_distribution
+from pulpcore.tests.suite import utils
+from pulpcore.tests.suite.utils import gen_distribution
 from urllib.parse import urljoin
 
 from pulpcore.app import settings

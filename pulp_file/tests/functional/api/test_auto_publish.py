@@ -1,8 +1,8 @@
 """Tests that sync file plugin repositories."""
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_repo
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import gen_repo
 
 from pulp_file.tests.functional.utils import get_files_in_manifest
 

@@ -1,12 +1,14 @@
 """Tests related to the tasking system."""
+import json
 import unittest
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, utils
-from pulp_smash.pulp3.bindings import delete_orphans
-from pulp_smash.pulp3.constants import TASKS_PATH
-from pulp_smash.pulp3.utils import gen_remote, gen_repo, get_content_summary, sync
-from requests.exceptions import HTTPError
+from aiohttp.client_exceptions import ClientResponseError
+
+from pulpcore.tests.suite import api, config, utils
+from pulpcore.tests.suite.bindings import delete_orphans
+from pulpcore.tests.suite.constants import TASKS_PATH
+from pulpcore.tests.suite.utils import gen_remote, gen_repo, get_content_summary, sync
 
 from pulp_file.tests.functional.utils import gen_file_remote
 from .constants import (
@@ -87,27 +89,26 @@ class CancelTaskTestCase(unittest.TestCase):
     def test_cancel_nonexistent_task(self):
         """Cancel a nonexistent task."""
         task_href = urljoin(TASKS_PATH, utils.uuid4() + "/")
-        with self.assertRaises(HTTPError) as ctx:
+        with self.assertRaises(ClientResponseError) as ctx:
             self.client.patch(task_href, json={"state": "canceled"})
         for key in ("not", "found"):
-            self.assertIn(
-                key, ctx.exception.response.json()["detail"].lower(), ctx.exception.response
-            )
+            detail = json.loads(ctx.exception.message.text)["detail"]
+            self.assertIn(key, detail.lower(), ctx.exception.message)
 
     def test_cancel_finished_task(self):
         repo = self.client.post(FILE_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
         repo["name"] = utils.uuid4()
         task_href = self.client.patch(repo["pulp_href"], json=repo)
-        with self.assertRaises(HTTPError) as ctx:
+        with self.assertRaises(ClientResponseError) as ctx:
             self.cancel_task(task_href)
-        self.assertEqual(ctx.exception.response.status_code, 409)
-        self.assertEqual(ctx.exception.response.json()["state"], "completed")
+        self.assertEqual(ctx.exception.status, 409)
+        self.assertEqual(json.loads(ctx.exception.message.text)["state"], "completed")
 
     def test_delete_running_task(self):
         """Delete a running task."""
         task = self.create_long_task()
-        with self.assertRaises(HTTPError):
+        with self.assertRaises(ClientResponseError):
             self.client.delete(task["task"])
 
     def create_long_task(self):
@@ -123,10 +124,10 @@ class CancelTaskTestCase(unittest.TestCase):
         self.addCleanup(self.client.delete, remote["pulp_href"])
 
         # use code_handler to avoid wait to the task to be completed.
-        return (
-            self.client.using_handler(api.code_handler)
-            .post(urljoin(repo["pulp_href"], "sync/"), {"remote": remote["pulp_href"]})
-            .json()
+        return json.loads(
+            self.client.using_handler(api.text_handler).post(
+                urljoin(repo["pulp_href"], "sync/"), {"remote": remote["pulp_href"]}
+            )
         )
 
     def cancel_task(self, task):

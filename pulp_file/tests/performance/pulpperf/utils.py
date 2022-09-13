@@ -1,8 +1,9 @@
+import aiohttp
+import asyncio
 import logging
 import random
 import time
 import string
-import requests
 
 
 def get_random_string():
@@ -26,7 +27,12 @@ def measureit(func, *args, **kwargs):
 
 def parse_pulp_manifest(url):
     """Parse pulp manifest."""
-    response = requests.get(url)
-    response.text.split("\n")
-    data = [i.strip().split(",") for i in response.text.split("\n")]
+
+    async def send_request():
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url) as response:
+                return await response.text()
+
+    response = asyncio.run(send_request())
+    data = [i.strip().split(",") for i in response.split("\n")]
     return [(i[0], i[1], int(i[2])) for i in data if i != [""]]

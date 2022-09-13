@@ -5,8 +5,8 @@ import pytest
 import uuid
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import (
     get_added_content_summary,
     get_content_summary,
 )

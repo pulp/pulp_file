@@ -2,9 +2,9 @@
 import unittest
 from random import randint, sample
 
-from pulp_smash import api, config
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_repo, get_versions, modify_repo
+from pulpcore.tests.suite import api, config
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import gen_repo, get_versions, modify_repo
 
 from pulp_file.tests.functional.utils import populate_pulp
 from .constants import (

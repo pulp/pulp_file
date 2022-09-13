@@ -1,9 +1,9 @@
 import unittest
 
-from pulp_smash import config
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task
+from pulpcore.tests.suite import config
+from pulpcore.tests.suite.bindings import delete_orphans, monitor_task
 
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite.utils import (
     gen_repo,
     get_content,
 )

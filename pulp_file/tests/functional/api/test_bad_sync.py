@@ -2,7 +2,7 @@ import pytest
 import uuid
 
 from collections import defaultdict
-from pulp_smash.pulp3.bindings import monitor_task
+from pulpcore.tests.suite.bindings import monitor_task
 
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,

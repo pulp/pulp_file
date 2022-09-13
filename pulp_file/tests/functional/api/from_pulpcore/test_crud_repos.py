@@ -6,9 +6,9 @@ from aiohttp import BasicAuth
 from subprocess import run
 from urllib.parse import urljoin
 
-from pulp_smash import utils
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_repo
+from pulpcore.tests.suite import utils
+from pulpcore.tests.suite.bindings import monitor_task
+from pulpcore.tests.suite.utils import gen_repo
 
 from pulpcore.client.pulp_file.exceptions import ApiException
 from pulp_file.tests.functional.utils import gen_file_remote, download_file, post_url

@@ -17,8 +17,8 @@ from pulpcore.client.pulp_file import (
 
 from pulpcore.constants import TASK_STATES, TASK_FINAL_STATES
 
-from pulp_smash import config
-from pulp_smash.pulp3.bindings import (
+from pulpcore.tests.suite import config
+from pulpcore.tests.suite.bindings import (
     monitor_task,
     PulpTestCase,
     PulpTaskError,

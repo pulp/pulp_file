@@ -3,10 +3,10 @@ import unittest
 from random import sample
 from urllib.parse import urljoin
 
-from pulp_smash import api, cli, config, utils
-from pulp_smash.pulp3.bindings import delete_orphans
-from pulp_smash.pulp3.constants import BASE_PATH
-from pulp_smash.pulp3.utils import (
+from pulpcore.tests.suite import api, cli, config, utils
+from pulpcore.tests.suite.bindings import delete_orphans
+from pulpcore.tests.suite.constants import BASE_PATH
+from pulpcore.tests.suite.utils import (
     gen_repo,
     get_content,
     get_versions,

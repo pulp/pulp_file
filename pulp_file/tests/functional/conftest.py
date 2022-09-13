@@ -21,7 +21,7 @@ from pulpcore.client.pulp_file import (
     PublicationsFileApi,
 )
 
-from pulp_smash.pulp3.utils import gen_repo
+from pulpcore.tests.suite.utils import gen_repo
 
 from pulp_file.tests.functional.utils import gen_file_client, generate_iso, generate_manifest
 
