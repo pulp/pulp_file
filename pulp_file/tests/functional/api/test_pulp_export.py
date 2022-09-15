@@ -6,6 +6,10 @@ from pulpcore.app import settings
 from pulpcore.constants import TASK_STATES
 
 
+if settings.DOMAIN_ENABLED:
+    pytest.skip("Domains do not support export.", allow_module_level=True)
+
+
 if "/tmp" not in settings.ALLOWED_EXPORT_PATHS:
     pytest.skip(
         "Cannot run export-tests unless /tmp is in ALLOWED_EXPORT_PATHS "

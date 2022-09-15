@@ -10,3 +10,4 @@ class PulpFilePluginAppConfig(PulpPluginAppConfig):
     label = "file"
     version = "1.13.0.dev"
     python_package_name = "pulp-file"
+    domain_compatible = True

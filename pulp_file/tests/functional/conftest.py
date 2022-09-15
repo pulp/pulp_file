@@ -111,10 +111,13 @@ def file_repo_with_auto_publish(file_repo_api_client, gen_object_with_cleanup):
 
 @pytest.fixture
 def file_distribution_factory(file_distro_api_client, gen_object_with_cleanup):
-    def _file_distribution_factory(**kwargs):
+    def _file_distribution_factory(pulp_domain=None, **body):
         data = {"base_path": str(uuid.uuid4()), "name": str(uuid.uuid4())}
-        data.update(kwargs)
-        return gen_object_with_cleanup(file_distro_api_client, data)
+        data.update(body)
+        kwargs = {}
+        if pulp_domain:
+            kwargs["pulp_domain"] = pulp_domain
+        return gen_object_with_cleanup(file_distro_api_client, data, **kwargs)
 
     return _file_distribution_factory
 
@@ -238,10 +241,13 @@ def file_fixture_server(file_fixtures_root, gen_fixture_server):
 
 @pytest.fixture
 def file_fixture_gen_remote(file_fixture_server, file_remote_api_client, gen_object_with_cleanup):
-    def _file_fixture_gen_remote(*, manifest_path, policy, **kwargs):
+    def _file_fixture_gen_remote(*, manifest_path, policy, pulp_domain=None, **body):
         url = file_fixture_server.make_url(manifest_path)
-        kwargs.update({"url": str(url), "policy": policy, "name": str(uuid.uuid4())})
-        return gen_object_with_cleanup(file_remote_api_client, kwargs)
+        body.update({"url": str(url), "policy": policy, "name": str(uuid.uuid4())})
+        kwargs = {}
+        if pulp_domain:
+            kwargs["pulp_domain"] = pulp_domain
+        return gen_object_with_cleanup(file_remote_api_client, body, **kwargs)
 
     yield _file_fixture_gen_remote
 
@@ -298,9 +304,12 @@ def file_fixture_gen_remote_client_cert_req(
 def file_fixture_gen_file_repo(file_repo_api_client, gen_object_with_cleanup):
     """A factory to generate a File Repository with auto-deletion after the test run."""
 
-    def _file_fixture_gen_file_repo(**kwargs):
-        kwargs.setdefault("name", str(uuid.uuid4()))
-        return gen_object_with_cleanup(file_repo_api_client, kwargs)
+    def _file_fixture_gen_file_repo(pulp_domain=None, **body):
+        kwargs = {}
+        if pulp_domain:
+            kwargs["pulp_domain"] = pulp_domain
+        body.setdefault("name", str(uuid.uuid4()))
+        return gen_object_with_cleanup(file_repo_api_client, body, **kwargs)
 
     yield _file_fixture_gen_file_repo
 

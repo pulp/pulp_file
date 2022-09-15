@@ -6,6 +6,12 @@ from rest_framework.serializers import ValidationError as DRFValidationError
 
 from pulp_file.app import models, viewsets
 
+API_ROOT = (
+    settings.V3_API_ROOT
+    if not settings.DOMAIN_ENABLED
+    else settings.V3_DOMAIN_API_ROOT.replace("<slug:pulp_domain>", "default")
+)
+
 
 class TestGetResource(TestCase):
     """
@@ -18,12 +24,11 @@ class TestGetResource(TestCase):
         """
         Tests that get_resource() properly resolves a valid URI and returns the correct resource.
         """
+
         repo = models.FileRepository.objects.create(name="foo")
         viewset = viewsets.FileRepositoryViewSet()
         resource = viewset.get_resource(
-            "{api_root}repositories/file/file/{pk}/".format(
-                api_root=settings.V3_API_ROOT, pk=repo.pk
-            ),
+            "{api_root}repositories/file/file/{pk}/".format(api_root=API_ROOT, pk=repo.pk),
             models.FileRepository,
         )
         self.assertEquals(repo, resource)
@@ -39,7 +44,7 @@ class TestGetResource(TestCase):
         with self.assertRaises(DRFValidationError):
             # matches all repositories
             viewset.get_resource(
-                "{api_root}repositories/file/file/".format(api_root=settings.V3_API_ROOT),
+                "{api_root}repositories/file/file/".format(api_root=API_ROOT),
                 models.FileRepository,
             )
 
@@ -62,9 +67,7 @@ class TestGetResource(TestCase):
 
         with self.assertRaises(DRFValidationError):
             viewset.get_resource(
-                "{api_root}repositories/file/file/{pk}/".format(
-                    api_root=settings.V3_API_ROOT, pk=pk
-                ),
+                "{api_root}repositories/file/file/{pk}/".format(api_root=API_ROOT, pk=pk),
                 models.FileRepository,
             )
 
@@ -80,7 +83,7 @@ class TestGetResource(TestCase):
             # has no repo versions yet
             viewset.get_resource(
                 "{api_root}repositories/file/file/{pk}/versions/1/".format(
-                    api_root=settings.V3_API_ROOT, pk=repo.pk
+                    api_root=API_ROOT, pk=repo.pk
                 ),
                 models.FileRepository,
             )

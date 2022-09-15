@@ -88,7 +88,7 @@ class FileContentViewSet(SingleArtifactContentUploadViewSet):
                 "condition": [
                     "has_required_repo_perms_on_upload:file.modify_filerepository",
                     "has_required_repo_perms_on_upload:file.view_filerepository",
-                    "has_upload_param_model_or_obj_perms:core.change_upload",
+                    "has_upload_param_model_or_domain_or_obj_perms:core.change_upload",
                 ],
             },
         ],
@@ -120,23 +120,23 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Role
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_perms:file.add_filerepository",
-                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_perms:file.add_filerepository",
+                    "has_remote_param_model_or_domain_or_obj_perms:file.view_fileremote",
                 ],
             },
             {
                 "action": ["retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_model_or_obj_perms:file.view_filerepository",
+                "condition": "has_model_or_domain_or_obj_perms:file.view_filerepository",
             },
             {
                 "action": ["destroy"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.delete_filerepository",
-                    "has_model_or_obj_perms:file.view_filerepository",
+                    "has_model_or_domain_or_obj_perms:file.delete_filerepository",
+                    "has_model_or_domain_or_obj_perms:file.view_filerepository",
                 ],
             },
             {
@@ -144,9 +144,9 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Role
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.change_filerepository",
-                    "has_model_or_obj_perms:file.view_filerepository",
-                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.change_filerepository",
+                    "has_model_or_domain_or_obj_perms:file.view_filerepository",
+                    "has_remote_param_model_or_domain_or_obj_perms:file.view_fileremote",
                 ],
             },
             {
@@ -154,9 +154,9 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Role
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.sync_filerepository",
-                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
-                    "has_model_or_obj_perms:file.view_filerepository",
+                    "has_model_or_domain_or_obj_perms:file.sync_filerepository",
+                    "has_remote_param_model_or_domain_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.view_filerepository",
                 ],
             },
             {
@@ -164,15 +164,15 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Role
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.modify_filerepository",
-                    "has_model_or_obj_perms:file.view_filerepository",
+                    "has_model_or_domain_or_obj_perms:file.modify_filerepository",
+                    "has_model_or_domain_or_obj_perms:file.view_filerepository",
                 ],
             },
             {
                 "action": ["list_roles", "add_role", "remove_role"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": ["has_model_or_obj_perms:file.manage_roles_filerepository"],
+                "condition": ["has_model_or_domain_or_obj_perms:file.manage_roles_filerepository"],
             },
         ],
         "creation_hooks": [
@@ -245,15 +245,15 @@ class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
                 "action": ["list", "retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_repository_model_or_obj_perms:file.view_filerepository",
+                "condition": "has_repository_model_or_domain_or_obj_perms:file.view_filerepository",
             },
             {
                 "action": ["destroy"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_repository_model_or_obj_perms:file.delete_filerepository",
-                    "has_repository_model_or_obj_perms:file.view_filerepository",
+                    "has_repository_model_or_domain_or_obj_perms:file.delete_filerepository",
+                    "has_repository_model_or_domain_or_obj_perms:file.view_filerepository",
                 ],
             },
             {
@@ -261,8 +261,8 @@ class FileRepositoryVersionViewSet(RepositoryVersionViewSet):
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_repository_model_or_obj_perms:file.repair_filerepository",
-                    "has_repository_model_or_obj_perms:file.view_filerepository",
+                    "has_repository_model_or_domain_or_obj_perms:file.repair_filerepository",
+                    "has_repository_model_or_domain_or_obj_perms:file.view_filerepository",
                 ],
             },
         ],
@@ -293,21 +293,21 @@ class FileRemoteViewSet(RemoteViewSet, RolesMixin):
                 "action": ["create"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_model_perms:file.add_fileremote",
+                "condition": "has_model_or_domain_perms:file.add_fileremote",
             },
             {
                 "action": ["retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_model_or_obj_perms:file.view_fileremote",
+                "condition": "has_model_or_domain_or_obj_perms:file.view_fileremote",
             },
             {
                 "action": ["update", "partial_update"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.change_fileremote",
-                    "has_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.change_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.view_fileremote",
                 ],
             },
             {
@@ -315,15 +315,15 @@ class FileRemoteViewSet(RemoteViewSet, RolesMixin):
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.delete_fileremote",
-                    "has_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.delete_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.view_fileremote",
                 ],
             },
             {
                 "action": ["list_roles", "add_role", "remove_role"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": ["has_model_or_obj_perms:file.manage_roles_fileremote"],
+                "condition": ["has_model_or_domain_or_obj_perms:file.manage_roles_fileremote"],
             },
         ],
         "creation_hooks": [
@@ -373,30 +373,31 @@ class FilePublicationViewSet(PublicationViewSet, RolesMixin):
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_perms:file.add_filepublication",
-                    "has_repo_or_repo_ver_param_model_or_obj_perms:file.view_filerepository",
+                    "has_model_or_domain_perms:file.add_filepublication",
+                    "has_repo_or_repo_ver_param_model_or_domain_or_obj_perms:"
+                    "file.view_filerepository",
                 ],
             },
             {
                 "action": ["retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_model_or_obj_perms:file.view_filepublication",
+                "condition": "has_model_or_domain_or_obj_perms:file.view_filepublication",
             },
             {
                 "action": ["destroy"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.delete_filepublication",
-                    "has_model_or_obj_perms:file.view_filepublication",
+                    "has_model_or_domain_or_obj_perms:file.delete_filepublication",
+                    "has_model_or_domain_or_obj_perms:file.view_filepublication",
                 ],
             },
             {
                 "action": ["list_roles", "add_role", "remove_role"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": ["has_model_or_obj_perms:file.manage_roles_filepublication"],
+                "condition": ["has_model_or_domain_or_obj_perms:file.manage_roles_filepublication"],
             },
         ],
         "creation_hooks": [
@@ -469,26 +470,28 @@ class FileDistributionViewSet(DistributionViewSet, RolesMixin):
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_perms:file.add_filedistribution",
-                    "has_repo_or_repo_ver_param_model_or_obj_perms:file.view_filerepository",
-                    "has_publication_param_model_or_obj_perms:file.view_filepublication",
+                    "has_model_or_domain_perms:file.add_filedistribution",
+                    "has_repo_or_repo_ver_param_model_or_domain_or_obj_perms:"
+                    "file.view_filerepository",
+                    "has_publication_param_model_or_domain_or_obj_perms:file.view_filepublication",
                 ],
             },
             {
                 "action": ["retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_model_or_obj_perms:file.view_filedistribution",
+                "condition": "has_model_or_domain_or_obj_perms:file.view_filedistribution",
             },
             {
                 "action": ["update", "partial_update"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.change_filedistribution",
-                    "has_model_or_obj_perms:file.view_filedistribution",
-                    "has_repo_or_repo_ver_param_model_or_obj_perms:file.view_filerepository",
-                    "has_publication_param_model_or_obj_perms:file.view_filepublication",
+                    "has_model_or_domain_or_obj_perms:file.change_filedistribution",
+                    "has_model_or_domain_or_obj_perms:file.view_filedistribution",
+                    "has_repo_or_repo_ver_param_model_or_domain_or_obj_perms:"
+                    "file.view_filerepository",
+                    "has_publication_param_model_or_domain_or_obj_perms:file.view_filepublication",
                 ],
             },
             {
@@ -496,15 +499,17 @@ class FileDistributionViewSet(DistributionViewSet, RolesMixin):
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.delete_filedistribution",
-                    "has_model_or_obj_perms:file.view_filedistribution",
+                    "has_model_or_domain_or_obj_perms:file.delete_filedistribution",
+                    "has_model_or_domain_or_obj_perms:file.view_filedistribution",
                 ],
             },
             {
                 "action": ["list_roles", "add_role", "remove_role"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": ["has_model_or_obj_perms:file.manage_roles_filedistribution"],
+                "condition": [
+                    "has_model_or_domain_or_obj_perms:file.manage_roles_filedistribution"
+                ],
             },
         ],
         "creation_hooks": [
@@ -551,24 +556,25 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet, RolesMixi
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_perms:file.add_filealternatecontentsource",
-                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_perms:file.add_filealternatecontentsource",
+                    "has_remote_param_model_or_domain_or_obj_perms:file.view_fileremote",
                 ],
             },
             {
                 "action": ["retrieve"],
                 "principal": "authenticated",
                 "effect": "allow",
-                "condition": "has_model_or_obj_perms:file.view_filealternatecontentsource",
+                "condition": "has_model_or_domain_or_obj_perms:"
+                "file.view_filealternatecontentsource",
             },
             {
                 "action": ["update", "partial_update"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.change_filealternatecontentsource",
-                    "has_model_or_obj_perms:file.view_filealternatecontentsource",
-                    "has_remote_param_model_or_obj_perms:file.view_fileremote",
+                    "has_model_or_domain_or_obj_perms:file.change_filealternatecontentsource",
+                    "has_model_or_domain_or_obj_perms:file.view_filealternatecontentsource",
+                    "has_remote_param_model_or_domain_or_obj_perms:file.view_fileremote",
                 ],
             },
             {
@@ -576,8 +582,8 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet, RolesMixi
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.delete_filealternatecontentsource",
-                    "has_model_or_obj_perms:file.view_filealternatecontentsource",
+                    "has_model_or_domain_or_obj_perms:file.delete_filealternatecontentsource",
+                    "has_model_or_domain_or_obj_perms:file.view_filealternatecontentsource",
                 ],
             },
             {
@@ -585,8 +591,8 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet, RolesMixi
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.refresh_filealternatecontentsource",
-                    "has_model_or_obj_perms:file.view_filealternatecontentsource",
+                    "has_model_or_domain_or_obj_perms:file.refresh_filealternatecontentsource",
+                    "has_model_or_domain_or_obj_perms:file.view_filealternatecontentsource",
                 ],
             },
             {
@@ -594,7 +600,7 @@ class FileAlternateContentSourceViewSet(AlternateContentSourceViewSet, RolesMixi
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
-                    "has_model_or_obj_perms:file.manage_roles_filealternatecontentsource"
+                    "has_model_or_domain_or_obj_perms:file.manage_roles_filealternatecontentsource"
                 ],
             },
         ],

@@ -13,6 +13,7 @@ from pulpcore.plugin.serializers import (
     RepositorySerializer,
     SingleArtifactContentUploadSerializer,
 )
+from pulpcore.plugin.util import get_domain_pk
 
 from pulp_file.app.models import (
     FileAlternateContentSource,
@@ -39,7 +40,9 @@ class FileContentSerializer(SingleArtifactContentUploadSerializer, ContentChecks
 
     def retrieve(self, validated_data):
         content = FileContent.objects.filter(
-            digest=validated_data["digest"], relative_path=validated_data["relative_path"]
+            digest=validated_data["digest"],
+            relative_path=validated_data["relative_path"],
+            pulp_domain=get_domain_pk(),
         )
         return content.first()
 

@@ -8,7 +8,11 @@ from pulp_file.app.models import FileContent
 from pulpcore.plugin.models import Artifact
 
 
-V3_API_ROOT = settings.V3_API_ROOT
+V3_API_ROOT = (
+    settings.V3_API_ROOT
+    if not settings.DOMAIN_ENABLED
+    else settings.V3_DOMAIN_API_ROOT.replace("<slug:pulp_domain>", "default")
+)
 
 
 class TestFileContentSerializer(TestCase):

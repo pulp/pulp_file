@@ -157,7 +157,9 @@ def test_specified_all_repos(
     reclaim_response = repositories_reclaim_space_api_client.reclaim({"repo_hrefs": ["*"]})
     task_status = monitor_task(reclaim_response.task)
 
-    repos_locked = [r.split(":")[-1] for r in task_status.reserved_resources_record]
+    repos_locked = [
+        r.split(":")[-1] for r in task_status.reserved_resources_record if "/repositories/" in r
+    ]
     assert len(repos) == len(repos_locked)
     assert set(repos) == set(repos_locked)
 

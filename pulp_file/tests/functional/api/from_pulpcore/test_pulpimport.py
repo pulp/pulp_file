@@ -20,6 +20,10 @@ from pulpcore.client.pulp_file import RepositorySyncURL
 NUM_REPOS = 2
 
 
+if settings.DOMAIN_ENABLED:
+    pytest.skip("Domains do not support import.", allow_module_level=True)
+
+
 if "/tmp" not in settings.ALLOWED_IMPORT_PATHS:
     raise pytest.skip(
         "Cannot run import-tests unless /tmp is in ALLOWED_IMPORT_PATHS ({}).".format(

@@ -9,6 +9,7 @@ import uuid
 
 from pulp_smash.pulp3.utils import gen_repo
 
+from pulpcore.app import settings
 from pulpcore.client.pulpcore.exceptions import ApiException
 
 from pulpcore.client.pulp_file import RepositorySyncURL
@@ -17,6 +18,9 @@ from pulp_file.tests.functional.utils import gen_file_remote
 
 NUM_REPOS = 1
 NUM_EXPORTERS = 4
+
+if settings.DOMAIN_ENABLED:
+    pytest.skip("Domains do not support export.", allow_module_level=True)
 
 
 @pytest.fixture
