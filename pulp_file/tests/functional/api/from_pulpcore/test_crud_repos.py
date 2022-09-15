@@ -11,7 +11,6 @@ from pulp_smash.pulp3.utils import gen_repo
 
 from pulpcore.client.pulp_file.exceptions import ApiException
 from pulp_file.tests.functional.utils import gen_file_remote, download_file
-from pulp_file.tests.functional.api.from_pulpcore.constants import FILE_REMOTE_PATH
 
 
 @pytest.mark.parallel
@@ -24,8 +23,11 @@ def test_crud_repo_full_workflow(
     # Try to create another with the same name
     with pytest.raises(ApiException) as e:
         file_repo_api_client.create(gen_repo(name=repo.name))
-        assert e.value.status == 400
-        assert e.value.reason == "This field must be unique."
+
+    assert e.value.status == 400
+    error_body = json.loads(e.value.body)
+    assert "name" in error_body
+    assert "This field must be unique." in error_body["name"]
 
     # Test reading the repository
     read_repo = file_repo_api_client.read(repo.pulp_href).to_dict()
@@ -115,8 +117,11 @@ def test_crud_repo_full_workflow(
     # Assert response returns an error 400 including ["Unexpected field"].
     with pytest.raises(ApiException) as e:
         file_repo_api_client.create(gen_repo(foo="bar"))
-        assert e.value.status == 400
-        assert e.value.body["foo"] == ["Unexpected field"]
+
+    assert e.value.status == 400
+    error_body = json.loads(e.value.body)
+    assert "foo" in error_body
+    assert "Unexpected field" in error_body["foo"]
 
 
 @pytest.mark.parallel
@@ -350,7 +355,9 @@ def test_repository_remote_filter(
     assert response.results[0].pulp_href == repo1.pulp_href
 
     # Test that supplying a base URI of a remote will show all repositories with similar remotes
-    response = file_repo_api_client.list(remote=FILE_REMOTE_PATH, name__in=name_in)
+    # Using a constant here would be nice, but our URIs are dependent on the machine's settings
+    BASE_URI = remote1.pulp_href[:-37]
+    response = file_repo_api_client.list(remote=BASE_URI, name__in=name_in)
     assert response.count == 3
     assert {r.pulp_href for r in response.results} == {
         repo2.pulp_href,

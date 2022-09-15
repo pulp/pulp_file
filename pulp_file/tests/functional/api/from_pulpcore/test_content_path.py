@@ -6,7 +6,6 @@ from pulp_smash import utils
 from pulp_smash.pulp3.utils import gen_distribution
 from urllib.parse import urljoin
 
-from pulpcore.app import settings
 from .constants import PULP_CONTENT_BASE_URL
 
 
@@ -16,10 +15,11 @@ def test_content_directory_listing(
     gen_object_with_cleanup,
     tls_certificate_authority_cert,
     x509_content_guards_api_client,
+    pulp_settings,
 ):
     """Checks that distributions are grouped by base-path when listing content directories."""
 
-    HIDE_GUARDED_DISTRIBUTIONS = getattr(settings, "HIDE_GUARDED_DISTRIBUTIONS", False)
+    HIDE_GUARDED_DISTRIBUTIONS = getattr(pulp_settings, "HIDE_GUARDED_DISTRIBUTIONS", False)
 
     content_guard1 = gen_object_with_cleanup(
         x509_content_guards_api_client,
@@ -38,11 +38,14 @@ def test_content_directory_listing(
             gen_distribution(base_path=base_path + path, content_guard=content_guard),
         )
 
-    response = utils.http_get(PULP_CONTENT_BASE_URL).decode("utf-8")
+    base_url = PULP_CONTENT_BASE_URL
+    if pulp_settings.DOMAIN_ENABLED:
+        base_url = urljoin(base_url, "default/")
+    response = utils.http_get(base_url).decode("utf-8")
     assert response.count(f'a href="{base_path}/"') == 1
     assert response.count('a href="../"') == 0
 
-    url = urljoin(PULP_CONTENT_BASE_URL, base_path + "/")
+    url = urljoin(base_url, base_path + "/")
     response = utils.http_get(url).decode("utf-8")
     assert response.count('a href="foo1/"') == 1
     assert response.count('a href="foo2/"') == (0 if HIDE_GUARDED_DISTRIBUTIONS else 1)
