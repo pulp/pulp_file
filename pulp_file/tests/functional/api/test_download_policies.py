@@ -17,6 +17,12 @@ from pulpcore.app import settings
 from pulpcore.client.pulp_file import FileFilePublication, RepositorySyncURL
 
 
+OBJECT_STORAGES = (
+    "storages.backends.s3boto3.S3Boto3Storage",
+    "storages.backends.azure_storage.AzureStorage",
+)
+
+
 def _do_range_request_download_and_assert(url, range_header, expected_bytes):
     file1 = download_file(url, headers=range_header)
     file2 = download_file(url, headers=range_header)
@@ -111,6 +117,11 @@ def test_download_policy(
     actual_checksum = hashlib.sha256(downloaded_file.body).hexdigest()
     expected_checksum = content_unit[1]
     assert expected_checksum == actual_checksum
+    if download_policy == "immediate" and settings.DEFAULT_FILE_STORAGE in OBJECT_STORAGES:
+        content_disposition = downloaded_file.response_obj.headers.get("Content-Disposition")
+        assert content_disposition is not None
+        filename = content_unit[0]
+        assert f"attachment;filename={filename}" == content_disposition
 
     # Assert proper download with range requests smaller than one chunk of downloader
     range_header = {"Range": "bytes=1048586-1049586"}
