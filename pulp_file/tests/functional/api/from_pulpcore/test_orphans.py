@@ -1,300 +1,110 @@
 """Tests that perform actions over orphan files."""
 import os
-import unittest
-from random import choice
+import pytest
 
-from pulp_smash import cli, config, utils
-from pulp_smash.exceptions import CalledProcessError
 from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import (
-    delete_version,
-    gen_repo,
-    get_content,
-    get_versions,
-)
 
-from pulpcore.client.pulpcore import ArtifactsApi
-from pulpcore.client.pulpcore import OrphansApi, OrphansCleanupApi
-from pulpcore.client.pulpcore.exceptions import ApiException
-from pulpcore.client.pulp_file import (
-    ApiClient,
-    ContentFilesApi,
-    RepositoriesFileApi,
-    RepositorySyncURL,
-    RemotesFileApi,
-)
+from pulpcore.app import settings
 
-from pulp_file.tests.functional.utils import configuration, gen_file_remote, gen_pulpcore_client
-from .constants import FILE_CONTENT_NAME
+from pulpcore.client.pulpcore import OrphansApi
+from pulpcore.client.pulpcore.exceptions import ApiException as CoreApiException
+from pulpcore.client.pulp_file.exceptions import ApiException
 
 
-class DeleteOrphansTestCase(unittest.TestCase):
-    """Test whether orphan files can be cleaned up.
-
-    An orphan artifact is an artifact that is not in any content units.
-    An orphan content unit is a content unit that is not in any repository
-    version.
-
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.api_client = ApiClient(configuration)
-        cls.cli_client = cli.Client(cls.cfg)
-        cls.core_client = gen_pulpcore_client()
-        cls.orphans_api = OrphansApi(cls.core_client)
-        cls.orphans_cleanup_api = OrphansCleanupApi(cls.core_client)
-        cls.storage = utils.get_pulp_setting(cls.cli_client, "DEFAULT_FILE_STORAGE")
-        cls.media_root = utils.get_pulp_setting(cls.cli_client, "MEDIA_ROOT")
-        cls.orphan_protection_time = utils.get_pulp_setting(
-            cls.cli_client, "ORPHAN_PROTECTION_TIME"
-        )
-
-        orphans_response = cls.orphans_cleanup_api.cleanup({"orphan_protection_time": 0})
-        monitor_task(orphans_response.task)
-
-    def test_clean_orphan_content_unit(self):
-        """Test whether orphaned content units can be cleaned up."""
-        repo_api = RepositoriesFileApi(self.api_client)
-        remote_api = RemotesFileApi(self.api_client)
-
-        repo = repo_api.create(gen_repo())
-        self.addCleanup(repo_api.delete, repo.pulp_href)
-
-        body = gen_file_remote()
-        remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
-
-        # Sync the repository.
-        self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-        repo = repo_api.read(repo.pulp_href)
-        content = choice(get_content(repo.to_dict())[FILE_CONTENT_NAME])
-
-        # Create an orphan content unit.
-        repo_api.modify(repo.pulp_href, dict(remove_content_units=[content["pulp_href"]]))
-
-        artifacts_api = ArtifactsApi(self.core_client)
-
-        if self.storage == "pulpcore.app.models.storage.FileSystem":
-            # Verify that the artifact is present on disk.
-            relative_path = artifacts_api.read(content["artifact"]).file
-            artifact_path = os.path.join(self.media_root, relative_path)
-            cmd = ("ls", artifact_path)
-            self.cli_client.run(cmd, sudo=True)
-
-        file_contents_api = ContentFilesApi(self.api_client)
-        # Delete first repo version. The previous removed content unit will be
-        # an orphan.
-        delete_version(repo, get_versions(repo.to_dict())[1]["pulp_href"])
-        content_units = file_contents_api.list().to_dict()["results"]
-        content_units_href = [c["pulp_href"] for c in content_units]
-        self.assertIn(content["pulp_href"], content_units_href)
-
-        orphans_response = self.orphans_api.delete()
-        monitor_task(orphans_response.task)
-
-        content_units = file_contents_api.list().to_dict()["results"]
-        content_units_href = [c["pulp_href"] for c in content_units]
-
-        if self.orphan_protection_time == 0:
-            self.assertNotIn(content["pulp_href"], content_units_href)
-
-            if self.storage == "pulpcore.app.models.storage.FileSystem":
-                # Verify that the artifact was removed from disk.
-                with self.assertRaises(CalledProcessError):
-                    self.cli_client.run(cmd)
-
-    def test_clean_orphan_artifact(self):
-        """Test whether orphan artifacts units can be clean up."""
-        repo_api = RepositoriesFileApi(self.api_client)
-        repo = repo_api.create(gen_repo())
-        self.addCleanup(repo_api.delete, repo.pulp_href)
-
-        artifacts_api = ArtifactsApi(self.core_client)
-        artifact = artifacts_api.create(file=__file__)
-
-        if self.storage == "pulpcore.app.models.storage.FileSystem":
-            cmd = ("ls", os.path.join(self.media_root, artifact.file))
-            self.cli_client.run(cmd, sudo=True)
-
-        orphans_response = self.orphans_api.delete()
-        monitor_task(orphans_response.task)
-
-        if self.orphan_protection_time == 0:
-            with self.assertRaises(ApiException):
-                artifacts_api.read(artifact.pulp_href)
-
-            if self.storage == "pulpcore.app.models.storage.FileSystem":
-                with self.assertRaises(CalledProcessError):
-                    self.cli_client.run(cmd)
+@pytest.fixture
+def orphans_api_client(pulpcore_client):
+    # This API is deprecated. Use it only to test its own functionality.
+    return OrphansApi(pulpcore_client)
 
 
-class OrphansCleanUpTestCase(unittest.TestCase):
-    """Test the orphan cleanup endpoint.
+def test_orphans_delete(
+    random_artifact,
+    file_random_content_unit,
+    artifacts_api_client,
+    file_content_api_client,
+    orphans_api_client,
+):
+    # Verify that the system contains the orphan content unit and the orphan artifact.
+    content_unit = file_content_api_client.read(file_random_content_unit.pulp_href)
+    artifact = artifacts_api_client.read(random_artifact.pulp_href)
 
-    An orphan artifact is an artifact that is not in any content units.
-    An orphan content unit is a content unit that is not in any repository
-    version.
+    if settings.DEFAULT_FILE_STORAGE == "pulpcore.app.models.storage.FileSystem":
+        # Verify that the artifacts are on disk
+        relative_path = artifacts_api_client.read(content_unit.artifact).file
+        artifact_path1 = os.path.join(settings.MEDIA_ROOT, relative_path)
+        artifact_path2 = os.path.join(settings.MEDIA_ROOT, artifact.file)
+        assert os.path.exists(artifact_path1) is True
+        assert os.path.exists(artifact_path2) is True
 
-    """
+    # Delete orphans using deprecated API
+    monitor_task(orphans_api_client.delete().task)
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.api_client = ApiClient(configuration)
-        cls.cli_client = cli.Client(cls.cfg)
-        cls.core_client = gen_pulpcore_client()
-        cls.orphans_cleanup_api = OrphansCleanupApi(cls.core_client)
-        cls.storage = utils.get_pulp_setting(cls.cli_client, "DEFAULT_FILE_STORAGE")
-        cls.media_root = utils.get_pulp_setting(cls.cli_client, "MEDIA_ROOT")
+    # Assert that the content unit and artifact are gone
+    if settings.ORPHAN_PROTECTION_TIME == 0:
+        with pytest.raises(ApiException) as exc:
+            file_content_api_client.read(file_random_content_unit.pulp_href)
+        assert exc.value.status == 404
+        if settings.DEFAULT_FILE_STORAGE == "pulpcore.app.models.storage.FileSystem":
+            assert os.path.exists(artifact_path1) is False
+            assert os.path.exists(artifact_path2) is False
 
-        orphans_response = cls.orphans_cleanup_api.cleanup({"orphan_protection_time": 0})
-        monitor_task(orphans_response.task)
 
-    def test_clean_orphan_content_unit(self):
-        """Test whether orphaned content units can be cleaned up."""
-        repo_api = RepositoriesFileApi(self.api_client)
-        remote_api = RemotesFileApi(self.api_client)
+def test_orphans_cleanup(
+    random_artifact,
+    file_random_content_unit,
+    artifacts_api_client,
+    file_content_api_client,
+    orphans_cleanup_api_client,
+):
+    # Cleanup orphans with a nonzero orphan_protection_time
+    monitor_task(orphans_cleanup_api_client.cleanup({"orphan_protection_time": 10}).task)
 
-        repo = repo_api.create(gen_repo())
-        self.addCleanup(repo_api.delete, repo.pulp_href)
+    # Verify that the system contains the orphan content unit and the orphan artifact.
+    content_unit = file_content_api_client.read(file_random_content_unit.pulp_href)
+    artifact = artifacts_api_client.read(random_artifact.pulp_href)
 
-        body = gen_file_remote()
-        remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
+    if settings.DEFAULT_FILE_STORAGE == "pulpcore.app.models.storage.FileSystem":
+        # Verify that the artifacts are on disk
+        relative_path = artifacts_api_client.read(content_unit.artifact).file
+        artifact_path1 = os.path.join(settings.MEDIA_ROOT, relative_path)
+        artifact_path2 = os.path.join(settings.MEDIA_ROOT, artifact.file)
+        assert os.path.exists(artifact_path1) is True
+        assert os.path.exists(artifact_path2) is True
 
-        # Sync the repository.
-        self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-        repo = repo_api.read(repo.pulp_href)
-        content = choice(get_content(repo.to_dict())[FILE_CONTENT_NAME])
+    # Cleanup orphans with a zero orphan_protection_time
+    monitor_task(orphans_cleanup_api_client.cleanup({"orphan_protection_time": 0}).task)
 
-        # Create an orphan content unit.
-        repo_api.modify(repo.pulp_href, dict(remove_content_units=[content["pulp_href"]]))
+    # Assert that the content unit and the artifact are gone
+    with pytest.raises(ApiException) as exc:
+        file_content_api_client.read(file_random_content_unit.pulp_href)
+    assert exc.value.status == 404
+    if settings.DEFAULT_FILE_STORAGE == "pulpcore.app.models.storage.FileSystem":
+        assert os.path.exists(artifact_path1) is False
+        assert os.path.exists(artifact_path2) is False
 
-        artifacts_api = ArtifactsApi(self.core_client)
 
-        if self.storage == "pulpcore.app.models.storage.FileSystem":
-            # Verify that the artifact is present on disk.
-            relative_path = artifacts_api.read(content["artifact"]).file
-            artifact_path = os.path.join(self.media_root, relative_path)
-            cmd = ("ls", artifact_path)
-            self.cli_client.run(cmd, sudo=True)
+def test_cleanup_specific_orphans(
+    file_content_unit_with_name_factory, file_content_api_client, orphans_cleanup_api_client
+):
+    content_unit_1 = file_content_unit_with_name_factory("1.iso")
+    content_unit_2 = file_content_unit_with_name_factory("2.iso")
+    cleanup_dict = {"content_hrefs": [content_unit_1.pulp_href], "orphan_protection_time": 0}
+    monitor_task(orphans_cleanup_api_client.cleanup(cleanup_dict).task)
 
-        file_contents_api = ContentFilesApi(self.api_client)
-        # Delete first repo version. The previous removed content unit will be
-        # an orphan.
-        delete_version(repo, get_versions(repo.to_dict())[1]["pulp_href"])
-        content_units = file_contents_api.list().to_dict()["results"]
-        content_units_href = [c["pulp_href"] for c in content_units]
-        self.assertIn(content["pulp_href"], content_units_href)
+    # Assert that content_unit_2 is gone and content_unit_1 is present
+    with pytest.raises(ApiException) as exc:
+        file_content_api_client.read(content_unit_1.pulp_href)
+    assert exc.value.status == 404
+    assert file_content_api_client.read(content_unit_2.pulp_href).pulp_href
 
-        content_before_cleanup = file_contents_api.list().count
-        orphans_response = self.orphans_cleanup_api.cleanup({"orphan_protection_time": 10})
-        monitor_task(orphans_response.task)
+    # Test whether the `content_hrefs` param raises a ValidationError with [] as the value
+    content_hrefs_dict = {"content_hrefs": []}
+    with pytest.raises(CoreApiException) as exc:
+        orphans_cleanup_api_client.cleanup(content_hrefs_dict)
+    assert exc.value.status == 400
 
-        # assert content was not removed
-        content_after_cleanup = file_contents_api.list().count
-        self.assertEqual(content_after_cleanup, content_before_cleanup)
-
-        orphans_response = self.orphans_cleanup_api.cleanup({"orphan_protection_time": 0})
-        monitor_task(orphans_response.task)
-
-        content_units = file_contents_api.list().to_dict()["results"]
-        content_units_href = [c["pulp_href"] for c in content_units]
-        self.assertNotIn(content["pulp_href"], content_units_href)
-
-        if self.storage == "pulpcore.app.models.storage.FileSystem":
-            # Verify that the artifact was removed from disk.
-            with self.assertRaises(CalledProcessError):
-                self.cli_client.run(cmd)
-
-    def test_clean_orphan_artifact(self):
-        """Test whether orphan artifacts units can be clean up."""
-        repo_api = RepositoriesFileApi(self.api_client)
-        repo = repo_api.create(gen_repo())
-        self.addCleanup(repo_api.delete, repo.pulp_href)
-
-        artifacts_api = ArtifactsApi(self.core_client)
-        artifact = artifacts_api.create(file=__file__)
-
-        if self.storage == "pulpcore.app.models.storage.FileSystem":
-            cmd = ("ls", os.path.join(self.media_root, artifact.file))
-            self.cli_client.run(cmd, sudo=True)
-
-        orphans_response = self.orphans_cleanup_api.cleanup({"orphan_protection_time": 10})
-        monitor_task(orphans_response.task)
-
-        # assert artifact was not removed
-        artifacts = artifacts_api.list().count
-        self.assertEqual(artifacts, 1)
-
-        orphans_response = self.orphans_cleanup_api.cleanup({"orphan_protection_time": 0})
-        monitor_task(orphans_response.task)
-
-        with self.assertRaises(ApiException):
-            artifacts_api.read(artifact.pulp_href)
-
-        if self.storage == "pulpcore.app.models.storage.FileSystem":
-            with self.assertRaises(CalledProcessError):
-                self.cli_client.run(cmd)
-
-    def test_clean_specific_orphans(self):
-        """Test whether the `content_hrefs` param removes specific orphans but not others"""
-        repo_api = RepositoriesFileApi(self.api_client)
-        remote_api = RemotesFileApi(self.api_client)
-
-        repo = repo_api.create(gen_repo())
-        self.addCleanup(repo_api.delete, repo.pulp_href)
-
-        body = gen_file_remote()
-        remote = remote_api.create(body)
-        self.addCleanup(remote_api.delete, remote.pulp_href)
-
-        # Sync the repository.
-        self.assertEqual(repo.latest_version_href, f"{repo.pulp_href}versions/0/")
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-        repo = repo_api.read(repo.pulp_href)
-
-        # Create two orphaned content units.
-        content_a = get_content(repo.to_dict())[FILE_CONTENT_NAME][0]["pulp_href"]
-        content_b = get_content(repo.to_dict())[FILE_CONTENT_NAME][1]["pulp_href"]
-        content_to_remove = dict(remove_content_units=[content_a, content_b])
-        repo_api.modify(repo.pulp_href, content_to_remove)
-
-        file_contents_api = ContentFilesApi(self.api_client)
-        # Delete first repo version. The previous removed content unit will be an orphan.
-        delete_version(repo, get_versions(repo.to_dict())[1]["pulp_href"])
-        content_units = file_contents_api.list().to_dict()["results"]
-        content_units_href = [c["pulp_href"] for c in content_units]
-        self.assertIn(content_a, content_units_href)
-        self.assertIn(content_b, content_units_href)
-
-        cleanup_dict = {"content_hrefs": [content_a], "orphan_protection_time": 0}
-        orphans_response = self.orphans_cleanup_api.cleanup(cleanup_dict)
-        monitor_task(orphans_response.task)
-
-        content_units = file_contents_api.list().to_dict()["results"]
-        content_units_href = [c["pulp_href"] for c in content_units]
-        self.assertNotIn(content_a, content_units_href)
-        self.assertIn(content_b, content_units_href)
-
-    def test_clean_specific_orphans_but_no_orphans_specified(self):
-        """Test whether the `content_hrefs` param raises a ValidationError with [] as the value"""
-        content_hrefs_dict = {"content_hrefs": []}
-        self.assertRaises(ApiException, self.orphans_cleanup_api.cleanup, content_hrefs_dict)
-
-    def test_clean_specific_orphans_but_invalid_orphan_specified(self):
-        """Test whether the `content_hrefs` param raises a ValidationError with and invalid href"""
-        content_hrefs_dict = {"content_hrefs": ["/not/a/valid/content/href"]}
-        self.assertRaises(ApiException, self.orphans_cleanup_api.cleanup, content_hrefs_dict)
+    # Test whether the `content_hrefs` param raises a ValidationError with and invalid href"""
+    content_hrefs_dict = {"content_hrefs": ["/not/a/valid/content/href"]}
+    with pytest.raises(CoreApiException) as exc:
+        orphans_cleanup_api_client.cleanup(content_hrefs_dict)
+    assert exc.value.status == 400
