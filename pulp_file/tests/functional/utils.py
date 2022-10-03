@@ -13,11 +13,7 @@ from tempfile import NamedTemporaryFile
 from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import STATUS_PATH
-from pulp_smash.pulp3.utils import (
-    gen_remote,
-    gen_repo,
-    get_content,
-)
+from pulp_smash.pulp3.utils import gen_remote, get_content
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
@@ -99,32 +95,6 @@ def gen_file_client():
     """Return an OBJECT for file client."""
     configuration = config.get_config().get_bindings_config()
     return FileApiClient(configuration)
-
-
-def create_repo_and_versions(syncd_repo, repo_api, versions_api, content_api):
-    """Create a repo with multiple versions.
-
-    :param syncd_repo: A Repository that has at least three Content-units for us to copy from.
-    :param pulpcore.client.pulp_file.RepositoriesFileApi repo_api: client to talk to the Repository
-        API
-    :param pulpcore.client.pulp_file.RepositoriesFileVersionsApi versions_api: client to talk to
-        the RepositoryVersions API
-    :param pulpcore.client.pulp_file.ContentFilesApi content_api: client to talk to the Content API
-    :returns: A (FileRepository, [FileRepositoryVersion...]) tuple
-    """
-    # Create a new file-repo
-    a_repo = repo_api.create(gen_repo())
-    # get a list of all the files from one of our existing repos
-    file_list = content_api.list(repository_version=syncd_repo.latest_version_href)
-    # copy files from repositories[0] into new, one file at a time
-    results = file_list.results
-    for a_file in results:
-        href = a_file.pulp_href
-        modify_response = repo_api.modify(a_repo.pulp_href, {"add_content_units": [href]})
-        monitor_task(modify_response.task)
-    # get all versions of that repo
-    versions = versions_api.list(a_repo.pulp_href, ordering=["number"])
-    return a_repo, versions
 
 
 def delete_exporter(exporter):

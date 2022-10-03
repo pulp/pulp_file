@@ -5,479 +5,452 @@ NOTE: assumes ALLOWED_EXPORT_PATHS and ALLOWED_IMPORT_PATHS settings contain "/t
 will fail if this is not the case.
 """
 import json
-import unittest
+import subprocess
+import pytest
+import uuid
 
-from pulp_smash import api, cli, config
-from pulp_smash.utils import uuid4, get_pulp_setting
-from pulp_smash.pulp3.bindings import delete_orphans, monitor_task, monitor_task_group
-from pulp_smash.pulp3.utils import (
-    gen_repo,
-)
+from pulpcore.tests.functional.utils import monitor_task, monitor_task_group
 
-from pulpcore.client.pulpcore import (
-    ApiClient as CoreApiClient,
-    ExportersPulpExportsApi,
-    ExportersPulpApi,
-    ImportersPulpImportCheckApi,
-    ImportersPulpImportsApi,
-    ImportersPulpApi,
-)
+from pulpcore.app import settings
 
 from pulpcore.client.pulpcore.exceptions import ApiException
 
-from pulpcore.client.pulp_file import (
-    ContentFilesApi,
-    RepositoriesFileApi,
-    RepositoriesFileVersionsApi,
-    RepositorySyncURL,
-    RemotesFileApi,
-)
-
-from pulp_file.tests.functional.utils import (
-    create_repo_and_versions,
-    delete_exporter,
-    gen_file_client,
-    gen_file_remote,
-)
-
+from pulpcore.client.pulp_file import RepositorySyncURL
 
 NUM_REPOS = 2
 
 
-class PulpImportTestCase(unittest.TestCase):
-    """
-    Base functionality for PulpImporter and PulpImport test classes
-    """
+if "/tmp" not in settings.ALLOWED_IMPORT_PATHS:
+    raise pytest.skip(
+        "Cannot run import-tests unless /tmp is in ALLOWED_IMPORT_PATHS ({}).".format(
+            settings.ALLOWED_IMPORT_PATHS
+        ),
+        allow_module_level=True,
+    )
 
-    @classmethod
-    def _setup_repositories(cls):
-        """Create and sync a number of repositories to be exported."""
-        # create and remember a set of repo
-        import_repos = []
-        export_repos = []
-        remotes = []
-        for r in range(NUM_REPOS):
-            import_repo = cls.repo_api.create(gen_repo())
-            export_repo = cls.repo_api.create(gen_repo())
-            body = gen_file_remote()
-            remote = cls.remote_api.create(body)
-            repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-            sync_response = cls.repo_api.sync(export_repo.pulp_href, repository_sync_data)
-            monitor_task(sync_response.task)
-            export_repo = cls.repo_api.read(export_repo.pulp_href)
-            # remember it
-            export_repos.append(export_repo)
-            import_repos.append(import_repo)
-            remotes.append(remote)
-        return import_repos, export_repos, remotes
 
-    @classmethod
-    def _create_exporter(cls, cleanup=True):
-        body = {
-            "name": uuid4(),
-            "repositories": [r.pulp_href for r in cls.export_repos],
-            "path": "/tmp/{}".format(uuid4()),
-        }
-        exporter = cls.exporter_api.create(body)
-        return exporter
+@pytest.fixture
+def import_export_repositories(
+    file_repo_api_client,
+    file_fixture_gen_file_repo,
+    file_fixture_gen_remote_ssl,
+    basic_manifest_path,
+):
+    import_repos = []
+    export_repos = []
+    for r in range(NUM_REPOS):
+        import_repo = file_fixture_gen_file_repo()
+        export_repo = file_fixture_gen_file_repo()
 
-    @classmethod
-    def _create_export(cls):
-        export_response = cls.exports_api.create(cls.exporter.pulp_href, {})
-        monitor_task(export_response.task)
-        task = cls.client.get(export_response.task)
-        resources = task["created_resources"]
-        export_href = resources[0]
-        export = cls.exports_api.read(export_href)
-        return export
+        remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+        sync_response = file_repo_api_client.sync(export_repo.pulp_href, repository_sync_data)
+        monitor_task(sync_response.task)
 
-    @classmethod
-    def _create_chunked_export(cls):
-        export_response = cls.exports_api.create(cls.exporter.pulp_href, {"chunk_size": "5KB"})
-        monitor_task(export_response.task)
-        task = cls.client.get(export_response.task)
-        resources = task["created_resources"]
-        export_href = resources[0]
-        export = cls.exports_api.read(export_href)
-        return export
+        export_repo = file_repo_api_client.read(export_repo.pulp_href)
 
-    @classmethod
-    def _setup_import_check_directories(cls):
-        """Creates a directory/file structure for testing import-check"""
-        cli_client = cli.Client(cls.cfg)
-        cmd = (
-            "mkdir",
-            "-p",
-            "/tmp/importcheck/noreaddir",
-            "/tmp/importcheck/nowritedir",
-            "/tmp/importcheck/nowritedir/notafile",
-        )
-        cli_client.run(cmd, sudo=False)
+        export_repos.append(export_repo)
+        import_repos.append(import_repo)
 
-        cmd = ("touch", "/tmp/importcheck/noreadfile")
-        cli_client.run(cmd, sudo=False)
+    return import_repos, export_repos
 
-        cmd = ("touch", "/tmp/importcheck/noreaddir/goodfile")
-        cli_client.run(cmd, sudo=False)
 
-        cmd = ("touch", "/tmp/importcheck/nowritedir/goodfile")
-        cli_client.run(cmd, sudo=False)
+@pytest.fixture
+def created_exporter(
+    gen_object_with_cleanup, exporters_pulp_api_client, import_export_repositories
+):
+    _, export_repos = import_export_repositories
+    body = {
+        "name": str(uuid.uuid4()),
+        "repositories": [r.pulp_href for r in export_repos],
+        "path": "/tmp/{}".format(str(uuid.uuid4())),
+    }
+    exporter = gen_object_with_cleanup(exporters_pulp_api_client, body)
+    return exporter
 
-        cmd = ("touch", "/tmp/importcheck/nowritedir/noreadfile")
-        cli_client.run(cmd, sudo=False)
 
-        cmd = ("chmod", "333", "/tmp/importcheck/nowritedir/noreadfile")
-        cli_client.run(cmd, sudo=False)
+@pytest.fixture
+def created_export(exporters_pulp_exports_api_client, created_exporter):
+    export_response = exporters_pulp_exports_api_client.create(created_exporter.pulp_href, {})
+    export_href = monitor_task(export_response.task).created_resources[0]
+    export = exporters_pulp_exports_api_client.read(export_href)
+    return export
 
-        cmd = ("chmod", "333", "/tmp/importcheck/noreadfile")
-        cli_client.run(cmd, sudo=False)
 
-        cmd = ("chmod", "333", "/tmp/importcheck/noreaddir")
-        cli_client.run(cmd, sudo=False)
+@pytest.fixture
+def chunked_export(exporters_pulp_exports_api_client, created_exporter):
+    export_response = exporters_pulp_exports_api_client.create(
+        created_exporter.pulp_href, {"chunk_size": "5KB"}
+    )
+    export_href = monitor_task(export_response.task).created_resources[0]
+    export = exporters_pulp_exports_api_client.read(export_href)
+    return export
 
-        cmd = ("chmod", "555", "/tmp/importcheck/nowritedir")
-        cli_client.run(cmd, sudo=False)
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.cli_client = cli.Client(cls.cfg)
-        allowed_imports = get_pulp_setting(cls.cli_client, "ALLOWED_IMPORT_PATHS")
-        if not allowed_imports or "/tmp" not in allowed_imports:
-            raise unittest.SkipTest(
-                "Cannot run import-tests unless /tmp is in ALLOWED_IMPORT_PATHS ({}).".format(
-                    allowed_imports
-                ),
-            )
+@pytest.fixture
+def import_check_directory():
+    """Creates a directory/file structure for testing import-check"""
+    tmpdir = f"/tmp/importcheck/{uuid.uuid4()}"
 
-        cls.client = api.Client(cls.cfg, api.json_handler)
-        cls.core_client = CoreApiClient(configuration=cls.cfg.get_bindings_config())
-        cls.file_client = gen_file_client()
+    subprocess.check_output(
+        f"mkdir -p {tmpdir}/noreaddir {tmpdir}/nowritedir {tmpdir}/nowritedir/notafile",
+        shell=True,
+    )
 
-        cls.repo_api = RepositoriesFileApi(cls.file_client)
-        cls.remote_api = RemotesFileApi(cls.file_client)
-        cls.versions_api = RepositoriesFileVersionsApi(cls.file_client)
-        cls.content_api = ContentFilesApi(cls.file_client)
-        cls.exporter_api = ExportersPulpApi(cls.core_client)
-        cls.exports_api = ExportersPulpExportsApi(cls.core_client)
-        cls.importer_api = ImportersPulpApi(cls.core_client)
-        cls.imports_api = ImportersPulpImportsApi(cls.core_client)
+    subprocess.check_output(f"touch {tmpdir}/noreadfile", shell=True)
+    subprocess.check_output(f"touch {tmpdir}/noreaddir/goodfile", shell=True)
+    subprocess.check_output(f"touch {tmpdir}/nowritedir/goodfile", shell=True)
+    subprocess.check_output(f"touch {tmpdir}/nowritedir/noreadfile", shell=True)
 
-        cls.import_check_api = ImportersPulpImportCheckApi(cls.core_client)
+    subprocess.check_output(f"chmod 333 {tmpdir}/nowritedir/noreadfile", shell=True)
+    subprocess.check_output(f"chmod 333 {tmpdir}/noreadfile", shell=True)
+    subprocess.check_output(f"chmod 333 {tmpdir}/noreaddir", shell=True)
+    subprocess.check_output(f"chmod 555 {tmpdir}/nowritedir", shell=True)
 
-        (cls.import_repos, cls.export_repos, cls.remotes) = cls._setup_repositories()
-        cls.exporter = cls._create_exporter()
-        cls.export = cls._create_export()
-        cls.chunked_export = cls._create_chunked_export()
-        cls._setup_import_check_directories()
+    yield tmpdir
 
-    @classmethod
-    def _delete_import_check_structures(cls):
-        """Deletes the directory tree used for testing import-check"""
-        cli_client = cli.Client(cls.cfg)
-        cmd = ("chmod", "-R", "+rwx", "/tmp/importcheck/")
-        cli_client.run(cmd, sudo=False)
-        cmd = ("rm", "-rf", "/tmp/importcheck")
-        cli_client.run(cmd, sudo=False)
+    subprocess.check_output(f"chmod -R +rwx {tmpdir}/", shell=True)
+    subprocess.check_output(f"rm -rf {tmpdir}", shell=True)
 
-    @classmethod
-    def _create_repo_and_versions(cls):
-        a_repo, versions = create_repo_and_versions(
-            cls.export_repos[0], cls.repo_api, cls.versions_api, cls.content_api
-        )
-        return a_repo, versions
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up."""
-        for remote in cls.remotes:
-            cls.remote_api.delete(remote.pulp_href)
-        for repo in cls.export_repos:
-            cls.repo_api.delete(repo.pulp_href)
-        for repo in cls.import_repos:
-            cls.repo_api.delete(repo.pulp_href)
-        delete_exporter(cls.exporter)
-        cls._delete_import_check_structures()
-        delete_orphans()
-
-    def _create_importer(self, name=None, cleanup=True, exported_repos=None):
+@pytest.fixture
+def pulp_importer_factory(
+    gen_object_with_cleanup, import_export_repositories, importers_pulp_api_client
+):
+    def _pulp_importer_factory(name=None, exported_repos=None):
         """Create an importer."""
+        _import_repos, _exported_repos = import_export_repositories
         mapping = {}
         if not name:
-            name = uuid4()
+            name = str(uuid.uuid4())
         if not exported_repos:
-            exported_repos = self.export_repos
+            exported_repos = _exported_repos
 
         for idx, repo in enumerate(exported_repos):
-            mapping[repo.name] = self.import_repos[idx].name
+            mapping[repo.name] = _import_repos[idx].name
 
         body = {
             "name": name,
             "repo_mapping": mapping,
         }
 
-        importer = self.importer_api.create(body)
-
-        if cleanup:
-            self.addCleanup(self.importer_api.delete, importer.pulp_href)
+        importer = gen_object_with_cleanup(importers_pulp_api_client, body)
 
         return importer
 
-    def _find_toc(self):
-        filenames = [
-            f for f in list(self.chunked_export.output_file_info.keys()) if f.endswith("json")
-        ]
-        return filenames[0]
+    return _pulp_importer_factory
 
-    def _find_path(self):
-        filenames = [f for f in list(self.export.output_file_info.keys()) if f.endswith("tar.gz")]
-        return filenames[0]
 
-    def _perform_import(self, importer, chunked=False, an_export=None):
+def _find_toc(chunked_export):
+    filenames = [f for f in list(chunked_export.output_file_info.keys()) if f.endswith("json")]
+    return filenames[0]
+
+
+def _find_path(created_export):
+    filenames = [f for f in list(created_export.output_file_info.keys()) if f.endswith("tar.gz")]
+    return filenames[0]
+
+
+@pytest.fixture
+def perform_import(chunked_export, created_export, importers_pulp_imports_api_client):
+    def _perform_import(importer, chunked=False, an_export=None):
         """Perform an import with importer."""
         if not an_export:
-            an_export = self.chunked_export if chunked else self.export
+            an_export = chunked_export if chunked else created_export
 
         if chunked:
             filenames = [f for f in list(an_export.output_file_info.keys()) if f.endswith("json")]
-            import_response = self.imports_api.create(importer.pulp_href, {"toc": filenames[0]})
+            import_response = importers_pulp_imports_api_client.create(
+                importer.pulp_href, {"toc": filenames[0]}
+            )
         else:
             filenames = [f for f in list(an_export.output_file_info.keys()) if f.endswith("tar.gz")]
-            import_response = self.imports_api.create(importer.pulp_href, {"path": filenames[0]})
+            import_response = importers_pulp_imports_api_client.create(
+                importer.pulp_href, {"path": filenames[0]}
+            )
         task_group = monitor_task_group(import_response.task_group)
 
         return task_group
 
-    def test_workflow(self):
-        self._importer_create()
-        self._importer_delete()
-        self._import()
-        self._double_import()
-        self._chunked_import()
-        self._import_check_valid_path()
-        self._import_check_valid_toc()
-        self._import_check_repo_mapping()
-        self._import_check_not_allowed()
-        self._import_check_no_file()
-        self._import_check_all_valid()
-        self._import_check_multiple_errors()
-        self._import_not_latest_version()
+    return _perform_import
 
-    def _importer_create(self):
-        """Test creating an importer."""
-        name = uuid4()
-        importer = self._create_importer(name)
 
-        self.assertEqual(importer.name, name)
-        importer = self.importer_api.read(importer.pulp_href)
-        self.assertEqual(importer.name, name)
+def test_importer_create(pulp_importer_factory, importers_pulp_api_client):
+    """Test creating an importer."""
+    name = str(uuid.uuid4())
+    importer = pulp_importer_factory(name)
+    assert importer.name == name
 
-    def _importer_delete(self):
-        """Test deleting an importer."""
-        importer = self._create_importer(cleanup=False)
+    importer = importers_pulp_api_client.read(importer.pulp_href)
+    assert importer.name == name
 
-        self.importer_api.delete(importer.pulp_href)
 
-        with self.assertRaises(ApiException) as ae:
-            self.importer_api.read(importer.pulp_href)
+def test_importer_delete(pulp_importer_factory, importers_pulp_api_client):
+    """Test deleting an importer."""
+    importer = pulp_importer_factory()
 
-        self.assertEqual(404, ae.exception.status)
+    importers_pulp_api_client.delete(importer.pulp_href)
 
-    def _import(self):
-        """Test an import."""
-        importer = self._create_importer()
-        task_group = self._perform_import(importer)
-        self.assertEqual(len(self.import_repos) + 1, task_group.completed)
+    with pytest.raises(ApiException) as ae:
+        importers_pulp_api_client.read(importer.pulp_href)
+    assert 404 == ae.value.status
 
-        for report in task_group.group_progress_reports:
-            if report.code == "import.repo.versions":
-                self.assertEqual(report.done, len(self.import_repos))
 
-        for repo in self.import_repos:
-            repo = self.repo_api.read(repo.pulp_href)
-            self.assertEqual(f"{repo.pulp_href}versions/1/", repo.latest_version_href)
+def test_import(
+    pulp_importer_factory, file_repo_api_client, import_export_repositories, perform_import
+):
+    """Test an import."""
+    import_repos, exported_repos = import_export_repositories
+    importer = pulp_importer_factory()
+    task_group = perform_import(importer)
+    assert (len(import_repos) + 1) == task_group.completed
 
-    def _double_import(self):
-        """Test two imports of our export."""
-        importer = self._create_importer()
-        self._perform_import(importer)
-        self._perform_import(importer)
+    for report in task_group.group_progress_reports:
+        if report.code == "import.repo.versions":
+            assert report.done == len(import_repos)
 
-        imports = self.imports_api.list(importer.pulp_href).results
-        self.assertEqual(len(imports), 2)
+    for repo in import_repos:
+        repo = file_repo_api_client.read(repo.pulp_href)
+        assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
-        for repo in self.import_repos:
-            repo = self.repo_api.read(repo.pulp_href)
-            # still only one version as pulp won't create a new version if nothing changed
-            self.assertEqual(f"{repo.pulp_href}versions/1/", repo.latest_version_href)
 
-    def _chunked_import(self):
-        """Test an import."""
-        importer = self._create_importer()
-        task_group = self._perform_import(importer, chunked=True)
-        self.assertEqual(len(self.import_repos) + 1, task_group.completed)
-        for repo in self.import_repos:
-            repo = self.repo_api.read(repo.pulp_href)
-            self.assertEqual(f"{repo.pulp_href}versions/1/", repo.latest_version_href)
+@pytest.mark.parallel
+def test_double_import(
+    pulp_importer_factory,
+    importers_pulp_imports_api_client,
+    import_export_repositories,
+    file_repo_api_client,
+    perform_import,
+):
+    """Test two imports of our export."""
+    import_repos, exported_repos = import_export_repositories
 
-    def _import_check_valid_path(self):
-        body = {"path": self._find_path()}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.path.context, self._find_path())
-        self.assertTrue(result.path.is_valid)
-        self.assertEqual(len(result.path.messages), 0)
-        self.assertIsNone(result.toc)
-        self.assertIsNone(result.repo_mapping)
+    importer = pulp_importer_factory()
+    perform_import(importer)
+    perform_import(importer)
 
-    def _import_check_valid_toc(self):
-        body = {"toc": self._find_toc()}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.toc.context, self._find_toc())
-        self.assertTrue(result.toc.is_valid)
-        self.assertEqual(len(result.toc.messages), 0)
-        self.assertIsNone(result.path)
-        self.assertIsNone(result.repo_mapping)
+    imports = importers_pulp_imports_api_client.list(importer.pulp_href).results
+    assert len(imports) == 2
 
-    def _import_check_repo_mapping(self):
-        body = {"repo_mapping": json.dumps({"foo": "bar"})}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.repo_mapping.context, json.dumps({"foo": "bar"}))
-        self.assertTrue(result.repo_mapping.is_valid)
-        self.assertEqual(len(result.repo_mapping.messages), 0)
-        self.assertIsNone(result.path)
-        self.assertIsNone(result.toc)
+    for repo in import_repos:
+        repo = file_repo_api_client.read(repo.pulp_href)
+        # still only one version as pulp won't create a new version if nothing changed
+        assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
-        body = {"repo_mapping": '{"foo": "bar"'}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.repo_mapping.context, '{"foo": "bar"')
-        self.assertFalse(result.repo_mapping.is_valid)
-        self.assertEqual(result.repo_mapping.messages[0], "invalid JSON")
 
-    def _import_check_not_allowed(self):
-        body = {"path": "/notinallowedimports"}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.path.context, "/notinallowedimports")
-        self.assertFalse(result.path.is_valid)
-        self.assertEqual(len(result.path.messages), 1, "Only not-allowed should be returned")
-        self.assertEqual(result.path.messages[0], "/ is not an allowed import path")
+@pytest.mark.parallel
+def test_chunked_import(
+    pulp_importer_factory, import_export_repositories, file_repo_api_client, perform_import
+):
+    """Test an import."""
+    import_repos, exported_repos = import_export_repositories
+    importer = pulp_importer_factory()
+    task_group = perform_import(importer, chunked=True)
+    assert (len(import_repos) + 1) == task_group.completed
 
-        body = {"toc": "/notinallowedimports"}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.toc.context, "/notinallowedimports")
-        self.assertFalse(result.toc.is_valid)
-        self.assertEqual(len(result.toc.messages), 1, "Only not-allowed should be returned")
-        self.assertEqual(result.toc.messages[0], "/ is not an allowed import path")
+    for repo in import_repos:
+        repo = file_repo_api_client.read(repo.pulp_href)
+        assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
-    def _import_check_no_file(self):
-        body = {"path": "/tmp/idonotexist"}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.path.context, "/tmp/idonotexist")
-        self.assertFalse(result.path.is_valid)
-        self.assertTrue(
-            any("file /tmp/idonotexist does not exist" in s for s in result.path.messages)
-        )
 
-        body = {"toc": "/tmp/idonotexist"}
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.toc.context, "/tmp/idonotexist")
-        self.assertFalse(result.toc.is_valid)
-        self.assertTrue(
-            any("file /tmp/idonotexist does not exist" in s for s in result.toc.messages)
-        )
+@pytest.mark.parallel
+def test_import_check_valid_path(created_export, importers_pulp_imports_check_api_client):
+    body = {"path": _find_path(created_export)}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.path.context == _find_path(created_export)
+    assert result.path.is_valid
+    assert len(result.path.messages) == 0
+    assert result.toc is None
+    assert result.repo_mapping is None
 
-    def _import_check_all_valid(self):
-        body = {
-            "path": self._find_path(),
-            "toc": self._find_toc(),
-            "repo_mapping": json.dumps({"foo": "bar"}),
-        }
-        result = self.import_check_api.pulp_import_check_post(body)
-        self.assertEqual(result.path.context, self._find_path())
-        self.assertEqual(result.toc.context, self._find_toc())
-        self.assertEqual(result.repo_mapping.context, json.dumps({"foo": "bar"}))
 
-        self.assertTrue(result.path.is_valid)
-        self.assertTrue(result.toc.is_valid)
-        self.assertTrue(result.repo_mapping.is_valid)
+@pytest.mark.parallel
+def test_import_check_valid_toc(chunked_export, importers_pulp_imports_check_api_client):
+    body = {"toc": _find_toc(chunked_export)}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.toc.context == _find_toc(chunked_export)
+    assert result.toc.is_valid
+    assert len(result.toc.messages) == 0
+    assert result.path is None
+    assert result.repo_mapping is None
 
-        self.assertEqual(len(result.path.messages), 0)
-        self.assertEqual(len(result.toc.messages), 0)
-        self.assertEqual(len(result.repo_mapping.messages), 0)
 
-    def _import_check_multiple_errors(self):
-        body = {
-            "path": "/notinallowedimports",
-            "toc": "/tmp/importcheck/nowritedir/notafile",
-            "repo_mapping": '{"foo": "bar"',
-        }
-        result = self.import_check_api.pulp_import_check_post(body)
+@pytest.mark.parallel
+def test_import_check_repo_mapping(importers_pulp_imports_check_api_client):
+    body = {"repo_mapping": json.dumps({"foo": "bar"})}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.repo_mapping.context == json.dumps({"foo": "bar"})
+    assert result.repo_mapping.is_valid
+    assert len(result.repo_mapping.messages) == 0
+    assert result.path is None
+    assert result.toc is None
 
-        self.assertFalse(result.path.is_valid)
-        self.assertEqual(len(result.path.messages), 1, "Only not-allowed should be returned")
-        self.assertEqual(result.path.messages[0], "/ is not an allowed import path")
+    body = {"repo_mapping": '{"foo": "bar"'}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.repo_mapping.context == '{"foo": "bar"'
+    assert not result.repo_mapping.is_valid
+    assert result.repo_mapping.messages[0] == "invalid JSON"
 
-        self.assertFalse(result.toc.is_valid)
-        self.assertTrue(
-            any(
-                "/tmp/importcheck/nowritedir/notafile is not a file" in s
-                for s in result.toc.messages
-            )
-        )
-        # FAILS IN CI, passes locally
-        # self.assertTrue(
-        #     any(
-        #         "directory /tmp/importcheck/nowritedir must allow pulp write-access" in s
-        #         for s in result.toc.messages
-        #     )
-        # )
 
-        self.assertFalse(result.repo_mapping.is_valid)
-        self.assertEqual(result.repo_mapping.messages[0], "invalid JSON")
+@pytest.mark.parallel
+def test_import_check_not_allowed(importers_pulp_imports_check_api_client):
+    body = {"path": "/notinallowedimports"}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.path.context == "/notinallowedimports"
+    assert not result.path.is_valid
+    assert len(result.path.messages) == 1, "Only not-allowed should be returned"
+    assert result.path.messages[0] == "/ is not an allowed import path"
 
-    def _gen_export(self, exporter, body={}):
-        """Create and read back an export for the specified PulpExporter."""
-        export_response = self.exports_api.create(exporter.pulp_href, body)
-        monitor_task(export_response.task)
-        task = self.client.get(export_response.task)
-        resources = task["created_resources"]
-        export_href = resources[0]
-        export = self.exports_api.read(export_href)
+    body = {"toc": "/notinallowedimports"}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.toc.context == "/notinallowedimports"
+    assert not result.toc.is_valid
+    assert len(result.toc.messages) == 1, "Only not-allowed should be returned"
+    assert result.toc.messages[0] == "/ is not an allowed import path"
+
+
+@pytest.mark.parallel
+def test_import_check_no_file(importers_pulp_imports_check_api_client):
+    body = {"path": "/tmp/idonotexist"}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.path.context == "/tmp/idonotexist"
+    assert not result.path.is_valid
+    assert any("file /tmp/idonotexist does not exist" in s for s in result.path.messages)
+
+    body = {"toc": "/tmp/idonotexist"}
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.toc.context == "/tmp/idonotexist"
+    assert not result.toc.is_valid
+    assert any("file /tmp/idonotexist does not exist" in s for s in result.toc.messages)
+
+
+@pytest.mark.parallel
+def test_import_check_all_valid(
+    created_export, chunked_export, importers_pulp_imports_check_api_client
+):
+    body = {
+        "path": _find_path(created_export),
+        "toc": _find_toc(chunked_export),
+        "repo_mapping": json.dumps({"foo": "bar"}),
+    }
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+    assert result.path.context == _find_path(created_export)
+    assert result.toc.context == _find_toc(chunked_export)
+    assert result.repo_mapping.context == json.dumps({"foo": "bar"})
+
+    assert result.path.is_valid
+    assert result.toc.is_valid
+    assert result.repo_mapping.is_valid
+
+    assert len(result.path.messages) == 0
+    assert len(result.toc.messages) == 0
+    assert len(result.repo_mapping.messages) == 0
+
+
+@pytest.mark.parallel
+def test_import_check_multiple_errors(
+    importers_pulp_imports_check_api_client, import_check_directory
+):
+    body = {
+        "path": "/notinallowedimports",
+        "toc": f"{import_check_directory}/nowritedir/notafile",
+        "repo_mapping": '{"foo": "bar"',
+    }
+    result = importers_pulp_imports_check_api_client.pulp_import_check_post(body)
+
+    assert not result.path.is_valid
+    assert len(result.path.messages) == 1, "Only not-allowed should be returned"
+    assert result.path.messages[0] == "/ is not an allowed import path"
+
+    assert not result.toc.is_valid
+    assert any(
+        f"{import_check_directory}/nowritedir/notafile is not a file" in s
+        for s in result.toc.messages
+    )
+    assert any(
+        f"directory {import_check_directory}/nowritedir must allow pulp write-access" in s
+        for s in result.toc.messages
+    )
+
+    assert not result.repo_mapping.is_valid
+    assert result.repo_mapping.messages[0] == "invalid JSON"
+
+
+@pytest.fixture
+def generate_export(exporters_pulp_exports_api_client):
+    """Create and read back an export for the specified PulpExporter."""
+
+    def _generate_export(exporter, body=None):
+        if body is None:
+            body = {}
+
+        export_response = exporters_pulp_exports_api_client.create(exporter.pulp_href, body)
+        export_href = monitor_task(export_response.task).created_resources[0]
+        export = exporters_pulp_exports_api_client.read(export_href)
+
         return export
 
-    def _export_first_version(self, a_repo, versions):
-        body = {
-            "name": uuid4(),
-            "repositories": [a_repo.pulp_href],
-            "path": "/tmp/{}".format(uuid4()),
-        }
-        exporter = self.exporter_api.create(body)
-        self.addCleanup(delete_exporter, exporter)
-        # export from version-0 to version-1, last=v1
-        body = {
-            "start_versions": [versions.results[0].pulp_href],
-            "versions": [versions.results[1].pulp_href],
-            "full": False,
-        }
-        export = self._gen_export(exporter, body)
-        return export
+    return _generate_export
 
-    def _import_not_latest_version(self):
-        try:
-            repo, versions = self._create_repo_and_versions()
 
-            export = self._export_first_version(repo, versions)
-            """Test an import."""
-            importer = self._create_importer(exported_repos=[repo])
-            task_group = self._perform_import(importer, chunked=False, an_export=export)
+@pytest.fixture
+def exported_version(
+    pulp_importer_factory,
+    gen_object_with_cleanup,
+    import_export_repositories,
+    exporters_pulp_api_client,
+    exporters_pulp_exports_api_client,
+    generate_export,
+    perform_import,
+    file_repo,
+    file_repo_api_client,
+    file_repo_ver_api_client,
+    content_api_client,
+    add_to_cleanup,
+):
+    import_repos, export_repos = import_export_repositories
 
-            for report in task_group.group_progress_reports:
-                if report.code == "import.repo.versions":
-                    self.assertEqual(report.done, 1)
+    file_list = content_api_client.list(repository_version=export_repos[0].latest_version_href)
 
-            imported_repo = self.repo_api.read(self.import_repos[0].pulp_href)
-            self.assertNotEqual(
-                f"{imported_repo.pulp_href}versions/0/", imported_repo.latest_version_href
-            )
-        finally:
-            self.repo_api.delete(repo.pulp_href)
+    # copy files from repositories[0] into new, one file at a time
+    results = file_list.results
+    for a_file in results:
+        href = a_file.pulp_href
+        modify_response = file_repo_api_client.modify(
+            file_repo.pulp_href, {"add_content_units": [href]}
+        )
+        monitor_task(modify_response.task)
+    # get all versions of that repo
+    versions = file_repo_ver_api_client.list(file_repo.pulp_href, ordering=["number"])
+
+    body = {
+        "name": str(uuid.uuid4()),
+        "repositories": [file_repo.pulp_href],
+        "path": "/tmp/{}".format(str(uuid.uuid4())),
+    }
+    exporter = gen_object_with_cleanup(exporters_pulp_api_client, body)
+
+    # export from version-0 to version-1, last=v1
+    body = {
+        "start_versions": [versions.results[0].pulp_href],
+        "versions": [versions.results[1].pulp_href],
+        "full": False,
+    }
+    export = generate_export(exporter, body)
+
+    importer = pulp_importer_factory(exported_repos=[file_repo])
+    task_group = perform_import(importer, chunked=False, an_export=export)
+
+    return import_repos, task_group
+
+
+@pytest.mark.parallel
+def test_import_not_latest_version(exported_version, file_repo_api_client):
+    """Test an import."""
+    import_repos, task_group = exported_version
+    for report in task_group.group_progress_reports:
+        if report.code == "import.repo.versions":
+            assert report.done == 1
+
+    imported_repo = file_repo_api_client.read(import_repos[0].pulp_href)
+    assert f"{imported_repo.pulp_href}versions/0/" != imported_repo.latest_version_href

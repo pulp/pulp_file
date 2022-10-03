@@ -2,14 +2,14 @@ import pytest
 import uuid
 
 from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_distribution
+from pulp_smash.pulp3.utils import gen_distribution, gen_repo
 
 from pulpcore.client.pulp_file import (
     ApiException,
 )
 from pulpcore.client.pulp_file import AsyncOperationResponse
 
-from pulp_file.tests.functional.utils import gen_repo, gen_file_remote, gen_artifact
+from pulp_file.tests.functional.utils import gen_file_remote, gen_artifact
 
 
 @pytest.fixture()
