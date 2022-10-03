@@ -11,7 +11,7 @@ from pulpcore.constants import TASK_STATES, TASK_FINAL_STATES
 
 from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
 
-from pulp_file.tests.functional.utils import gen_file_remote, gen_repo
+from pulp_file.tests.functional.utils import gen_file_remote
 
 TOMORROW_STR = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
 
@@ -56,10 +56,11 @@ def sync_results(
     tasks_api_client,
     gen_object_with_cleanup,
     file_fixture_gen_remote_ssl,
+    file_fixture_gen_file_repo,
     basic_manifest_path,
 ):
     good_remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
-    good_repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    good_repo = file_fixture_gen_file_repo()
     good_sync_data = RepositorySyncURL(remote=good_remote.pulp_href)
 
     bad_remote = gen_object_with_cleanup(
@@ -68,7 +69,7 @@ def sync_results(
             "https://fixtures.pulpproject.org/THEREISNOFILEREPOHERE/", policy="on_demand"
         ),
     )
-    bad_repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    bad_repo = file_fixture_gen_file_repo()
     bad_sync_data = RepositorySyncURL(remote=bad_remote.pulp_href)
 
     pre_total, pre_final, pre_summary = _task_summary(tasks_api_client)
@@ -203,8 +204,8 @@ def test_not_final_state(tasks_api_client, sync_results):
 def test_purge_with_different_users(
     tasks_api_client,
     file_repo_api_client,
-    gen_object_with_cleanup,
     file_fixture_gen_remote_ssl,
+    file_fixture_gen_file_repo,
     basic_manifest_path,
     gen_user,
 ):
@@ -213,7 +214,7 @@ def test_purge_with_different_users(
         manifest_path=basic_manifest_path, policy="on_demand"
     )
     admin_sync_data = RepositorySyncURL(remote=admin_remote.pulp_href)
-    admin_repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    admin_repo = file_fixture_gen_file_repo()
 
     # create random user related data
     user = gen_user(
@@ -228,7 +229,7 @@ def test_purge_with_different_users(
             manifest_path=basic_manifest_path, policy="on_demand"
         )
         user_sync_data = RepositorySyncURL(remote=user_remote.pulp_href)
-        user_repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+        user_repo = file_fixture_gen_file_repo()
 
     # Sync as admin
     sync_response = file_repo_api_client.sync(admin_repo.pulp_href, admin_sync_data)
