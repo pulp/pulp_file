@@ -39,11 +39,12 @@ def publish(manifest, repository_version_pk):
     with tempfile.TemporaryDirectory(dir="."):
         with FilePublication.create(repo_version, pass_through=True) as publication:
             publication.manifest = manifest
-            manifest = Manifest(manifest)
-            manifest.write(yield_entries_for_version(repo_version))
-            PublishedMetadata.create_from_file(
-                file=File(open(manifest.relative_path, "rb")), publication=publication
-            )
+            if manifest:
+                manifest = Manifest(manifest)
+                manifest.write(yield_entries_for_version(repo_version))
+                PublishedMetadata.create_from_file(
+                    file=File(open(manifest.relative_path, "rb")), publication=publication
+                )
 
         log.info(_("Publication: {publication} created").format(publication=publication.pk))
 

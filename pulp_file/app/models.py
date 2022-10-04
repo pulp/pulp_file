@@ -66,7 +66,7 @@ class FileRepository(Repository, AutoAddObjPermsMixin):
     CONTENT_TYPES = [FileContent]
     REMOTE_TYPES = [FileRemote]
 
-    manifest = models.TextField(default="PULP_MANIFEST")
+    manifest = models.TextField(default="PULP_MANIFEST", null=True)
     autopublish = models.BooleanField(default=False)
 
     class Meta:
@@ -119,7 +119,7 @@ class FilePublication(Publication, AutoAddObjPermsMixin):
 
     TYPE = "file"
 
-    manifest = models.TextField()
+    manifest = models.TextField(null=True)
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
