@@ -41,6 +41,7 @@ def create_exporter(
     return _create_exporter
 
 
+@pytest.mark.parallel
 def test_create_exporter(create_exporter):
     """Create a FilesystemExporter."""
     exporter, body = create_exporter()
@@ -48,6 +49,7 @@ def test_create_exporter(create_exporter):
     assert body["path"] == exporter.path
 
 
+@pytest.mark.parallel
 def test_create_exporter_with_custom_method_field(create_exporter):
     exporter, _ = create_exporter({"method": "symlink"})
     assert "symlink" == exporter.method
@@ -57,6 +59,7 @@ def test_create_exporter_with_custom_method_field(create_exporter):
     assert 400 == ae.value.status
 
 
+@pytest.mark.parallel
 def test_read_exporter(create_exporter, exporters_filesystem_api_client):
     """Read a created FilesystemExporter."""
     exporter_created, body = create_exporter()
@@ -65,6 +68,7 @@ def test_read_exporter(create_exporter, exporters_filesystem_api_client):
     assert exporter_created.path == exporter_read.path
 
 
+@pytest.mark.parallel
 def test_partial_update_exporter(create_exporter, exporters_filesystem_api_client):
     """Update a FilesystemExporter's path."""
     exporter_created, body = create_exporter()
@@ -86,6 +90,7 @@ def test_list_exporter(create_exporter, exporters_filesystem_api_client):
     assert NUM_EXPORTERS == (len(ending_exporters) - len(starting_exporters))
 
 
+@pytest.mark.parallel
 def test_delete_exporter(exporters_filesystem_api_client):
     exporter = exporters_filesystem_api_client.create({"name": "test", "path": "/tmp/abc"})
     result = exporters_filesystem_api_client.delete(exporter.pulp_href)
@@ -129,6 +134,7 @@ def create_exporter_export(exporters_filesystem_exports_api_client):
     return _create_exporter_export
 
 
+@pytest.mark.parallel
 def test_create_exporter_export(create_exporter, create_exporter_export, publications):
     """Issue an export for a FileSystemExporter object."""
     exporter, body = create_exporter({"method": "write"})
@@ -136,6 +142,7 @@ def test_create_exporter_export(create_exporter, create_exporter_export, publica
     assert export is not None
 
 
+@pytest.mark.parallel
 def test_list_exporter_exports(
     create_exporter,
     exporters_filesystem_exports_api_client,
@@ -152,6 +159,7 @@ def test_list_exporter_exports(
     assert NUM_REPOS == len(exports)
 
 
+@pytest.mark.parallel
 def test_delete_exporter_export(
     create_exporter, exporters_filesystem_exports_api_client, create_exporter_export, publications
 ):
