@@ -436,7 +436,7 @@ class FilePublicationViewSet(PublicationViewSet, RolesMixin):
         result = dispatch(
             tasks.publish,
             shared_resources=[repository_version.repository],
-            kwargs={"repository_version_pk": str(repository_version.pk), "manifest": str(manifest)},
+            kwargs={"repository_version_pk": str(repository_version.pk), "manifest": manifest},
         )
         return OperationPostponedResponse(result, request)
 

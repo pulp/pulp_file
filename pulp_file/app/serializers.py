@@ -69,6 +69,7 @@ class FileRepositorySerializer(RepositorySerializer):
         help_text=_("Filename to use for manifest file containing metadata for all the files."),
         default="PULP_MANIFEST",
         required=False,
+        allow_null=True,
     )
 
     class Meta:
@@ -109,6 +110,7 @@ class FilePublicationSerializer(PublicationSerializer):
         help_text=_("Filename to use for manifest file containing metadata for all the files."),
         default="PULP_MANIFEST",
         required=False,
+        allow_null=True,
     )
 
     class Meta:
