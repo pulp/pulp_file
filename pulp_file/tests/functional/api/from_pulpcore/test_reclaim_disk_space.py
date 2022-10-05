@@ -1,193 +1,160 @@
 """Tests that perform actions over reclaim disk space."""
-from pulp_smash import config
-from pulp_smash.pulp3.bindings import monitor_task, PulpTestCase
-from pulp_smash.pulp3.utils import (
-    gen_repo,
-    get_content,
-    gen_distribution,
-    download_content_unit,
-)
-from pulpcore.client.pulpcore import (
-    ArtifactsApi,
-    OrphansCleanupApi,
-    RepositoriesReclaimSpaceApi,
-    RepositoriesApi,
-)
-from pulpcore.client.pulp_file import (
-    FileFilePublication,
-    PublicationsFileApi,
-    RepositoriesFileApi,
-    RepositorySyncURL,
-    RemotesFileApi,
-    DistributionsFileApi,
-)
+import pytest
 
-from pulp_file.tests.functional.utils import (
-    gen_file_client,
-    gen_file_remote,
-    gen_pulpcore_client,
-)
-from .constants import FILE_CONTENT_NAME
+from urllib.parse import urljoin
+
+from pulp_smash.pulp3.bindings import monitor_task
+from pulp_smash.pulp3.utils import gen_repo, gen_distribution
+from pulpcore.client.pulp_file import RepositorySyncURL
+
+from pulp_file.tests.functional.utils import get_files_in_manifest, download_file
 
 
-class ReclaimSpaceTestCase(PulpTestCase):
+@pytest.mark.parallel
+def test_reclaim_immediate_content(
+    file_repo_api_client,
+    file_repo,
+    repositories_reclaim_space_api_client,
+    artifacts_api_client,
+    file_fixture_gen_remote_ssl,
+    basic_manifest_path,
+):
     """
-    Test whether repository content can be reclaimed.
-    Subsequently, confirm that artifact is correctly re-downloaded in sync
-    task or when streamed to the client (this is true only for synced content, not uploaded.)
+    Test whether immediate repository content can be reclaimed
+    and then re-populated back after sync.
     """
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.client = gen_file_client()
-        core_client = gen_pulpcore_client()
-        cls.orphans_api = OrphansCleanupApi(core_client)
-        cls.reclaim_api = RepositoriesReclaimSpaceApi(core_client)
-        cls.artifacts_api = ArtifactsApi(core_client)
-        cls.all_repo_api = RepositoriesApi(core_client)
-        cls.publication_api = PublicationsFileApi(cls.client)
-        cls.distributions_api = DistributionsFileApi(cls.client)
-        cls.repo_api = RepositoriesFileApi(cls.client)
-        cls.remote_api = RemotesFileApi(cls.client)
+    # sync the repository with immediate policy
+    repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+    sync_response = file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data)
+    monitor_task(sync_response.task)
 
-        orphans_response = cls.orphans_api.cleanup({"orphan_protection_time": 0})
-        monitor_task(orphans_response.task)
+    # reclaim disk space
+    reclaim_response = repositories_reclaim_space_api_client.reclaim(
+        {"repo_hrefs": [file_repo.pulp_href]}
+    )
+    monitor_task(reclaim_response.task)
 
-    def tearDown(self):
-        """Clean created resources."""
-        # Runs any delete tasks and waits for them to complete
-        self.doCleanups()
-        orphans_response = self.orphans_api.cleanup({"orphan_protection_time": 0})
-        monitor_task(orphans_response.task)
+    # assert no artifacts left
+    expected_files = list(get_files_in_manifest(remote.url))
+    for f in expected_files:
+        artifacts = artifacts_api_client.list(sha256=f[1]).count
+        assert artifacts == 0
 
-    def test_reclaim_immediate_content(self):
-        """
-        Test whether immediate repository content can be reclaimed
-        and then re-populated back after sync.
-        """
-        repo = self.repo_api.create(gen_repo())
-        self.addCleanup(self.repo_api.delete, repo.pulp_href)
+    # sync repo again
+    repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+    sync_response = file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data)
+    monitor_task(sync_response.task)
 
-        remote = self.remote_api.create(gen_file_remote())
-        self.addCleanup(self.remote_api.delete, remote.pulp_href)
+    # assert re-sync populated missing artifacts
+    for f in expected_files:
+        artifacts = artifacts_api_client.list(sha256=f[1]).count
+        assert artifacts == 1
 
-        # sync the repository with immediate policy
+
+@pytest.fixture
+def sync_repository_distribution(
+    gen_object_with_cleanup,
+    file_repo_api_client,
+    file_pub_api_client,
+    file_distro_api_client,
+    file_fixture_gen_remote_ssl,
+    file_repo_with_auto_publish,
+    basic_manifest_path,
+):
+    def _sync_repository_distribution(policy="immediate"):
+
+        remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy=policy)
+
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
+        sync_response = file_repo_api_client.sync(
+            file_repo_with_auto_publish.pulp_href, repository_sync_data
+        )
         monitor_task(sync_response.task)
 
-        # reclaim disk space
-        reclaim_response = self.reclaim_api.reclaim({"repo_hrefs": [repo.pulp_href]})
-        monitor_task(reclaim_response.task)
+        body = gen_distribution(repository=file_repo_with_auto_publish.pulp_href)
+        distribution = gen_object_with_cleanup(file_distro_api_client, body)
 
-        # assert no artifacts left
-        artifacts = self.artifacts_api.list().count
-        self.assertEqual(artifacts, 0)
+        return file_repo_with_auto_publish, remote, distribution
 
-        # sync repo again
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
+    return _sync_repository_distribution
 
-        # assert re-sync populated missing artifacts
-        artifacts = self.artifacts_api.list().count
-        self.assertGreater(artifacts, 0)
-        self.addCleanup(self.orphans_api.cleanup, {"orphan_protection_time": 0})
 
-    def test_reclaim_on_demand_content(self):
-        """
-        Test whether on_demand repository content can be reclaimed
-        and then re-populated back after client request.
-        """
-        repo, distribution = self._repo_sync_distribute(policy="on_demand")
+@pytest.mark.parallel
+def test_reclaim_on_demand_content(
+    sync_repository_distribution, artifacts_api_client, repositories_reclaim_space_api_client
+):
+    """
+    Test whether on_demand repository content can be reclaimed
+    and then re-populated back after client request.
+    """
+    repo, remote, distribution = sync_repository_distribution(policy="on_demand")
 
-        artifacts_before_download = self.artifacts_api.list().count
-        content = get_content(repo.to_dict())[FILE_CONTENT_NAME][0]
-        download_content_unit(self.cfg, distribution.to_dict(), content["relative_path"])
+    content = get_files_in_manifest(urljoin(distribution.base_url, "PULP_MANIFEST")).pop()
+    download_file(urljoin(distribution.base_url, content[0]))
 
-        artifacts = self.artifacts_api.list().count
-        self.assertGreater(artifacts, artifacts_before_download)
+    expected_files = get_files_in_manifest(remote.url)
+    artifact_sha256 = get_file_by_path(content[0], expected_files)[1]
+    assert 1 == artifacts_api_client.list(sha256=artifact_sha256).count
 
-        # reclaim disk space
-        reclaim_response = self.reclaim_api.reclaim({"repo_hrefs": [repo.pulp_href]})
-        monitor_task(reclaim_response.task)
+    # reclaim disk space
+    reclaim_response = repositories_reclaim_space_api_client.reclaim(
+        {"repo_hrefs": [repo.pulp_href]}
+    )
+    monitor_task(reclaim_response.task)
 
-        artifacts_after_reclaim = self.artifacts_api.list().count
-        content = get_content(repo.to_dict())[FILE_CONTENT_NAME]
-        download_content_unit(self.cfg, distribution.to_dict(), content[0]["relative_path"])
+    assert 0 == artifacts_api_client.list(sha256=artifact_sha256).count
 
-        artifacts = self.artifacts_api.list().count
-        self.assertGreater(artifacts, artifacts_after_reclaim)
+    download_file(urljoin(distribution.base_url, content[0]))
 
-    def test_immediate_reclaim_becomes_on_demand(self):
-        """Tests if immediate content becomes like on_demand content after reclaim."""
-        repo, distribution = self._repo_sync_distribute()
+    assert 1 == artifacts_api_client.list(sha256=artifact_sha256).count
 
-        artifacts_before_reclaim = self.artifacts_api.list().count
-        self.assertGreater(artifacts_before_reclaim, 0)
-        content = get_content(repo.to_dict())[FILE_CONTENT_NAME][0]
-        # Populate cache
-        download_content_unit(self.cfg, distribution.to_dict(), content["relative_path"])
 
-        reclaim_response = self.reclaim_api.reclaim({"repo_hrefs": [repo.pulp_href]})
-        monitor_task(reclaim_response.task)
+@pytest.mark.parallel
+def test_immediate_reclaim_becomes_on_demand(
+    sync_repository_distribution, artifacts_api_client, repositories_reclaim_space_api_client
+):
+    """Tests if immediate content becomes like on_demand content after reclaim."""
+    repo, remote, distribution = sync_repository_distribution()
 
-        artifacts_after_reclaim = self.artifacts_api.list().count
-        self.assertLess(artifacts_after_reclaim, artifacts_before_reclaim)
+    artifacts_before_reclaim = artifacts_api_client.list().count
+    assert artifacts_before_reclaim > 0
 
-        download_content_unit(self.cfg, distribution.to_dict(), content["relative_path"])
-        artifacts_after_download = self.artifacts_api.list().count
-        # Downloading a reclaimed content will increase the artifact count by 1
-        self.assertEqual(artifacts_after_download, artifacts_after_reclaim + 1)
-        # But only 1 extra artifact will be downloaded, so still less than after immediate sync
-        self.assertLess(artifacts_after_download, artifacts_before_reclaim)
+    content = get_files_in_manifest(urljoin(distribution.base_url, "PULP_MANIFEST")).pop()
+    # Populate cache
+    download_file(urljoin(distribution.base_url, content[0]))
 
-    def test_specified_all_repos(self):
-        """Tests that specifying all repos w/ '*' properly grabs all the repos."""
-        repos = [self.repo_api.create(gen_repo()) for _ in range(10)]
-        for repo in repos:
-            self.addCleanup(self.repo_api.delete, repo.pulp_href)
+    reclaim_response = repositories_reclaim_space_api_client.reclaim(
+        {"repo_hrefs": [repo.pulp_href]}
+    )
+    monitor_task(reclaim_response.task)
 
-        repos = [r.pulp_href for r in self.all_repo_api.list().results]
+    expected_files = get_files_in_manifest(remote.url)
+    artifact_sha256 = get_file_by_path(content[0], expected_files)[1]
+    assert 0 == artifacts_api_client.list(sha256=artifact_sha256).count
 
-        reclaim_response = self.reclaim_api.reclaim({"repo_hrefs": ["*"]})
-        task_status = monitor_task(reclaim_response.task)
+    download_file(urljoin(distribution.base_url, content[0]))
 
-        repos_locked = [r.split(":")[-1] for r in task_status.reserved_resources_record]
-        self.assertEqual(len(repos), len(repos_locked))
-        self.assertEqual(set(repos), set(repos_locked))
+    assert 1 == artifacts_api_client.list(sha256=artifact_sha256).count
 
-    def _repo_sync_distribute(self, policy="immediate"):
-        """Helper to create & populate a repository and distribute it."""
-        repo = self.repo_api.create(gen_repo())
-        self.addCleanup(self.repo_api.delete, repo.pulp_href)
 
-        # sync the repository with passed in policy
-        body = gen_file_remote(**{"policy": policy})
-        remote = self.remote_api.create(body)
-        self.addCleanup(self.remote_api.delete, remote.pulp_href)
+def test_specified_all_repos(
+    gen_object_with_cleanup, file_repo_api_client, repositories_reclaim_space_api_client
+):
+    """Tests that specifying all repos w/ '*' properly grabs all the repos."""
+    repos = [gen_object_with_cleanup(file_repo_api_client, gen_repo()).pulp_href for _ in range(10)]
 
-        # sync repo
-        repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = self.repo_api.sync(repo.pulp_href, repository_sync_data)
-        monitor_task(sync_response.task)
-        repo = self.repo_api.read(repo.pulp_href)
+    reclaim_response = repositories_reclaim_space_api_client.reclaim({"repo_hrefs": ["*"]})
+    task_status = monitor_task(reclaim_response.task)
 
-        # Publication
-        publication_data = FileFilePublication(repository=repo.pulp_href)
-        publication_response = self.publication_api.create(publication_data)
-        task_response = monitor_task(publication_response.task)
-        publication = self.publication_api.read(task_response.created_resources[0])
-        self.addCleanup(self.publication_api.delete, publication.pulp_href)
+    repos_locked = [r.split(":")[-1] for r in task_status.reserved_resources_record]
+    assert len(repos) == len(repos_locked)
+    assert set(repos) == set(repos_locked)
 
-        # Distribution
-        body = gen_distribution()
-        body["publication"] = publication.pulp_href
-        distribution_response = self.distributions_api.create(body)
-        created_resources = monitor_task(distribution_response.task).created_resources
-        distribution = self.distributions_api.read(created_resources[0])
-        self.addCleanup(self.distributions_api.delete, distribution.pulp_href)
 
-        return repo, distribution
+def get_file_by_path(path, files):
+    try:
+        return next(filter(lambda x: x[0] == path, files))
+    except StopIteration:
+        pytest.fail(f"Could not find a file with the path {path}")
