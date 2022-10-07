@@ -1,27 +1,16 @@
+import pytest
 import os
-import unittest
+
 from random import sample
-from urllib.parse import urljoin
 
-from pulp_smash import api, cli, config, utils
-from pulp_smash.pulp3.bindings import delete_orphans
-from pulp_smash.pulp3.constants import BASE_PATH
-from pulp_smash.pulp3.utils import (
-    gen_repo,
-    get_content,
-    get_versions,
-    sync,
-)
+from pulp_smash.pulp3.bindings import monitor_task
 
-from pulp_file.tests.functional.utils import gen_file_remote
-from .constants import (
-    FILE_CONTENT_NAME,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-)
+from pulpcore.client.pulpcore import Repair
+from pulpcore.client.pulp_file import RepositorySyncURL
 
+from pulpcore.app import settings
 
-REPAIR_PATH = urljoin(BASE_PATH, "repair/")
+from pulp_file.tests.functional.utils import get_files_in_manifest
 
 
 SUPPORTED_STORAGE_FRAMEWORKS = [
@@ -29,170 +18,183 @@ SUPPORTED_STORAGE_FRAMEWORKS = [
     "pulpcore.app.models.storage.FileSystem",
 ]
 
+if settings.DEFAULT_FILE_STORAGE not in SUPPORTED_STORAGE_FRAMEWORKS:
+    raise pytest.skip(
+        "Cannot simulate bit-rot on this storage platform ({}).".format(
+            settings.DEFAULT_FILE_STORAGE
+        ),
+        allow_module_level=True,
+    )
 
-class ArtifactRepairTestCase(unittest.TestCase):
-    """Test whether missing and corrupted artifact files can be redownloaded."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.cfg = config.get_config()
-        cls.api_client = api.Client(cls.cfg, api.smart_handler)
-        cls.cli_client = cli.Client(cls.cfg)
+@pytest.fixture
+def repository_with_corrupted_artifacts(
+    file_repo_api_client,
+    file_repo,
+    artifacts_api_client,
+    file_fixture_gen_remote_ssl,
+    basic_manifest_path,
+):
+    # STEP 1: sync content from a remote source
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+    sync_data = RepositorySyncURL(remote=remote.pulp_href)
+    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, sync_data).task)
+    repo = file_repo_api_client.read(file_repo.pulp_href)
 
-        storage = utils.get_pulp_setting(cls.cli_client, "DEFAULT_FILE_STORAGE")
-        if storage not in SUPPORTED_STORAGE_FRAMEWORKS:
-            raise unittest.SkipTest(
-                "Cannot simulate bit-rot on this storage platform ({}).".format(storage),
-            )
+    # STEP 2: sample artifacts that will be modified on the filesystem later on
+    content1, content2 = sample(get_files_in_manifest(remote.url), 2)
 
-    def setUp(self):
-        """Initialize Pulp with some content for our repair tests.
+    # Modify one artifact on disk.
+    artifact1_path = os.path.join(
+        settings.MEDIA_ROOT, artifacts_api_client.list(sha256=content1[1]).results[0].file
+    )
+    with open(artifact1_path, "r+b") as f:
+        f.write(b"$a bit rot")
 
-        1. Create and sync a repo.
-        2. Select two content units from the repo, delete one artifact and corrupt another.
-        """
-        # STEP 1
-        delete_orphans()
-        repo = self.api_client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.api_client.delete, repo["pulp_href"])
+    # Delete another one from disk.
+    artifact2_path = os.path.join(
+        settings.MEDIA_ROOT, artifacts_api_client.list(sha256=content2[1]).results[0].file
+    )
+    os.remove(artifact2_path)
 
-        body = gen_file_remote()
-        remote = self.api_client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(self.api_client.delete, remote["pulp_href"])
+    return repo
 
-        sync(self.cfg, remote, repo)
-        repo = self.api_client.get(repo["pulp_href"])
 
-        # STEP 2
-        media_root = utils.get_pulp_setting(self.cli_client, "MEDIA_ROOT")
-        content1, content2 = sample(get_content(repo)[FILE_CONTENT_NAME], 2)
-        # Muddify one artifact on disk.
-        artifact1_path = os.path.join(media_root, self.api_client.get(content1["artifact"])["file"])
-        cmd1 = ("sed", "-i", "-e", r"$a bit rot", artifact1_path)
-        self.cli_client.run(cmd1, sudo=True)
-        # Delete another one from disk.
-        artifact2_path = os.path.join(media_root, self.api_client.get(content2["artifact"])["file"])
-        cmd2 = ("rm", artifact2_path)
-        self.cli_client.run(cmd2, sudo=True)
+def test_repair_global_with_checksums(repair_api_client, repository_with_corrupted_artifacts):
+    """Test whether missing and corrupted files can be re-downloaded.
 
-        self.repo = repo
+    Do the following:
 
-    def _verify_repair_results(self, result, missing=0, corrupted=0, repaired=0):
-        """Parse the repair task output and confirm it matches expectations."""
-        progress_reports = {report["code"]: report for report in result["progress_reports"]}
+    3. Perform Pulp repair, including checksum verification.
+    4. Assert that the repair task reported two corrupted and two repaired units.
+    5. Repeat the Pulp repair operation.
+    6. Assert that the repair task reported no missing, corrupted or repaired units.
+    """
+    # STEP 3
+    response = repair_api_client.post(Repair(verify_checksums=True))
+    results = monitor_task(response.task)
 
-        corrupted_units_report = progress_reports["repair.corrupted"]
-        self.assertEqual(corrupted_units_report["done"], corrupted, corrupted_units_report)
+    # STEP 4
+    _verify_repair_results(results, missing=1, corrupted=1, repaired=2)
 
-        missing_units_report = progress_reports["repair.missing"]
-        self.assertEqual(missing_units_report["done"], missing, missing_units_report)
+    # STEP 5
+    response = repair_api_client.post(Repair(verify_checksums=True))
+    results = monitor_task(response.task)
 
-        repaired_units_report = progress_reports["repair.repaired"]
-        self.assertEqual(repaired_units_report["done"], repaired, repaired_units_report)
+    # STEP 6
+    _verify_repair_results(results)
 
-    def test_repair_global_with_checksums(self):
-        """Test whether missing and corrupted files can be redownloaded.
 
-        Do the following:
+def test_repair_global_without_checksums(repair_api_client, repository_with_corrupted_artifacts):
+    """Test whether missing files can be redownloaded.
 
-        3. Perform Pulp repair, including checksum verification.
-        4. Assert that the repair task reported two corrupted and two repaired units.
-        5. Repeat the Pulp repair operation.
-        6. Assert that the repair task reported no missing, corrupted or repaired units.
-        """
-        # STEP 3
-        result = self.api_client.post(REPAIR_PATH, {"verify_checksums": True})
+    Do the following:
 
-        # STEP 4
-        self._verify_repair_results(result, missing=1, corrupted=1, repaired=2)
+    3. Perform Pulp repair, not including checksum verification.
+    4. Assert that the repair task reported one missing and one repaired unit.
+    5. Repeat the Pulp repair operation.
+    6. Assert that the repair task reported no missing, corrupted or repaired units.
+    7. Repeat the Pulp repair operation, this time including checksum verification.
+    8. Assert that the repair task reported one corrupted and one repaired unit.
+    """
+    # STEP 3
+    response = repair_api_client.post(Repair(verify_checksums=False))
+    results = monitor_task(response.task)
 
-        # STEP 5
-        result = self.api_client.post(REPAIR_PATH, {"verify_checksums": True})
+    # STEP 4
+    _verify_repair_results(results, missing=1, repaired=1)
 
-        # STEP 6
-        self._verify_repair_results(result)
+    # STEP 5
+    response = repair_api_client.post(Repair(verify_checksums=False))
+    results = monitor_task(response.task)
 
-    def test_repair_global_without_checksums(self):
-        """Test whether missing files can be redownloaded.
+    # STEP 6
+    _verify_repair_results(results)
 
-        Do the following:
+    # STEP 7
+    response = repair_api_client.post(Repair(verify_checksums=True))
+    results = monitor_task(response.task)
 
-        3. Perform Pulp repair, not including checksum verification.
-        4. Assert that the repair task reported one missing and one repaired unit.
-        5. Repeat the Pulp repair operation.
-        6. Assert that the repair task reported no missing, corrupted or repaired units.
-        7. Repeat the Pulp repair operation, this time including checksum verification.
-        8. Assert that the repair task reported one corrupted and one repaired unit.
-        """
-        # STEP 3
-        result = self.api_client.post(REPAIR_PATH, {"verify_checksums": False})
+    # STEP 8
+    _verify_repair_results(results, corrupted=1, repaired=1)
 
-        # STEP 4
-        self._verify_repair_results(result, missing=1, repaired=1)
 
-        # STEP 5
-        result = self.api_client.post(REPAIR_PATH, {"verify_checksums": False})
+@pytest.mark.parallel
+def test_repair_repository_version_with_checksums(
+    file_repo_ver_api_client, repository_with_corrupted_artifacts
+):
+    """Test whether corrupted files can be redownloaded.
 
-        # STEP 6
-        self._verify_repair_results(result)
+    Do the following:
 
-        # STEP 7
-        result = self.api_client.post(REPAIR_PATH, {"verify_checksums": True})
+    3. Repair the RepositoryVersion.
+    4. Assert that the repair task reported two corrupted and two repaired units.
+    5. Repeat the RepositoryVersion repair operation.
+    6. Assert that the repair task reported no missing, corrupted or repaired units.
+    """
+    # STEP 3
+    latest_version = repository_with_corrupted_artifacts.latest_version_href
+    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=True))
+    results = monitor_task(response.task)
 
-        # STEP 8
-        self._verify_repair_results(result, corrupted=1, repaired=1)
+    # STEP 4
+    _verify_repair_results(results, missing=1, corrupted=1, repaired=2)
 
-    def test_repair_repository_version_with_checksums(self):
-        """Test whether corrupted files can be redownloaded.
+    # STEP 5
+    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=True))
+    results = monitor_task(response.task)
 
-        Do the following:
+    # STEP 6
+    _verify_repair_results(results)
 
-        3. Repair the RepositoryVersion.
-        4. Assert that the repair task reported two corrupted and two repaired units.
-        5. Repeat the RepositoryVersion repair operation.
-        6. Assert that the repair task reported no missing, corrupted or repaired units.
-        """
-        # STEP 3
-        latest_version = get_versions(self.repo)[-1]["pulp_href"]
-        result = self.api_client.post(latest_version + "repair/", {"verify_checksums": True})
 
-        # STEP 4
-        self._verify_repair_results(result, missing=1, corrupted=1, repaired=2)
+@pytest.mark.parallel
+def test_repair_repository_version_without_checksums(
+    file_repo_ver_api_client, repository_with_corrupted_artifacts
+):
+    """Test whether missing files can be redownloaded.
 
-        # STEP 5
-        result = self.api_client.post(latest_version + "repair/", {"verify_checksums": True})
+    Do the following:
 
-        # STEP 6
-        self._verify_repair_results(result)
+    3. Repair the RepositoryVersion, not including checksum verification.
+    4. Assert that the repair task reported one missing and one repaired unit.
+    5. Repeat the RepositoryVersion repair operation.
+    6. Assert that the repair task reported no missing, corrupted or repaired units.
+    7. Repeat the RepositoryVersion repair operation, this time including checksum verification
+    8. Assert that the repair task reported one corrupted and one repaired unit.
+    """
+    # STEP 3
+    latest_version = repository_with_corrupted_artifacts.latest_version_href
+    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=False))
+    results = monitor_task(response.task)
 
-    def test_repair_repository_version_without_checksums(self):
-        """Test whether missing files can be redownloaded.
+    # STEP 4
+    _verify_repair_results(results, missing=1, repaired=1)
 
-        Do the following:
+    # STEP 5
+    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=False))
+    results = monitor_task(response.task)
 
-        3. Repair the RepositoryVersion, not including checksum verification.
-        4. Assert that the repair task reported one missing and one repaired unit.
-        5. Repeat the RepositoryVersion repair operation.
-        6. Assert that the repair task reported no missing, corrupted or repaired units.
-        7. Repeat the RepositoryVersion repair operation, this time including checksum verification
-        8. Assert that the repair task reported one corrupted and one repaired unit.
-        """
-        # STEP 3
-        latest_version = get_versions(self.repo)[-1]["pulp_href"]
-        result = self.api_client.post(latest_version + "repair/", {"verify_checksums": False})
+    # STEP 6
+    _verify_repair_results(results)
 
-        # STEP 4
-        self._verify_repair_results(result, missing=1, repaired=1)
+    # STEP 7
+    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=True))
+    results = monitor_task(response.task)
 
-        # STEP 5
-        result = self.api_client.post(REPAIR_PATH, {"verify_checksums": False})
+    # STEP 8
+    _verify_repair_results(results, corrupted=1, repaired=1)
 
-        # STEP 6
-        self._verify_repair_results(result)
 
-        # STEP 7
-        result = self.api_client.post(latest_version + "repair/", {"verify_checksums": True})
+def _verify_repair_results(results, missing=0, corrupted=0, repaired=0):
+    """Parse the repair task output and confirm it matches expectations."""
+    progress_reports = {report.code: report for report in results.progress_reports}
 
-        # STEP 8
-        self._verify_repair_results(result, corrupted=1, repaired=1)
+    corrupted_units_report = progress_reports["repair.corrupted"]
+    assert corrupted_units_report.done == corrupted, corrupted_units_report
+
+    missing_units_report = progress_reports["repair.missing"]
+    assert missing_units_report.done == missing, missing_units_report
+
+    repaired_units_report = progress_reports["repair.repaired"]
+    assert repaired_units_report.done == repaired, repaired_units_report
