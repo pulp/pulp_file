@@ -1,30 +1,26 @@
-import aiofiles
 import logging
 import os
 import uuid
-
-from aiohttp import web
 from collections import defaultdict
 from pathlib import Path
 
+import aiofiles
 import pytest
-
+from aiohttp import web
+from pulp_smash.pulp3.utils import gen_repo
 from pulpcore.client.pulp_file import (
-    ApiClient,
     AcsFileApi,
+    ApiClient,
     ContentFilesApi,
     DistributionsFileApi,
     FileFileAlternateContentSource,
+    PublicationsFileApi,
+    RemotesFileApi,
     RepositoriesFileApi,
     RepositoriesFileVersionsApi,
-    RemotesFileApi,
-    PublicationsFileApi,
 )
 
-from pulp_smash.pulp3.utils import gen_repo
-
 from pulp_file.tests.functional.utils import gen_file_client, generate_iso, generate_manifest
-
 
 _logger = logging.getLogger(__name__)
 
