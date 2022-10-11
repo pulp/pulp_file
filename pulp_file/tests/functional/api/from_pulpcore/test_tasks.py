@@ -1,225 +1,109 @@
 """Test that operations can be performed over tasks."""
-import unittest
+import json
+from urllib.parse import urljoin
+from uuid import uuid4
 
-from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import (
-    BASE_DISTRIBUTION_PATH,
-    P3_TASK_END_STATES,
-    TASKS_PATH,
-)
-from pulp_smash.pulp3.utils import gen_repo, gen_distribution, get_content, modify_repo, sync
-from requests import HTTPError
+import pytest
+from aiohttp import BasicAuth
+from pulpcore.tests.functional.utils import monitor_task
+from pulpcore.client.pulp_file import RepositorySyncURL
+from pulpcore.client.pulpcore.exceptions import ApiException
 
-from pulp_file.tests.functional.utils import gen_file_remote, skip_if
-from .constants import (
-    FILE_CONTENT_NAME,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-)
+from pulp_file.tests.functional.utils import download_file
 
 
-_DYNAMIC_TASKS_ATTRS = ("finished_at",)
-"""Task attributes that are dynamically set by Pulp, not set by a user."""
+@pytest.fixture
+def distribution(file_repo, file_distro_api_client, gen_object_with_cleanup):
+    distribution = gen_object_with_cleanup(
+        file_distro_api_client,
+        {"name": str(uuid4()), "base_path": str(uuid4()), "repository": file_repo.pulp_href},
+    )
+
+    return distribution
 
 
-class TasksTestCase(unittest.TestCase):
-    """Perform different operation over tasks.
+@pytest.mark.parallel
+def test_retrieve_task_with_fields_created_resources_only(
+    bindings_cfg, tasks_api_client, distribution
+):
+    """Perform filtering over the task's field created_resources."""
 
-    This test targets the following issues:
+    task, *_ = tasks_api_client.list(created_resources=distribution.pulp_href).results
 
-    * `Pulp #3144 <https://pulp.plan.io/issues/3144>`_
-    * `Pulp #3527 <https://pulp.plan.io/issues/3527>`_
-    * `Pulp Smash #754 <https://github.com/pulp/pulp-smash/issues/754>`_
-    """
+    auth = BasicAuth(login=bindings_cfg.username, password=bindings_cfg.password)
+    full_href = urljoin(bindings_cfg.host, task.pulp_href)
 
-    @classmethod
-    def setUpClass(cls):
-        """Create class-wide variables."""
-        cls.client = api.Client(config.get_config(), api.json_handler)
-        cls.task = {}
+    response_body = download_file(f"{full_href}?fields=created_resources", auth=auth).body
 
-    def test_01_create_task(self):
-        """Create a task."""
-        repo = self.client.post(FILE_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
-        attrs = {"description": utils.uuid4()}
-        response = self.client.patch(repo["pulp_href"], attrs)
-        self.task.update(self.client.get(response["task"]))
+    filtered_task = json.loads(response_body)
 
-    @skip_if(bool, "task", False)
-    def test_02_read_href(self):
-        """Read a task by its pulp_href."""
-        task = self.client.get(self.task["pulp_href"])
-        for key, val in self.task.items():
-            if key in _DYNAMIC_TASKS_ATTRS:
-                continue
-            with self.subTest(key=key):
-                self.assertEqual(task[key], val, task)
-
-    @skip_if(bool, "task", False)
-    def test_02_read_href_with_specific_fields(self):
-        """Read a task by its pulp_hrefproviding specific fields."""
-        fields = ("pulp_href", "state", "worker")
-        task = self.client.get(self.task["pulp_href"], params={"fields": ",".join(fields)})
-        self.assertEqual(sorted(fields), sorted(task.keys()))
-
-    @skip_if(bool, "task", False)
-    def test_02_read_task_without_specific_fields(self):
-        """Read a task by its href excluding specific fields."""
-        # requests doesn't allow the use of != in parameters.
-        url = "{}?exclude_fields=state".format(self.task["pulp_href"])
-        task = self.client.get(url)
-        self.assertNotIn("state", task.keys())
-
-    @skip_if(bool, "task", False)
-    def test_02_read_task_with_minimal_fields(self):
-        """Read a task by its href filtering minimal fields."""
-        task = self.client.get(self.task["pulp_href"], params={"minimal": True})
-        response_fields = task.keys()
-        self.assertNotIn("progress_reports", response_fields)
-        self.assertNotIn("parent_task", response_fields)
-        self.assertNotIn("error", response_fields)
-
-    @skip_if(bool, "task", False)
-    def test_02_read_invalid_worker(self):
-        """Read a task using an invalid worker name."""
-        with self.assertRaises(HTTPError):
-            self.filter_tasks({"worker": utils.uuid4()})
-
-    @skip_if(bool, "task", False)
-    def test_02_read_valid_worker(self):
-        """Read a task using a valid worker name."""
-        page = self.filter_tasks({"worker": self.task["worker"]})
-        self.assertNotEqual(len(page["results"]), 0, page["results"])
-
-    def test_02_read_invalid_date(self):
-        """Read a task by an invalid date."""
-        with self.assertRaises(HTTPError):
-            self.filter_tasks({"finished_at": utils.uuid4(), "started_at": utils.uuid4()})
-
-    @skip_if(bool, "task", False)
-    def test_02_read_valid_date(self):
-        """Read a task by a valid date."""
-        page = self.filter_tasks({"started_at": self.task["started_at"]})
-        self.assertGreaterEqual(len(page["results"]), 1, page["results"])
-
-    @skip_if(bool, "task", False)
-    def test_02_search_task_by_name(self):
-        """Search Task by its name.
-
-        This test targets the following issue:
-
-        * `Pulp #4230 <https://pulp.plan.io/issues/4230>`_
-
-        Do the following:
-
-        1. Assert that task has a field name, and that this field is not empty.
-        2. Filter the tasks by name.
-        3. Assert the created task is included on the search results.
-        """
-        # step 1
-        self.assertIsNotNone(self.task.get("name"))
-        # step 2
-        search_results = self.filter_tasks({"name": self.task["name"]})
-        # step 3
-        self.assertIn(self.task, search_results["results"])
-
-    def test_02_search_by_invalid_name(self):
-        """Search passing invalid name and assert nothing is returned."""
-        search_results = self.filter_tasks({"name": "this-is-not-a-task-name"})
-        self.assertEqual(search_results["count"], 0)
-        self.assertEqual(len(search_results["results"]), 0)
-
-    @skip_if(bool, "task", False)
-    def test_03_delete_tasks(self):
-        """Delete a task."""
-        # If this assertion fails, then either Pulp's tasking system or Pulp
-        # Smash's code for interacting with the tasking system has a bug.
-        self.assertIn(self.task["state"], P3_TASK_END_STATES)
-        self.client.delete(self.task["pulp_href"])
-        with self.assertRaises(HTTPError):
-            self.client.get(self.task["pulp_href"])
-
-    def filter_tasks(self, criteria):
-        """Filter tasks based on the provided criteria."""
-        return self.client.get(TASKS_PATH, params=criteria)
+    assert len(filtered_task["created_resources"]) == 1
+    assert task.created_resources == filtered_task["created_resources"]
 
 
-class FilterTaskCreatedResourcesTestCase(unittest.TestCase):
-    """Perform filtering over the task's field created_resources.
+@pytest.fixture
+def setup_filter_fixture(
+    file_repo,
+    file_repo_api_client,
+    file_fixture_gen_remote_ssl,
+    file_random_content_unit,
+    basic_manifest_path,
+    tasks_api_client,
+):
 
-    This test targets the following issue:
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
 
-    * `Pulp #5180 <https://pulp.plan.io/issues/5180>`_
-    """
+    body = RepositorySyncURL(remote=remote.pulp_href)
+    synced_repo = monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
 
-    def test_read_fields_created_resources_only(self):
-        """Read created resources from the requested fields."""
-        client = api.Client(config.get_config(), api.page_handler)
-        distribution_path = "{}file/file/".format(BASE_DISTRIBUTION_PATH)
-        response = client.post(distribution_path, gen_distribution())
+    file_repo = file_repo_api_client.read(file_repo.pulp_href)
 
-        task = client.get(response["task"])
-        self.addCleanup(client.delete, task["created_resources"][0])
+    monitor_task(
+        file_repo_api_client.modify(
+            file_repo.pulp_href, {"remove_content_units": [file_random_content_unit.pulp_href]}
+        ).task
+    )
 
-        filtered_task = client.get(task["pulp_href"], params={"fields": "created_resources"})
+    repo_update_action = file_repo_api_client.partial_update(
+        file_repo.pulp_href, {"description": str(uuid4())}
+    )
+    repo_update_task = tasks_api_client.read(repo_update_action.task)
 
-        self.assertEqual(len(filtered_task), 1, filtered_task)
+    yield (file_repo, remote, synced_repo, repo_update_task)
 
-        self.assertEqual(
-            task["created_resources"], filtered_task["created_resources"], filtered_task
+    tasks_api_client.delete(repo_update_task.pulp_href)
+
+
+def test_filter_tasks_by_reserved_resources(setup_filter_fixture, tasks_api_client):
+    """Filter all tasks by a particular reserved resource."""
+    *_, synced_repo, repo_update_task = setup_filter_fixture
+    reserved_resources_record, *_ = repo_update_task.reserved_resources_record
+
+    results = tasks_api_client.list(reserved_resources_record=[reserved_resources_record]).results
+    # Why reserved_resources_record parameter needs to be a list here? ^
+
+    assert results[0] == repo_update_task
+    assert len(results) == 3
+
+    # Filter all tasks by a non-existing reserved resource.
+    with pytest.raises(ApiException) as ctx:
+        tasks_api_client.list(
+            reserved_resources_record=["a_resource_should_be_never_named_like_this"]
         )
 
+    assert ctx.value.status == 400
 
-class FilterTaskResourcesTestCase(unittest.TestCase):
-    """Perform filtering of reserved resources and the contents of created resources."""
+    # Filter all tasks by a particular created resource.
+    created_resources, *_ = synced_repo.created_resources
+    results = tasks_api_client.list(created_resources=created_resources).results
 
-    @classmethod
-    def setUpClass(cls):
-        cls.cfg = config.get_config()
-        cls.client = api.Client(cls.cfg, api.page_handler)
+    assert len(results) == 1
+    assert results[0] == synced_repo
 
-    def setUp(self):
-        self.remote = self.client.post(FILE_REMOTE_PATH, gen_file_remote())
-        self.repository = self.client.post(FILE_REPO_PATH, gen_repo())
-        response = sync(self.cfg, self.remote, self.repository)
-        self.created_repo_version = response["pulp_href"]
-        self.repository = self.client.get(self.repository["pulp_href"])
-        for file_content in get_content(self.repository)[FILE_CONTENT_NAME]:
-            modify_repo(self.cfg, self.repository, remove_units=[file_content])
-        attrs = {"description": utils.uuid4()}
-        response = self.client.patch(self.repository["pulp_href"], attrs)
-        self.repo_update_task = self.client.get(response["task"])
+    # Filter all tasks by a non-existing reserved resource.
+    created_resources = "a_resource_should_be_never_named_like_this"
 
-    def tearDown(self):
-        self.client.delete(self.repository["pulp_href"])
-        self.client.delete(self.remote["pulp_href"])
-        self.client.delete(self.repo_update_task["pulp_href"])
+    with pytest.raises(ApiException) as ctx:
+        tasks_api_client.list(created_resources=created_resources)
 
-    def test_01_filter_tasks_by_reserved_resources(self):
-        """Filter all tasks by a particular reserved resource."""
-        filter_params = {
-            "reserved_resources_record": self.repo_update_task["reserved_resources_record"][0]
-        }
-        results = self.client.get(TASKS_PATH, params=filter_params)
-        self.assertEqual(len(results), 5, results)
-        self.assertEqual(self.repo_update_task, results[0], results)
-
-    def test_02_filter_tasks_by_non_existing_resources(self):
-        """Filter all tasks by a non-existing reserved resource."""
-        filter_params = {"reserved_resources_record": "a_resource_should_be_never_named_like_this"}
-        with self.assertRaises(HTTPError):
-            self.client.get(TASKS_PATH, params=filter_params)
-
-    def test_03_filter_tasks_by_created_resources(self):
-        """Filter all tasks by a particular created resource."""
-        filter_params = {"created_resources": self.created_repo_version}
-        results = self.client.get(TASKS_PATH, params=filter_params)
-        self.assertEqual(len(results), 1, results)
-        self.assertEqual([self.created_repo_version], results[0]["created_resources"], results)
-
-    def test_04_filter_tasks_by_non_existing_resources(self):
-        """Filter all tasks by a non-existing reserved resource."""
-        filter_params = {"created_resources": "a_resource_should_be_never_named_like_this"}
-        with self.assertRaises(HTTPError):
-            self.client.get(TASKS_PATH, params=filter_params)
+    assert ctx.value.status == 404
