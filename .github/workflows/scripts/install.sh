@@ -79,8 +79,10 @@ services:
     volumes:
       - ./settings:/etc/pulp
       - ./ssh:/keys/
-      - ~/.config:/root/.config
+      - ~/.config:/var/lib/pulp/.config
       - ../../../pulp-openapi-generator:/root/pulp-openapi-generator
+    env:
+      PULP_WORKERS: "4"
 VARSYAML
 
 cat >> vars/main.yaml << VARSYAML
@@ -91,11 +93,7 @@ pulp_container_tag: https
 
 VARSYAML
 
-if [ "$TEST" = "upgrade" ]; then
-  sed -i "/^pulp_container_tag:.*/s//pulp_container_tag: upgrade-https/" vars/main.yaml
-fi
-
-SCENARIOS=("pulp" "performance" "upgrade" "azure" "s3" "stream" "plugin-from-pypi" "generate-bindings")
+SCENARIOS=("pulp" "performance" "azure" "s3" "stream" "plugin-from-pypi" "generate-bindings")
 if [[ " ${SCENARIOS[*]} " =~ " ${TEST} " ]]; then
   sed -i -e '/^services:/a \
   - name: pulp-fixtures\
@@ -109,7 +107,9 @@ if [ "$TEST" == 'stream' ]; then
     volumes:\
       - ./ssh/id_ed25519.pub:/home/foo/.ssh/keys/id_ed25519.pub\
     command: "foo::::storage"' vars/main.yaml
-  sed -i -e '$a stream_test: true' vars/main.yaml
+  sed -i -e '$a stream_test: true\
+pulp_scenario_settings: null\
+' vars/main.yaml
 fi
 
 if [ "$TEST" = "s3" ]; then
@@ -124,7 +124,9 @@ if [ "$TEST" = "s3" ]; then
     command: "server /data"' vars/main.yaml
   sed -i -e '$a s3_test: true\
 minio_access_key: "'$MINIO_ACCESS_KEY'"\
-minio_secret_key: "'$MINIO_SECRET_KEY'"' vars/main.yaml
+minio_secret_key: "'$MINIO_SECRET_KEY'"\
+pulp_scenario_settings: null\
+' vars/main.yaml
   export PULP_API_ROOT="/rerouted/djnd/"
 fi
 
@@ -141,7 +143,9 @@ if [ "$TEST" = "azure" ]; then
     volumes:\
       - ./azurite:/etc/pulp\
     command: "azurite-blob --blobHost 0.0.0.0 --cert /etc/pulp/azcert.pem --key /etc/pulp/azkey.pem"' vars/main.yaml
-  sed -i -e '$a azure_test: true' vars/main.yaml
+  sed -i -e '$a azure_test: true\
+pulp_scenario_settings: null\
+' vars/main.yaml
 fi
 
 echo "PULP_API_ROOT=${PULP_API_ROOT}" >> "$GITHUB_ENV"
@@ -152,6 +156,15 @@ fi
 
 ansible-playbook build_container.yaml
 ansible-playbook start_container.yaml
+
+# .config needs to be accessible by the pulp user in the container, but some
+# files will likely be modified on the host by post/pre scripts.
+chmod 777 ~/.config/pulp_smash/
+chmod 666 ~/.config/pulp_smash/settings.json
+sudo chown -R 700:700 ~runner/.config
+# Plugins often write to ~/.config/pulp/cli.toml from the host
+sudo chmod 777 ~runner/.config/pulp
+sudo chmod 666 ~runner/.config/pulp/cli.toml
 echo ::group::SSL
 # Copy pulp CA
 sudo docker cp pulp:/etc/pulp/certs/pulp_webserver.crt /usr/local/share/ca-certificates/pulp_webserver.crt
@@ -178,6 +191,9 @@ if [[ "$TEST" = "azure" ]]; then
   cat /usr/local/share/ca-certificates/azcert.crt | cmd_stdin_prefix tee -a /etc/pki/tls/cert.pem > /dev/null
   AZURE_STORAGE_CONNECTION_STRING='DefaultEndpointsProtocol=https;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=https://ci-azurite:10000/devstoreaccount1;'
   az storage container create --name pulp-test --connection-string $AZURE_STORAGE_CONNECTION_STRING
+
+  # temporary hack until https://github.com/Azure/azure-sdk-for-python/pull/26872 is released
+  cmd_prefix bash -c "pip3 install 'azure-storage-blob<12.14.0'"
 fi
 
 echo ::group::PIP_LIST
