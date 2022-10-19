@@ -1,59 +1,31 @@
 """Tests that perform action over remotes"""
-
-import unittest
-
-from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_repo, get_content, sync
-
-from pulp_file.tests.functional.utils import gen_file_remote
-from .constants import (
-    FILE_CONTENT_NAME,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
-)
+import pytest
+from pulpcore.tests.functional.utils import monitor_task
+from pulp_smash.pulp3.utils import gen_repo
 
 
-class RemotesTestCase(unittest.TestCase):
+@pytest.mark.parallel
+def test_shared_remote_usage(
+    file_repo_api_client,
+    file_content_api_client,
+    file_fixture_gen_remote_ssl,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+):
     """Verify remotes can be used with different repos."""
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
 
-    def test_all(self):
-        """Verify remotes can be used with different repos.
+    # Create and sync repos.
+    repos = []
+    for _ in range(2):
+        repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+        monitor_task(file_repo_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task)
+        repos.append(file_repo_api_client.read(repo.pulp_href))
 
-        This test explores the design choice stated in `Pulp #3341`_ that
-        remove the FK from remotes to repository.
-        Allowing remotes to be used with different
-        repositories.
-
-        .. _Pulp #3341: https://pulp.plan.io/issues/3341
-
-        Do the following:
-
-        1. Create a remote.
-        2. Create 2 repositories.
-        3. Sync both repositories using the same remote.
-        4. Assert that the two repositories have the same contents.
-        """
-        cfg = config.get_config()
-
-        # Create a remote.
-        client = api.Client(cfg, api.json_handler)
-        body = gen_file_remote()
-        remote = client.post(FILE_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
-
-        # Create and sync repos.
-        repos = []
-        for _ in range(2):
-            repo = client.post(FILE_REPO_PATH, gen_repo())
-            self.addCleanup(client.delete, repo["pulp_href"])
-            sync(cfg, remote, repo)
-            repos.append(client.get(repo["pulp_href"]))
-
-        # Compare contents of repositories.
-        contents = []
-        for repo in repos:
-            contents.append(get_content(repo)[FILE_CONTENT_NAME])
-        self.assertEqual(
-            {content["pulp_href"] for content in contents[0]},
-            {content["pulp_href"] for content in contents[1]},
-        )
+    # Compare contents of repositories.
+    contents = set()
+    for repo in repos:
+        content = file_content_api_client.list(repository_version=repo.latest_version_href)
+        assert content.count == 3
+        contents.update({c.pulp_href for c in content.results})
+    assert len(contents) == 3
