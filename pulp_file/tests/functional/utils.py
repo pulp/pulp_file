@@ -269,14 +269,18 @@ def parse_date_from_string(s, parse_format="%Y-%m-%dT%H:%M:%S.%fZ"):
     return datetime.strptime(s, parse_format)
 
 
-def generate_iso(name, size=1024):
+def generate_iso(full_path, size=1024, relative_path=None):
     """Generate a random file."""
-    with open(name, "wb") as fout:
+    with open(full_path, "wb") as fout:
         contents = os.urandom(size)
         fout.write(contents)
         fout.flush()
     digest = hashlib.sha256(contents).hexdigest()
-    return {"name": name.name, "size": size, "digest": digest}
+    if relative_path:
+        name = relative_path
+    else:
+        name = full_path.name
+    return {"name": name, "size": size, "digest": digest}
 
 
 def generate_manifest(name, file_list):
