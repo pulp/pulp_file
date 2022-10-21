@@ -1,6 +1,7 @@
 """Tests for Pulp`s download policies."""
 from aiohttp.client_exceptions import ClientResponseError
 import hashlib
+import os
 import pytest
 import uuid
 from urllib.parse import urljoin
@@ -120,7 +121,7 @@ def test_download_policy(
     if download_policy == "immediate" and settings.DEFAULT_FILE_STORAGE in OBJECT_STORAGES:
         content_disposition = downloaded_file.response_obj.headers.get("Content-Disposition")
         assert content_disposition is not None
-        filename = content_unit[0]
+        filename = os.path.basename(content_unit[0])
         assert f"attachment;filename={filename}" == content_disposition
 
     # Assert proper download with range requests smaller than one chunk of downloader
