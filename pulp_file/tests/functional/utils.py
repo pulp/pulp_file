@@ -2,31 +2,26 @@
 import aiohttp
 import asyncio
 from dataclasses import dataclass
-from datetime import datetime
 from functools import partial
 import hashlib
 import os
 import requests
+import shutil
 from unittest import SkipTest
 from tempfile import NamedTemporaryFile
 
-from pulp_smash import api, cli, config, selectors, utils
+from pulp_smash import api, config, selectors, utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import STATUS_PATH
 from pulp_smash.pulp3.utils import (
     gen_remote,
     gen_repo,
     get_content,
-    sync,
 )
 
 from pulp_file.tests.functional.constants import (
     FILE_CONTENT_NAME,
-    FILE_CONTENT_PATH,
     FILE_FIXTURE_MANIFEST_URL,
-    FILE_PUBLICATION_PATH,
-    FILE_REMOTE_PATH,
-    FILE_REPO_PATH,
     FILE_URL,
 )
 
@@ -34,11 +29,8 @@ from pulpcore.client.pulpcore import (
     ApiClient as CoreApiClient,
     ArtifactsApi,
     ExportersPulpApi,
-    UsersApi,
-    UsersRolesApi,
 )
 from pulpcore.client.pulp_file import ApiClient as FileApiClient
-from pulpcore.client.pulp_file import DistributionsFileApi
 
 
 cfg = config.get_config()
@@ -76,29 +68,6 @@ def gen_file_content_attrs(artifact):
     return {"artifact": artifact["pulp_href"], "relative_path": utils.uuid4()}
 
 
-def populate_pulp(cfg, url=FILE_FIXTURE_MANIFEST_URL):
-    """Add file contents to Pulp.
-
-    :param pulp_smash.config.PulpSmashConfig: Information about a Pulp application.
-    :param url: The URL to a file repository's ``PULP_MANIFEST`` file. Defaults to
-        :data:`pulp_smash.constants.FILE_FIXTURE_MANIFEST_URL` + ``PULP_MANIFEST``.
-    :returns: A list of dicts, where each dict describes one file content in Pulp.
-    """
-    client = api.Client(cfg, api.json_handler)
-    remote = {}
-    repo = {}
-    try:
-        remote.update(client.post(FILE_REMOTE_PATH, gen_remote(url)))
-        repo.update(client.post(FILE_REPO_PATH, gen_repo()))
-        sync(cfg, remote, repo)
-    finally:
-        if remote:
-            client.delete(remote["pulp_href"])
-        if repo:
-            client.delete(repo["pulp_href"])
-    return client.get(FILE_CONTENT_PATH)["results"]
-
-
 skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
 """The ``@skip_if`` decorator, customized for unittest.
 
@@ -130,23 +99,6 @@ def gen_file_client():
     """Return an OBJECT for file client."""
     configuration = config.get_config().get_bindings_config()
     return FileApiClient(configuration)
-
-
-def create_file_publication(cfg, repo, version_href=None):
-    """Create a file publication.
-
-    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
-        host.
-    :param repo: A dict of information about the repository.
-    :param version_href: A href for the repo version to be published.
-    :returns: A publication. A dict of information about the just created
-        publication.
-    """
-    if version_href:
-        body = {"repository_version": version_href}
-    else:
-        body = {"repository": repo["pulp_href"]}
-    return api.Client(cfg).post(FILE_PUBLICATION_PATH, body)
 
 
 def create_repo_and_versions(syncd_repo, repo_api, versions_api, content_api):
@@ -181,70 +133,12 @@ def delete_exporter(exporter):
     :param exporter : PulpExporter to delete
     """
     cfg = config.get_config()
-    cli_client = cli.Client(cfg)
     core_client = CoreApiClient(configuration=cfg.get_bindings_config())
     exporter_api = ExportersPulpApi(core_client)
-    cmd = ("rm", "-rf", exporter.path)
+    shutil.rmtree(exporter.path, ignore_errors=True)
 
-    cli_client.run(cmd, sudo=True)
     result = exporter_api.delete(exporter.pulp_href)
     monitor_task(result.task)
-
-
-def create_distribution(repository_href=None):
-    """Utility to create a pulp_file distribution."""
-    file_client = gen_file_client()
-    distro_api = DistributionsFileApi(file_client)
-
-    body = {"name": utils.uuid4(), "base_path": utils.uuid4()}
-    if repository_href:
-        body["repository"] = repository_href
-
-    result = distro_api.create(body)
-    distro_href = monitor_task(result.task).created_resources[0]
-    distro = distro_api.read(distro_href)
-    return distro
-
-
-def gen_user_rest(cfg=None, model_roles=None, object_roles=None, **kwargs):
-    """Add a user with a set of roles using the REST API."""
-    if cfg is None:
-        cfg = config.get_config()
-    api_config = cfg.get_bindings_config()
-    admin_core_client = CoreApiClient(api_config)
-    admin_user_api = UsersApi(admin_core_client)
-    admin_user_roles_api = UsersRolesApi(admin_core_client)
-
-    user_body = {
-        "username": utils.uuid4(),
-        "password": utils.uuid4(),
-    }
-    user_body.update(kwargs)
-
-    user = admin_user_api.create(user_body)
-
-    if model_roles:
-        for role in model_roles:
-            user_role = {"role": role, "content_object": None}
-            admin_user_roles_api.create(user.pulp_href, user_role)
-    if object_roles:
-        for role, obj in object_roles:
-            user_role = {"role": role, "content_object": obj}
-            admin_user_roles_api.create(user.pulp_href, user_role)
-
-    user_body.update(user.to_dict())
-    return user_body
-
-
-def del_user_rest(user_href, cfg=None):
-    """Delete a user using the REST API."""
-    if cfg is None:
-        cfg = config.get_config()
-    api_config = cfg.get_bindings_config()
-    admin_core_client = CoreApiClient(api_config)
-    admin_user_api = UsersApi(admin_core_client)
-
-    admin_user_api.delete(user_href)
 
 
 def get_redis_status():
@@ -257,16 +151,6 @@ def get_redis_status():
     except (KeyError, TypeError):
         is_redis_connected = False
     return is_redis_connected
-
-
-def parse_date_from_string(s, parse_format="%Y-%m-%dT%H:%M:%S.%fZ"):
-    """Parse string to datetime object.
-
-    :param s: str like '2018-11-18T21:03:32.493697Z'
-    :param parse_format: str defaults to %Y-%m-%dT%H:%M:%S.%fZ
-    :return: datetime.datetime
-    """
-    return datetime.strptime(s, parse_format)
 
 
 def generate_iso(full_path, size=1024, relative_path=None):

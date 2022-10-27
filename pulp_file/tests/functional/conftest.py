@@ -8,6 +8,7 @@ import aiofiles
 import pytest
 from aiohttp import web
 from pulp_smash.pulp3.utils import gen_repo
+from pulp_smash.pulp3.bindings import monitor_task
 from pulpcore.client.pulp_file import (
     AcsFileApi,
     ApiClient,
@@ -52,20 +53,17 @@ def file_content_api_client(file_client):
 
 
 @pytest.fixture
-def file_random_content_unit(
-    file_content_api_client, tmp_path, random_artifact, gen_object_with_cleanup
-):
-    artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
-    return gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
+def file_random_content_unit(file_content_unit_with_name_factory):
+    return file_content_unit_with_name_factory(str(uuid.uuid4()))
 
 
 @pytest.fixture
-def file_content_unit_with_name_factory(
-    file_content_api_client, tmp_path, random_artifact, gen_object_with_cleanup
-):
+def file_content_unit_with_name_factory(file_content_api_client, random_artifact):
     def _file_content_unit_with_name_factory(name):
         artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": name}
-        return gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
+        return file_content_api_client.read(
+            monitor_task(file_content_api_client.create(**artifact_attrs).task).created_resources[0]
+        )
 
     return _file_content_unit_with_name_factory
 
@@ -285,6 +283,7 @@ def file_fixture_gen_file_repo(file_repo_api_client, gen_object_with_cleanup):
     """A factory to generate a File Repository with auto-deletion after the test run."""
 
     def _file_fixture_gen_file_repo(**kwargs):
+        kwargs.setdefault("name", str(uuid.uuid4()))
         return gen_object_with_cleanup(file_repo_api_client, kwargs)
 
     yield _file_fixture_gen_file_repo
