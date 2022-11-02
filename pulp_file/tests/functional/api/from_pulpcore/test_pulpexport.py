@@ -191,6 +191,8 @@ class PulpExportTestCase(BaseExporterCase):
         task = self.client.get(export_response.task)
         resources = task["created_resources"]
         self.assertEqual(1, len(resources))
+        shared_resources = [r for r in task["reserved_resources_record"] if r.startswith("shared:")]
+        self.assertEqual(len(exporter.repositories), len(shared_resources))
         reports = task["progress_reports"]
         found_artifacts = False
         found_content = False
