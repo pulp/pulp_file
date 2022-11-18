@@ -8,7 +8,6 @@ import aiofiles
 import pytest
 from aiohttp import web
 from pulp_smash.pulp3.utils import gen_repo
-from pulp_smash.pulp3.bindings import monitor_task
 from pulpcore.client.pulp_file import (
     AcsFileApi,
     ApiClient,
@@ -35,21 +34,53 @@ def pytest_check_for_leftover_pulp_objects(config):
             raise Exception(f"This test left over a {type_to_check}.")
 
 
-@pytest.fixture
-def file_client(cid, bindings_cfg):
+# Api Bindings fixtures
+
+
+@pytest.fixture(scope="session")
+def file_client(_api_client_set, bindings_cfg):
     api_client = ApiClient(bindings_cfg)
-    api_client.default_headers["Correlation-ID"] = cid
-    return api_client
+    _api_client_set.add(api_client)
+    yield api_client
+    _api_client_set.remove(api_client)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def file_acs_api_client(file_client):
     return AcsFileApi(file_client)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def file_content_api_client(file_client):
     return ContentFilesApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_distro_api_client(file_client):
+    return DistributionsFileApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_pub_api_client(file_client):
+    return PublicationsFileApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_repo_api_client(file_client):
+    return RepositoriesFileApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_repo_ver_api_client(file_client):
+    return RepositoriesFileVersionsApi(file_client)
+
+
+@pytest.fixture(scope="session")
+def file_remote_api_client(file_client):
+    return RemotesFileApi(file_client)
+
+
+# Factory fixtures
 
 
 @pytest.fixture
@@ -58,7 +89,7 @@ def file_random_content_unit(file_content_unit_with_name_factory):
 
 
 @pytest.fixture
-def file_content_unit_with_name_factory(file_content_api_client, random_artifact):
+def file_content_unit_with_name_factory(file_content_api_client, random_artifact, monitor_task):
     def _file_content_unit_with_name_factory(name):
         artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": name}
         return file_content_api_client.read(
@@ -69,26 +100,6 @@ def file_content_unit_with_name_factory(file_content_api_client, random_artifact
 
 
 @pytest.fixture
-def file_distro_api_client(file_client):
-    return DistributionsFileApi(file_client)
-
-
-@pytest.fixture
-def file_pub_api_client(file_client):
-    return PublicationsFileApi(file_client)
-
-
-@pytest.fixture
-def file_repo_api_client(file_client):
-    return RepositoriesFileApi(file_client)
-
-
-@pytest.fixture
-def file_repo_ver_api_client(file_client):
-    return RepositoriesFileVersionsApi(file_client)
-
-
-@pytest.fixture
 def file_repo(file_repo_api_client, gen_object_with_cleanup):
     return gen_object_with_cleanup(file_repo_api_client, gen_repo())
 
@@ -96,11 +107,6 @@ def file_repo(file_repo_api_client, gen_object_with_cleanup):
 @pytest.fixture
 def file_repo_with_auto_publish(file_repo_api_client, gen_object_with_cleanup):
     return gen_object_with_cleanup(file_repo_api_client, gen_repo(autopublish=True))
-
-
-@pytest.fixture
-def file_remote_api_client(file_client):
-    return RemotesFileApi(file_client)
 
 
 @pytest.fixture

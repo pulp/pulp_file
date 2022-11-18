@@ -2,15 +2,13 @@
 import aiohttp
 import asyncio
 from dataclasses import dataclass
-from functools import partial
 import hashlib
 import os
 import requests
 import shutil
-from unittest import SkipTest
 from tempfile import NamedTemporaryFile
 
-from pulp_smash import api, config, selectors, utils
+from pulp_smash import api, config, utils
 from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import STATUS_PATH
 from pulp_smash.pulp3.utils import gen_remote, get_content
@@ -62,14 +60,6 @@ def gen_file_content_attrs(artifact):
     :returns: A semi-random dict for use in creating a content unit.
     """
     return {"artifact": artifact["pulp_href"], "relative_path": utils.uuid4()}
-
-
-skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
-"""The ``@skip_if`` decorator, customized for unittest.
-
-:func:`pulp_smash.selectors.skip_if` is test runner agnostic. This function is
-identical, except that ``exc`` has been set to ``unittest.SkipTest``.
-"""
 
 
 def gen_artifact(url=FILE_URL, file=None):
