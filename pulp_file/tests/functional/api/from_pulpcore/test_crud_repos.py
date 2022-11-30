@@ -11,7 +11,7 @@ from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulpcore.client.pulp_file.exceptions import ApiException
-from pulp_file.tests.functional.utils import gen_file_remote, download_file, post_url
+from pulp_file.tests.functional.utils import gen_file_remote, download_file
 from pulp_file.tests.functional.api.from_pulpcore.constants import FILE_REMOTE_PATH
 
 
@@ -266,16 +266,6 @@ def test_remote_pulp_labels(file_remote_api_client, gen_object_with_cleanup):
     )
 
     assert remote.pulp_labels == pulp_labels
-
-    # Test if a created remote contains pulp_labels when passing form data.
-    config = file_remote_api_client.api_client.configuration
-    auth = BasicAuth(login=config.username, password=config.password)
-    url = urljoin(config.host, remote.pulp_href[:-37])  # Cut off the UUID
-    remote = post_url(
-        url, gen_file_remote(pulp_labels=json.dumps(pulp_labels)), return_body=True, auth=auth
-    )
-
-    assert json.loads(remote)["pulp_labels"] == pulp_labels
 
 
 @pytest.mark.parallel
