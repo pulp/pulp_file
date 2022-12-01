@@ -3,7 +3,6 @@ import pytest
 import json
 from uuid import uuid4
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import (
     gen_distribution,
     gen_repo,
@@ -28,6 +27,7 @@ def test_crud_publication_distribution(
     basic_manifest_path,
     gen_object_with_cleanup,
     file_distro_api_client,
+    monitor_task,
 ):
     # Create a remote and sync from it to create the first repository version
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
@@ -176,6 +176,7 @@ def test_distribution_filtering(
     file_pub_api_client,
     gen_object_with_cleanup,
     write_3_iso_file_fixture_data_factory,
+    monitor_task,
 ):
     """Test distribution filtering based on the content exposed from the distribution."""
 

@@ -1,7 +1,6 @@
 """Tests that sync file plugin repositories."""
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulp_file.tests.functional.utils import get_files_in_manifest
@@ -28,6 +27,7 @@ def test_auto_publish_and_distribution(
     gen_object_with_cleanup,
     file_distro_api_client,
     file_random_content_unit,
+    monitor_task,
 ):
     """Tests auto-publish and auto-distribution"""
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")

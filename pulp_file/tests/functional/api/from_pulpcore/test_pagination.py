@@ -1,12 +1,14 @@
 """Tests related to pagination."""
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 
 @pytest.mark.parallel
 def test_repo_version_pagination(
-    file_content_unit_with_name_factory, file_repo_api_client, file_repo_ver_api_client, file_repo
+    file_content_unit_with_name_factory,
+    file_repo_api_client,
+    file_repo_ver_api_client,
+    file_repo,
+    monitor_task,
 ):
     # Create 20 new repository versions (21 in total)
     for i in range(20):

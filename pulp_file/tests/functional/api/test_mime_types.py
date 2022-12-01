@@ -5,8 +5,6 @@ import uuid
 
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.client.pulp_file import FileFileDistribution, RepositoryAddRemoveContent
 
 
@@ -17,6 +15,7 @@ def test_content_types(
     file_repo_with_auto_publish,
     file_content_unit_with_name_factory,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Test if content-app correctly returns mime-types based on filenames."""
     files = {

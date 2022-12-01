@@ -7,7 +7,6 @@ the case.
 import pytest
 import uuid
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulpcore.client.pulpcore.exceptions import ApiException
@@ -69,7 +68,7 @@ def test_read_exporter(create_exporter, exporters_filesystem_api_client):
 
 
 @pytest.mark.parallel
-def test_partial_update_exporter(create_exporter, exporters_filesystem_api_client):
+def test_partial_update_exporter(create_exporter, exporters_filesystem_api_client, monitor_task):
     """Update a FilesystemExporter's path."""
     exporter_created, body = create_exporter()
     body = {"path": "/tmp/{}".format(str(uuid.uuid4()))}
@@ -91,7 +90,7 @@ def test_list_exporter(create_exporter, exporters_filesystem_api_client):
 
 
 @pytest.mark.parallel
-def test_delete_exporter(exporters_filesystem_api_client):
+def test_delete_exporter(exporters_filesystem_api_client, monitor_task):
     exporter = exporters_filesystem_api_client.create({"name": "test", "path": "/tmp/abc"})
     result = exporters_filesystem_api_client.delete(exporter.pulp_href)
     monitor_task(result.task)
@@ -103,7 +102,11 @@ def test_delete_exporter(exporters_filesystem_api_client):
 
 @pytest.fixture
 def publications(
-    gen_object_with_cleanup, file_repo_api_client, file_remote_api_client, file_pub_api_client
+    gen_object_with_cleanup,
+    file_repo_api_client,
+    file_remote_api_client,
+    file_pub_api_client,
+    monitor_task,
 ):
     publications = []
 
@@ -122,7 +125,7 @@ def publications(
 
 
 @pytest.fixture
-def create_exporter_export(exporters_filesystem_exports_api_client):
+def create_exporter_export(exporters_filesystem_exports_api_client, monitor_task):
     def _create_exporter_export(exporter, publication):
         body = {"publication": publication.pulp_href}
         export_response = exporters_filesystem_exports_api_client.create(exporter.pulp_href, body)

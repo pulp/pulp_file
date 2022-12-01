@@ -2,9 +2,6 @@
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
-from pulp_smash.pulp3.utils import gen_distribution
-
 from pulpcore.client.pulp_file import (
     RepositoryAddRemoveContent,
     RepositorySyncURL,
@@ -31,7 +28,9 @@ def test_full_workflow(
     file_pub_api_client,
     file_distro_api_client,
     file_content_api_client,
+    file_distribution_factory,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     def _check_cache(url):
         """Helper to check if cache miss or hit"""
@@ -52,9 +51,7 @@ def test_full_workflow(
     pub2 = file_pub_api_client.read(
         monitor_task(file_pub_api_client.create(body).task).created_resources[0]
     )
-    distro = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(repository=repo.pulp_href)
-    )
+    distro = file_distribution_factory(repository=repo.pulp_href)
 
     # Checks responses are cached for content
     files = ["", "", "PULP_MANIFEST", "PULP_MANIFEST", "1.iso", "1.iso"]
@@ -79,8 +76,7 @@ def test_full_workflow(
         assert (200, "HIT" if i % 2 == 1 else "MISS") == _check_cache(url), file
 
     # Add a new distribution and check that its responses are cached separately
-    response = file_distro_api_client.create(gen_distribution(repository=repo.pulp_href))
-    distro2 = file_distro_api_client.read(monitor_task(response.task).created_resources[0])
+    distro2 = file_distribution_factory(repository=repo.pulp_href)
     url = urljoin(PULP_CONTENT_BASE_URL, f"{distro2.base_path}/")
     files = ["", "", "PULP_MANIFEST", "PULP_MANIFEST", "1.iso", "1.iso"]
     for i, file in enumerate(files):

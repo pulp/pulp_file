@@ -4,7 +4,6 @@ import hashlib
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import (
     gen_distribution,
 )
@@ -28,6 +27,7 @@ def test_delete_remote_on_demand(
     file_distro_api_client,
     basic_manifest_path,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     # Create a remote with on_demand download policy
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
@@ -74,6 +74,7 @@ def test_remote_artifact_url_update(
     basic_manifest_path,
     basic_manifest_only_path,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     # Create a remote that points to a repository that only has the manifest, but no content
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_only_path, policy="on_demand")

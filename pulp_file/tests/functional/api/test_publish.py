@@ -4,8 +4,6 @@ import json
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,
     FileFilePublication,
@@ -23,6 +21,7 @@ def test_crd_publications(
     basic_manifest_path,
     gen_object_with_cleanup,
     file_random_content_unit,
+    monitor_task,
 ):
     # Tests that a publication can be created from a specific repository version
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")

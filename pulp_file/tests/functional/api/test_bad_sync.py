@@ -2,15 +2,14 @@ import pytest
 import uuid
 
 from collections import defaultdict
-from pulp_smash.pulp3.bindings import monitor_task
 
-from pulpcore.client.pulp_file import (
-    RepositorySyncURL,
-)
+from pulpcore.client.pulp_file import RepositorySyncURL
 
 
 @pytest.fixture
-def perform_sync(file_repo, file_repo_api_client, file_remote_api_client, gen_object_with_cleanup):
+def perform_sync(
+    file_repo, file_repo_api_client, file_remote_api_client, gen_object_with_cleanup, monitor_task
+):
     def _perform_sync(url, policy="immediate"):
         remote_data = {
             "url": str(url),

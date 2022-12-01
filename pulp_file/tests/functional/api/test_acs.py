@@ -3,12 +3,6 @@ import pytest
 import uuid
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import (
-    monitor_task,
-    monitor_task_group,
-)
-from pulp_smash.pulp3.utils import gen_distribution
-
 from pulpcore.client.pulp_file import RepositorySyncURL
 from pulpcore.client.pulp_file.exceptions import ApiException
 
@@ -36,7 +30,11 @@ def generate_server_and_remote(
 
 @pytest.mark.parallel
 def test_acs_validation_and_update(
-    file_acs_api_client, file_fixture_gen_remote, basic_manifest_path, gen_object_with_cleanup
+    file_acs_api_client,
+    file_fixture_gen_remote,
+    basic_manifest_path,
+    gen_object_with_cleanup,
+    monitor_task,
 ):
     # Test that a remote with "immediate" download policy can't be used with an ACS
     immediate_remote = file_fixture_gen_remote(
@@ -102,6 +100,8 @@ def test_acs_sync(
     basic_manifest_path,
     gen_object_with_cleanup,
     generate_server_and_remote,
+    monitor_task,
+    monitor_task_group,
 ):
     # Create the main server and remote pointing to it
     main_server, main_remote = generate_server_and_remote(
@@ -153,6 +153,8 @@ def test_acs_sync_with_paths(
     large_manifest_path,
     gen_object_with_cleanup,
     generate_server_and_remote,
+    monitor_task,
+    monitor_task_group,
 ):
     # Create the main server and remote pointing to it
     main_server, main_remote = generate_server_and_remote(
@@ -207,9 +209,12 @@ def test_serving_acs_content(
     file_repo_api_client,
     file_acs_api_client,
     file_distro_api_client,
+    file_distribution_factory,
     basic_manifest_path,
     gen_object_with_cleanup,
     generate_server_and_remote,
+    monitor_task,
+    monitor_task_group,
 ):
     # Create the main server and remote pointing to it
     main_server, main_remote = generate_server_and_remote(
@@ -231,10 +236,7 @@ def test_serving_acs_content(
     monitor_task_group(file_acs_api_client.refresh(acs.pulp_href).task_group)
 
     # Create a distribution
-    distribution_href = monitor_task(
-        file_distro_api_client.create(gen_distribution(repository=file_repo.pulp_href)).task
-    ).created_resources[0]
-    distribution = file_distro_api_client.read(distribution_href)
+    distribution = file_distribution_factory(repository=file_repo.pulp_href)
 
     # Turn on auto-publish on the repository
     monitor_task(

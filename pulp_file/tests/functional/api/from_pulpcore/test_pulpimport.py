@@ -5,9 +5,11 @@ NOTE: assumes ALLOWED_EXPORT_PATHS and ALLOWED_IMPORT_PATHS settings contain "/t
 will fail if this is not the case.
 """
 import json
-import subprocess
+import os
 import pytest
+import shutil
 import uuid
+from pathlib import Path
 
 from pulpcore.app import settings
 
@@ -56,13 +58,13 @@ def import_export_repositories(
 
 @pytest.fixture
 def created_exporter(
-    gen_object_with_cleanup, exporters_pulp_api_client, import_export_repositories
+    tmpdir, gen_object_with_cleanup, exporters_pulp_api_client, import_export_repositories
 ):
     _, export_repos = import_export_repositories
     body = {
         "name": str(uuid.uuid4()),
         "repositories": [r.pulp_href for r in export_repos],
-        "path": "/tmp/{}".format(str(uuid.uuid4())),
+        "path": str(tmpdir),
     }
     exporter = gen_object_with_cleanup(exporters_pulp_api_client, body)
     return exporter
@@ -87,29 +89,29 @@ def chunked_export(exporters_pulp_exports_api_client, created_exporter, monitor_
 
 
 @pytest.fixture
-def import_check_directory():
+def import_check_directory(tmpdir):
     """Creates a directory/file structure for testing import-check"""
-    tmpdir = f"/tmp/importcheck/{uuid.uuid4()}"
+    os.makedirs(f"{tmpdir}/noreaddir")
+    os.makedirs(f"{tmpdir}/nowritedir")
+    os.makedirs(f"{tmpdir}/nowritedir/notafile")
 
-    subprocess.check_output(
-        f"mkdir -p {tmpdir}/noreaddir {tmpdir}/nowritedir {tmpdir}/nowritedir/notafile",
-        shell=True,
-    )
+    Path(f"{tmpdir}/noreadfile").touch()
+    Path(f"{tmpdir}/noreaddir/goodfile").touch()
+    Path(f"{tmpdir}/nowritedir/goodfile").touch()
+    Path(f"{tmpdir}/nowritedir/noreadfile").touch()
 
-    subprocess.check_output(f"touch {tmpdir}/noreadfile", shell=True)
-    subprocess.check_output(f"touch {tmpdir}/noreaddir/goodfile", shell=True)
-    subprocess.check_output(f"touch {tmpdir}/nowritedir/goodfile", shell=True)
-    subprocess.check_output(f"touch {tmpdir}/nowritedir/noreadfile", shell=True)
-
-    subprocess.check_output(f"chmod 333 {tmpdir}/nowritedir/noreadfile", shell=True)
-    subprocess.check_output(f"chmod 333 {tmpdir}/noreadfile", shell=True)
-    subprocess.check_output(f"chmod 333 {tmpdir}/noreaddir", shell=True)
-    subprocess.check_output(f"chmod 555 {tmpdir}/nowritedir", shell=True)
+    os.chmod(f"{tmpdir}/nowritedir/noreadfile", 0o333)
+    os.chmod(f"{tmpdir}/noreadfile", 0o333)
+    os.chmod(f"{tmpdir}/noreaddir", 0o333)
+    os.chmod(f"{tmpdir}/nowritedir", 0o555)
 
     yield tmpdir
 
-    subprocess.check_output(f"chmod -R +rwx {tmpdir}/", shell=True)
-    subprocess.check_output(f"rm -rf {tmpdir}", shell=True)
+    os.chmod(f"{tmpdir}/nowritedir/noreadfile", 0o644)
+    os.chmod(f"{tmpdir}/noreadfile", 0o644)
+    os.chmod(f"{tmpdir}/noreaddir", 0o755)
+    os.chmod(f"{tmpdir}/nowritedir", 0o755)
+    shutil.rmtree(tmpdir)
 
 
 @pytest.fixture

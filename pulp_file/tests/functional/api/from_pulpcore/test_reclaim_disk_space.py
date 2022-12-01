@@ -3,7 +3,6 @@ import pytest
 
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo, gen_distribution
 from pulpcore.client.pulp_file import RepositorySyncURL
 
@@ -18,6 +17,7 @@ def test_reclaim_immediate_content(
     artifacts_api_client,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test whether immediate repository content can be reclaimed
@@ -62,6 +62,7 @@ def sync_repository_distribution(
     file_fixture_gen_remote_ssl,
     file_repo_with_auto_publish,
     basic_manifest_path,
+    monitor_task,
 ):
     def _sync_repository_distribution(policy="immediate"):
 
@@ -83,7 +84,10 @@ def sync_repository_distribution(
 
 @pytest.mark.parallel
 def test_reclaim_on_demand_content(
-    sync_repository_distribution, artifacts_api_client, repositories_reclaim_space_api_client
+    sync_repository_distribution,
+    artifacts_api_client,
+    repositories_reclaim_space_api_client,
+    monitor_task,
 ):
     """
     Test whether on_demand repository content can be reclaimed
@@ -113,7 +117,10 @@ def test_reclaim_on_demand_content(
 
 @pytest.mark.parallel
 def test_immediate_reclaim_becomes_on_demand(
-    sync_repository_distribution, artifacts_api_client, repositories_reclaim_space_api_client
+    sync_repository_distribution,
+    artifacts_api_client,
+    repositories_reclaim_space_api_client,
+    monitor_task,
 ):
     """Tests if immediate content becomes like on_demand content after reclaim."""
     repo, remote, distribution = sync_repository_distribution()
@@ -140,7 +147,10 @@ def test_immediate_reclaim_becomes_on_demand(
 
 
 def test_specified_all_repos(
-    gen_object_with_cleanup, file_repo_api_client, repositories_reclaim_space_api_client
+    gen_object_with_cleanup,
+    file_repo_api_client,
+    repositories_reclaim_space_api_client,
+    monitor_task,
 ):
     """Tests that specifying all repos w/ '*' properly grabs all the repos."""
     repos = [gen_object_with_cleanup(file_repo_api_client, gen_repo()).pulp_href for _ in range(10)]

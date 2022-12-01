@@ -110,6 +110,16 @@ def file_repo_with_auto_publish(file_repo_api_client, gen_object_with_cleanup):
 
 
 @pytest.fixture
+def file_distribution_factory(file_distro_api_client, gen_object_with_cleanup):
+    def _file_distribution_factory(**kwargs):
+        data = {"base_path": str(uuid.uuid4()), "name": str(uuid.uuid4())}
+        data.update(kwargs)
+        return gen_object_with_cleanup(file_distro_api_client, data)
+
+    return _file_distribution_factory
+
+
+@pytest.fixture
 def file_fixtures_root(tmpdir):
     return Path(tmpdir)
 

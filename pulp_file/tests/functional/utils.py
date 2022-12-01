@@ -5,11 +5,9 @@ from dataclasses import dataclass
 import hashlib
 import os
 import requests
-import shutil
 from tempfile import NamedTemporaryFile
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.constants import STATUS_PATH
 from pulp_smash.pulp3.utils import gen_remote, get_content
 
@@ -22,7 +20,6 @@ from pulp_file.tests.functional.constants import (
 from pulpcore.client.pulpcore import (
     ApiClient as CoreApiClient,
     ArtifactsApi,
-    ExportersPulpApi,
 )
 from pulpcore.client.pulp_file import ApiClient as FileApiClient
 
@@ -85,20 +82,6 @@ def gen_file_client():
     """Return an OBJECT for file client."""
     configuration = config.get_config().get_bindings_config()
     return FileApiClient(configuration)
-
-
-def delete_exporter(exporter):
-    """
-    Utility routine to delete an exporter and any exported files
-    :param exporter : PulpExporter to delete
-    """
-    cfg = config.get_config()
-    core_client = CoreApiClient(configuration=cfg.get_bindings_config())
-    exporter_api = ExportersPulpApi(core_client)
-    shutil.rmtree(exporter.path, ignore_errors=True)
-
-    result = exporter_api.delete(exporter.pulp_href)
-    monitor_task(result.task)
 
 
 def get_redis_status():

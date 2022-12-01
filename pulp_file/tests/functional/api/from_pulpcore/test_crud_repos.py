@@ -7,7 +7,6 @@ from subprocess import run
 from urllib.parse import urljoin
 
 from pulp_smash import utils
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
 from pulpcore.client.pulp_file.exceptions import ApiException
@@ -17,7 +16,7 @@ from pulp_file.tests.functional.api.from_pulpcore.constants import FILE_REMOTE_P
 
 @pytest.mark.parallel
 def test_crud_repo_full_workflow(
-    file_repo_api_client, file_remote_api_client, gen_object_with_cleanup
+    file_repo_api_client, file_remote_api_client, gen_object_with_cleanup, monitor_task
 ):
     # Create repository
     repo = file_repo_api_client.create(gen_repo())
@@ -121,7 +120,7 @@ def test_crud_repo_full_workflow(
 
 
 @pytest.mark.parallel
-def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_cleanup):
+def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_cleanup, monitor_task):
     remote_attrs = gen_file_remote(
         **{
             "name": utils.uuid4(),

@@ -2,8 +2,6 @@ import pytest
 import uuid
 
 from pulpcore.client.pulpcore.exceptions import ApiException
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.app import settings
 from pulpcore.constants import TASK_STATES
 
@@ -18,6 +16,7 @@ if "/tmp" not in settings.ALLOWED_EXPORT_PATHS:
 
 @pytest.fixture
 def pulp_exporter_factory(
+    tmpdir,
     exporters_pulp_api_client,
     gen_object_with_cleanup,
     add_to_filesystem_cleanup,
@@ -26,7 +25,7 @@ def pulp_exporter_factory(
         if repositories is None:
             repositories = []
         name = str(uuid.uuid4())
-        path = "/tmp/{}/".format(name)
+        path = "{}/{}/".format(tmpdir, name)
         body = {
             "name": name,
             "path": path,
@@ -44,9 +43,7 @@ def pulp_exporter_factory(
 
 
 @pytest.fixture
-def pulp_export_factory(
-    exporters_pulp_exports_api_client,
-):
+def pulp_export_factory(exporters_pulp_exports_api_client, monitor_task):
     def _pulp_export_factory(exporter, body=None):
         task = monitor_task(
             exporters_pulp_exports_api_client.create(exporter.pulp_href, body or {}).task
@@ -77,6 +74,7 @@ def three_synced_repositories(
     file_fixture_gen_file_repo,
     file_fixture_gen_remote,
     write_3_iso_file_fixture_data_factory,
+    monitor_task,
 ):
     remotes = [
         file_fixture_gen_remote(
@@ -99,6 +97,7 @@ def repository_with_four_versions(
     file_fixture_gen_file_repo,
     file_content_api_client,
     random_artifact,
+    monitor_task,
 ):
     repository = file_fixture_gen_file_repo()
     for i in range(3):
@@ -127,7 +126,7 @@ def full_pulp_exporter(
 
 
 @pytest.mark.parallel
-def test_crud_exporter(exporters_pulp_api_client, shallow_pulp_exporter):
+def test_crud_exporter(exporters_pulp_api_client, shallow_pulp_exporter, monitor_task):
     # READ
     exporter = shallow_pulp_exporter
     exporter_read = exporters_pulp_api_client.read(exporter.pulp_href)
@@ -154,7 +153,9 @@ def test_crud_exporter(exporters_pulp_api_client, shallow_pulp_exporter):
 
 
 @pytest.mark.parallel
-def test_export(exporters_pulp_exports_api_client, pulp_export_factory, full_pulp_exporter):
+def test_export(
+    exporters_pulp_exports_api_client, pulp_export_factory, full_pulp_exporter, monitor_task
+):
     exporter = full_pulp_exporter
     assert len(exporter.repositories) == 3
 

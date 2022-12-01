@@ -2,7 +2,6 @@ from aiohttp import BasicAuth
 import pytest
 import uuid
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_distribution
 
 from pulpcore.client.pulp_file import (
@@ -24,6 +23,7 @@ def test_rbac_content_guard_full_workflow(
     anonymous_user,
     gen_user,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     # Create all of the users and groups
     creator_user = gen_user(

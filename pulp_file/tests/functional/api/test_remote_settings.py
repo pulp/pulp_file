@@ -2,15 +2,13 @@ import uuid
 
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,
 )
 
 
 def _run_basic_sync_and_assert(
-    remote, file_repo, file_repo_api_client, file_content_api_client, policy="on_demand"
+    remote, file_repo, file_repo_api_client, file_content_api_client, monitor_task
 ):
     body = RepositorySyncURL(remote=remote.pulp_href)
     monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
@@ -21,7 +19,7 @@ def _run_basic_sync_and_assert(
     )
     assert content_response.count == 3
     for content in content_response.results:
-        if policy == "immediate":
+        if remote.policy == "immediate":
             assert content.artifact is not None
         else:
             assert content.artifact is None
@@ -34,6 +32,7 @@ def test_http_sync_no_ssl(
     file_repo_api_client,
     file_content_api_client,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file on_demand sync with plain http://
@@ -43,7 +42,7 @@ def test_http_sync_no_ssl(
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
+        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
     )
 
 
@@ -54,6 +53,7 @@ def test_http_sync_ssl_tls_validation_off(
     file_repo_api_client,
     file_content_api_client,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file on_demand sync with https:// serving from an untrusted certificate.
@@ -63,7 +63,7 @@ def test_http_sync_ssl_tls_validation_off(
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
+        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
     )
 
 
@@ -74,6 +74,7 @@ def test_http_sync_ssl_tls_validation_on(
     file_repo_api_client,
     file_content_api_client,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file on_demand sync with https:// and a client connection configured to trust it.
@@ -83,7 +84,7 @@ def test_http_sync_ssl_tls_validation_on(
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
+        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
     )
 
 
@@ -94,6 +95,7 @@ def test_http_sync_ssl_tls_validation_defaults_to_on(
     file_repo_api_client,
     file_content_api_client,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file on_demand sync with https:// and that tls validation is on by default.
@@ -104,7 +106,7 @@ def test_http_sync_ssl_tls_validation_defaults_to_on(
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
+        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
     )
 
 
@@ -115,6 +117,7 @@ def test_http_sync_ssl_with_client_cert_req(
     file_repo_api_client,
     file_content_api_client,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file on_demand sync with https:// and mutual authentication between client and server.
@@ -124,7 +127,7 @@ def test_http_sync_ssl_with_client_cert_req(
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
+        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
     )
 
 
@@ -135,6 +138,7 @@ def test_ondemand_to_immediate_sync(
     file_repo_api_client,
     file_content_api_client,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file on_demand sync does not bring in Artifacts, but a later sync with "immediate" will.
@@ -148,6 +152,7 @@ def test_ondemand_to_immediate_sync(
         file_repo,
         file_repo_api_client,
         file_content_api_client,
+        monitor_task,
     )
 
     remote_immediate = file_fixture_gen_remote_ssl(
@@ -159,7 +164,7 @@ def test_ondemand_to_immediate_sync(
         file_repo,
         file_repo_api_client,
         file_content_api_client,
-        policy="immediate",
+        monitor_task,
     )
 
 
@@ -173,6 +178,7 @@ def test_header_for_sync(
     file_content_api_client,
     gen_object_with_cleanup,
     basic_manifest_path,
+    monitor_task,
 ):
     """
     Test file sync will correctly submit header data during download when configured.
@@ -194,7 +200,7 @@ def test_header_for_sync(
     remote_on_demand = gen_object_with_cleanup(file_remote_api_client, remote_on_demand_data)
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client
+        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
     )
 
     assert len(requests_record) == 1
