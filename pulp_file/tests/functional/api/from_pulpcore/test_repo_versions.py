@@ -8,7 +8,7 @@ from pulp_smash import utils
 from pulp_smash.pulp3.utils import gen_repo, gen_distribution
 
 from pulpcore.client.pulpcore import ApiException as CoreApiException
-from pulpcore.tests.functional.utils import monitor_task, PulpTaskError
+from pulpcore.tests.functional.utils import PulpTaskError
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 from pulp_file.tests.functional.utils import get_files_in_manifest
@@ -23,6 +23,7 @@ def file_populate_pulp(
     range_header_manifest_path,
     gen_object_with_cleanup,
     orphans_cleanup_api_client,
+    monitor_task,
 ):
     """Fixture to populate Pulp with 8 content units."""
     repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
@@ -47,6 +48,7 @@ def test_add_remove_content(
     file_content_api_client,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
+    monitor_task,
 ):
     """Add and remove content to a repository. Verify side-effects.
 
@@ -147,6 +149,7 @@ def test_add_remove_repo_version(
     file_repo_ver_api_client,
     file_content_api_client,
     file_populate_pulp,
+    monitor_task,
 ):
     """Create and delete repository versions."""
     # Setup 8 content units in Pulp to populate test repository with
@@ -222,7 +225,11 @@ def test_add_remove_repo_version(
 
 @pytest.mark.parallel
 def test_squash_repo_version(
-    file_repo_api_client, file_repo_ver_api_client, file_content_api_client, file_repo
+    file_repo_api_client,
+    file_repo_ver_api_client,
+    file_content_api_client,
+    file_repo,
+    monitor_task,
 ):
     """Test that the deletion of a repository version properly squashes the content.
 
@@ -356,6 +363,7 @@ def test_content_immutable_repo_version(
     file_client,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
+    monitor_task,
 ):
     """Test whether the content present in a repo version is immutable.
 
@@ -398,7 +406,11 @@ def test_content_immutable_repo_version(
 
 @pytest.mark.parallel
 def test_filter_repo_version(
-    file_repo_api_client, file_repo_ver_api_client, file_populate_pulp, file_repo
+    file_repo_api_client,
+    file_repo_ver_api_client,
+    file_populate_pulp,
+    file_repo,
+    monitor_task,
 ):
     """Test whether repository versions can be filtered."""
     # Setup 8 content units in Pulp to populate test repository with
@@ -485,6 +497,7 @@ def test_create_repo_base_version(
     basic_manifest_path,
     file_random_content_unit,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Test whether one can create a repository version from any version."""
     # Test ``base_version`` for the same repository
@@ -577,6 +590,7 @@ def test_filter_artifacts(
     random_artifact_factory,
     file_fixture_gen_remote_ssl,
     duplicate_filename_paths,
+    monitor_task,
 ):
     """Filter artifacts by repository version."""
     # Setup, add artifacts to show proper filtering
@@ -616,6 +630,7 @@ def test_delete_repo_version_resources(
     file_pub_api_client,
     file_distro_api_client,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Test whether removing a repository version affects related resources.
 
@@ -657,6 +672,7 @@ def test_clear_all_units_repo_version(
     basic_manifest_path,
     file_populate_pulp,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Test clear of all units of a given repository version."""
     # Test addition and removal of all units for a given repository version.
@@ -719,6 +735,7 @@ def test_repo_version_retention(
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Test retain_repo_versions for repositories."""
     # Setup
@@ -808,6 +825,7 @@ def test_content_in_repository_version_view(
     repository_versions_api_client,
     file_random_content_unit,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Sync two repositories and check view filter."""
     # Test content doesn't exists.

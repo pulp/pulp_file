@@ -1,6 +1,5 @@
 """Tests that perform action over remotes"""
 import pytest
-from pulpcore.tests.functional.utils import monitor_task
 from pulp_smash.pulp3.utils import gen_repo
 
 
@@ -11,6 +10,7 @@ def test_shared_remote_usage(
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     """Verify remotes can be used with different repos."""
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
