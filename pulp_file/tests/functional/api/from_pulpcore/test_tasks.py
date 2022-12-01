@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pytest
 from aiohttp import BasicAuth
-from pulpcore.tests.functional.utils import monitor_task
 from pulpcore.client.pulp_file import RepositorySyncURL
 from pulpcore.client.pulpcore.exceptions import ApiException
 
@@ -49,6 +48,7 @@ def setup_filter_fixture(
     file_random_content_unit,
     basic_manifest_path,
     tasks_api_client,
+    monitor_task,
 ):
 
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")

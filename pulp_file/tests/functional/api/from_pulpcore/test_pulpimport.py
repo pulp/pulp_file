@@ -9,8 +9,6 @@ import subprocess
 import pytest
 import uuid
 
-from pulpcore.tests.functional.utils import monitor_task, monitor_task_group
-
 from pulpcore.app import settings
 
 from pulpcore.client.pulpcore.exceptions import ApiException
@@ -35,6 +33,7 @@ def import_export_repositories(
     file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
+    monitor_task,
 ):
     import_repos = []
     export_repos = []
@@ -70,7 +69,7 @@ def created_exporter(
 
 
 @pytest.fixture
-def created_export(exporters_pulp_exports_api_client, created_exporter):
+def created_export(exporters_pulp_exports_api_client, created_exporter, monitor_task):
     export_response = exporters_pulp_exports_api_client.create(created_exporter.pulp_href, {})
     export_href = monitor_task(export_response.task).created_resources[0]
     export = exporters_pulp_exports_api_client.read(export_href)
@@ -78,7 +77,7 @@ def created_export(exporters_pulp_exports_api_client, created_exporter):
 
 
 @pytest.fixture
-def chunked_export(exporters_pulp_exports_api_client, created_exporter):
+def chunked_export(exporters_pulp_exports_api_client, created_exporter, monitor_task):
     export_response = exporters_pulp_exports_api_client.create(
         created_exporter.pulp_href, {"chunk_size": "5KB"}
     )
@@ -152,7 +151,9 @@ def _find_path(created_export):
 
 
 @pytest.fixture
-def perform_import(chunked_export, created_export, importers_pulp_imports_api_client):
+def perform_import(
+    chunked_export, created_export, importers_pulp_imports_api_client, monitor_task_group
+):
     def _perform_import(importer, chunked=False, an_export=None):
         """Perform an import with importer."""
         if not an_export:
@@ -377,7 +378,7 @@ def test_import_check_multiple_errors(
 
 
 @pytest.fixture
-def generate_export(exporters_pulp_exports_api_client):
+def generate_export(exporters_pulp_exports_api_client, monitor_task):
     """Create and read back an export for the specified PulpExporter."""
 
     def _generate_export(exporter, body=None):
@@ -407,6 +408,7 @@ def exported_version(
     file_repo_ver_api_client,
     content_api_client,
     add_to_cleanup,
+    monitor_task,
 ):
     import_repos, export_repos = import_export_repositories
 
