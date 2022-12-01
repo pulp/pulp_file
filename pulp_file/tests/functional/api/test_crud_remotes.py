@@ -4,13 +4,11 @@ import uuid
 
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 
 @pytest.mark.parallel
-def test_remote_crud_workflow(file_remote_api_client, gen_object_with_cleanup):
+def test_remote_crud_workflow(file_remote_api_client, gen_object_with_cleanup, monitor_task):
     remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com"}
     remote = gen_object_with_cleanup(file_remote_api_client, remote_data)
     assert remote.url == remote_data["url"]
@@ -84,7 +82,7 @@ def test_specify_remote_policy_on_demand(file_remote_api_client, gen_object_with
 
 
 @pytest.mark.parallel
-def test_can_update_remote_policy(file_remote_api_client, gen_object_with_cleanup):
+def test_can_update_remote_policy(file_remote_api_client, gen_object_with_cleanup, monitor_task):
     initial_remote_data = {"name": str(uuid.uuid4()), "url": "http://example.com"}
     remote = gen_object_with_cleanup(file_remote_api_client, initial_remote_data)
     assert remote.policy == "immediate"

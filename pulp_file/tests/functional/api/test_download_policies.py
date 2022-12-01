@@ -6,7 +6,6 @@ import pytest
 import uuid
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import (
     get_added_content_summary,
     get_content_summary,
@@ -56,6 +55,7 @@ def test_download_policy(
     gen_object_with_cleanup,
     file_content_api_client,
     download_policy,
+    monitor_task,
 ):
     """Test that "on_demand" and "streamed" download policies work as expected."""
     remote = file_fixture_gen_remote_ssl(

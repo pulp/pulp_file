@@ -3,8 +3,6 @@ import os
 
 from random import sample
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.client.pulpcore import Repair
 from pulpcore.client.pulp_file import RepositorySyncURL
 
@@ -34,6 +32,7 @@ def repository_with_corrupted_artifacts(
     artifacts_api_client,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
+    monitor_task,
 ):
     # STEP 1: sync content from a remote source
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
@@ -60,7 +59,9 @@ def repository_with_corrupted_artifacts(
     return repo
 
 
-def test_repair_global_with_checksums(repair_api_client, repository_with_corrupted_artifacts):
+def test_repair_global_with_checksums(
+    repair_api_client, repository_with_corrupted_artifacts, monitor_task
+):
     """Test whether missing and corrupted files can be re-downloaded.
 
     Do the following:
@@ -85,7 +86,9 @@ def test_repair_global_with_checksums(repair_api_client, repository_with_corrupt
     _verify_repair_results(results)
 
 
-def test_repair_global_without_checksums(repair_api_client, repository_with_corrupted_artifacts):
+def test_repair_global_without_checksums(
+    repair_api_client, repository_with_corrupted_artifacts, monitor_task
+):
     """Test whether missing files can be redownloaded.
 
     Do the following:
@@ -121,7 +124,7 @@ def test_repair_global_without_checksums(repair_api_client, repository_with_corr
 
 @pytest.mark.parallel
 def test_repair_repository_version_with_checksums(
-    file_repo_ver_api_client, repository_with_corrupted_artifacts
+    file_repo_ver_api_client, repository_with_corrupted_artifacts, monitor_task
 ):
     """Test whether corrupted files can be redownloaded.
 
@@ -150,7 +153,7 @@ def test_repair_repository_version_with_checksums(
 
 @pytest.mark.parallel
 def test_repair_repository_version_without_checksums(
-    file_repo_ver_api_client, repository_with_corrupted_artifacts
+    file_repo_ver_api_client, repository_with_corrupted_artifacts, monitor_task
 ):
     """Test whether missing files can be redownloaded.
 

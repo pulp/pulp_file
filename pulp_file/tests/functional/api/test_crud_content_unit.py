@@ -4,10 +4,7 @@ import os
 import pytest
 import uuid
 
-from pulp_smash.pulp3.bindings import (
-    monitor_task,
-    PulpTaskError,
-)
+from pulpcore.tests.functional.utils import PulpTaskError
 from pulp_smash.pulp3.utils import get_content_summary, get_added_content_summary
 
 from pulpcore.client.pulpcore.exceptions import ApiException as coreApiException
@@ -42,7 +39,10 @@ def test_crud_content_unit(
 
 @pytest.mark.parallel
 def test_same_sha256_same_relative_path_no_repo(
-    random_artifact, file_content_api_client, gen_object_with_cleanup
+    random_artifact,
+    file_content_api_client,
+    gen_object_with_cleanup,
+    monitor_task,
 ):
     artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
 
@@ -63,6 +63,7 @@ def test_same_sha256_same_relative_path_repo_specified(
     file_repo_api_client,
     gen_user,
     file_fixture_gen_file_repo,
+    monitor_task,
 ):
     max = gen_user(model_roles=["file.filerepository_creator"])
     john = gen_user(model_roles=["file.filerepository_creator"])
@@ -155,6 +156,7 @@ def test_cannot_create_repo_version_with_two_relative_paths_the_same(
     gen_object_with_cleanup,
     file_repo_ver_api_client,
     file_repo_api_client,
+    monitor_task,
 ):
     latest_repo_version = file_repo_ver_api_client.read(file_repo.latest_version_href)
     assert latest_repo_version.number == 0
@@ -180,7 +182,11 @@ def test_cannot_create_repo_version_with_two_relative_paths_the_same(
 
 @pytest.mark.parallel
 def test_create_file_content_from_chunked_upload(
-    tmp_path, gen_object_with_cleanup, uploads_api_client, file_content_api_client
+    tmp_path,
+    gen_object_with_cleanup,
+    uploads_api_client,
+    file_content_api_client,
+    monitor_task,
 ):
     hasher = hashlib.sha256()
     file_1 = tmp_path / "file.part1"

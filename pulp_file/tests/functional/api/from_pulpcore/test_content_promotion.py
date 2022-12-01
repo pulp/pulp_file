@@ -3,7 +3,6 @@ import hashlib
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.bindings import monitor_task
 from pulp_smash.pulp3.utils import gen_distribution
 
 from pulp_file.tests.functional.utils import (
@@ -24,6 +23,7 @@ def test_content_promotion(
     file_distro_api_client,
     basic_manifest_path,
     gen_object_with_cleanup,
+    monitor_task,
 ):
     # Create a repository, publication, and 2 distributions
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")

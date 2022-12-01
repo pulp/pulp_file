@@ -2,8 +2,6 @@
 import os
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.app import settings
 
 from pulpcore.client.pulpcore import OrphansApi
@@ -23,6 +21,7 @@ def test_orphans_delete(
     artifacts_api_client,
     file_content_api_client,
     orphans_api_client,
+    monitor_task,
 ):
     # Verify that the system contains the orphan content unit and the orphan artifact.
     content_unit = file_content_api_client.read(file_random_content_unit.pulp_href)
@@ -55,6 +54,7 @@ def test_orphans_cleanup(
     artifacts_api_client,
     file_content_api_client,
     orphans_cleanup_api_client,
+    monitor_task,
 ):
     # Cleanup orphans with a nonzero orphan_protection_time
     monitor_task(orphans_cleanup_api_client.cleanup({"orphan_protection_time": 10}).task)
@@ -84,7 +84,10 @@ def test_orphans_cleanup(
 
 
 def test_cleanup_specific_orphans(
-    file_content_unit_with_name_factory, file_content_api_client, orphans_cleanup_api_client
+    file_content_unit_with_name_factory,
+    file_content_api_client,
+    orphans_cleanup_api_client,
+    monitor_task,
 ):
     content_unit_1 = file_content_unit_with_name_factory("1.iso")
     content_unit_2 = file_content_unit_with_name_factory("2.iso")

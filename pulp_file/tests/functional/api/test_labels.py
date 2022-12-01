@@ -2,8 +2,6 @@ from uuid import uuid4
 
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task
-
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 
@@ -17,7 +15,7 @@ def test_create_repo_with_labels(file_fixture_gen_file_repo):
 
 
 @pytest.mark.parallel
-def test_set_unset_all_labels(file_repo, file_repo_api_client):
+def test_set_unset_all_labels(file_repo, file_repo_api_client, monitor_task):
     """Set and unset labels from a repository."""
 
     assert file_repo.pulp_labels == {}
@@ -37,7 +35,9 @@ def test_set_unset_all_labels(file_repo, file_repo_api_client):
 
 
 @pytest.mark.parallel
-def test_add_remove_label_keys(file_repo, file_repo_api_client, file_fixture_gen_file_repo):
+def test_add_remove_label_keys(
+    file_repo, file_repo_api_client, file_fixture_gen_file_repo, monitor_task
+):
     """Add and Remove labels by key."""
 
     # Set some initial labels
@@ -64,7 +64,9 @@ def test_add_remove_label_keys(file_repo, file_repo_api_client, file_fixture_gen
 
 
 @pytest.mark.parallel
-def test_update_existing_label_value(file_repo_api_client, file_fixture_gen_file_repo):
+def test_update_existing_label_value(
+    file_repo_api_client, file_fixture_gen_file_repo, monitor_task
+):
     """Update an existing label."""
 
     # Set some initial labels
@@ -82,7 +84,7 @@ def test_update_existing_label_value(file_repo_api_client, file_fixture_gen_file
 
 
 @pytest.mark.parallel
-def test_model_partial_update(file_fixture_gen_file_repo, file_repo_api_client):
+def test_model_partial_update(file_fixture_gen_file_repo, file_repo_api_client, monitor_task):
     """Test that labels aren't unset accidentally with PATCH calls of other fields."""
 
     # Set some initial labels

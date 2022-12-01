@@ -9,7 +9,7 @@ from pulpcore.client.pulp_file import RepositorySyncURL
 
 from pulpcore.constants import TASK_STATES, TASK_FINAL_STATES
 
-from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
+from pulpcore.tests.functional.utils import PulpTaskError
 
 from pulp_file.tests.functional.utils import gen_file_remote
 
@@ -58,6 +58,7 @@ def sync_results(
     file_fixture_gen_remote_ssl,
     file_fixture_gen_file_repo,
     basic_manifest_path,
+    monitor_task,
 ):
     good_remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
     good_repo = file_fixture_gen_file_repo()
@@ -95,7 +96,7 @@ def sync_results(
     return completed_sync_task, failed_sync_task, pre_total, pre_final, pre_summary
 
 
-def test_purge_before_time(tasks_api_client, sync_results):
+def test_purge_before_time(tasks_api_client, sync_results, monitor_task):
     """Purge that should find no tasks to delete."""
     _, _, pre_total, _, _ = sync_results
     dta = Purge(finished_before="1970-01-01T00:00")
@@ -108,7 +109,7 @@ def test_purge_before_time(tasks_api_client, sync_results):
     assert _purge_report_total(task) == 0
 
 
-def test_purge_defaults(tasks_api_client, sync_results):
+def test_purge_defaults(tasks_api_client, sync_results, monitor_task):
     """Purge using defaults (finished_before=30-days-ago, state=completed)"""
     dta = Purge()
     response = tasks_api_client.purge(dta)
@@ -123,7 +124,7 @@ def test_purge_defaults(tasks_api_client, sync_results):
     tasks_api_client.read(failed_sync_task.pulp_href)
 
 
-def test_purge_all(tasks_api_client, sync_results):
+def test_purge_all(tasks_api_client, sync_results, monitor_task):
     """Purge all tasks in any 'final' state."""
     completed_sync_task, failed_sync_task, pre_total, pre_final, pre_summary = sync_results
 
@@ -146,7 +147,7 @@ def test_purge_all(tasks_api_client, sync_results):
     _check_delete_report(task, pre_final + 2)
 
 
-def test_purge_leave_one(tasks_api_client, sync_results):
+def test_purge_leave_one(tasks_api_client, sync_results, monitor_task):
     """Arrange to leave one task unscathed."""
     # Leave only the failed sync
     completed_sync_task, failed_sync_task, pre_total, pre_final, pre_summary = sync_results
@@ -166,7 +167,7 @@ def test_purge_leave_one(tasks_api_client, sync_results):
     _check_delete_report(task, pre_final + 1)
 
 
-def test_purge_only_failed(tasks_api_client, sync_results):
+def test_purge_only_failed(tasks_api_client, sync_results, monitor_task):
     """Purge all failed tasks only."""
     dta = Purge(finished_before=TOMORROW_STR, states=["failed"])
     response = tasks_api_client.purge(dta)
@@ -208,6 +209,7 @@ def test_purge_with_different_users(
     file_fixture_gen_file_repo,
     basic_manifest_path,
     gen_user,
+    monitor_task,
 ):
     # create admin related data
     admin_remote = file_fixture_gen_remote_ssl(

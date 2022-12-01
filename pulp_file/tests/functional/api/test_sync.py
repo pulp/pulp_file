@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 
-from pulp_smash.pulp3.bindings import monitor_task, PulpTaskError
+from pulpcore.tests.functional.utils import PulpTaskError
 from pulp_smash.pulp3.utils import (
     get_added_content_summary,
     get_content_summary,
@@ -20,7 +20,7 @@ from pulpcore.client.pulp_file import (
 
 
 def test_sync_file_protocol_handler(
-    file_repo, file_repo_api_client, file_remote_api_client, gen_object_with_cleanup
+    file_repo, file_repo_api_client, file_remote_api_client, gen_object_with_cleanup, monitor_task
 ):
     """Test syncing from a file repository with the file:// protocol handler"""
     wget_download_on_host(FILE_FIXTURE_URL, "/tmp")
@@ -43,7 +43,7 @@ def test_sync_file_protocol_handler(
 
 @pytest.mark.parallel
 def test_mirrored_sync(
-    file_repo, file_fixture_gen_remote_ssl, file_repo_api_client, basic_manifest_path
+    file_repo, file_fixture_gen_remote_ssl, file_repo_api_client, basic_manifest_path, monitor_task
 ):
     """Assert that syncing the repository w/ mirror=True creates a publication."""
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
@@ -60,7 +60,7 @@ def test_mirrored_sync(
 
 @pytest.mark.parallel
 def test_invalid_url(
-    file_repo, gen_object_with_cleanup, file_remote_api_client, file_repo_api_client
+    file_repo, gen_object_with_cleanup, file_remote_api_client, file_repo_api_client, monitor_task
 ):
     """Sync a repository using a remote url that does not exist."""
     remote_kwargs = {
@@ -77,7 +77,7 @@ def test_invalid_url(
 
 @pytest.mark.parallel
 def test_invalid_file(
-    file_repo, file_repo_api_client, invalid_manifest_path, file_fixture_gen_remote
+    file_repo, file_repo_api_client, invalid_manifest_path, file_fixture_gen_remote, monitor_task
 ):
     """Sync a repository using an invalid file repository."""
     remote = file_fixture_gen_remote(manifest_path=invalid_manifest_path, policy="immediate")
@@ -88,7 +88,7 @@ def test_invalid_file(
 
 @pytest.mark.parallel
 def test_duplicate_file_sync(
-    file_repo, file_fixture_gen_remote, duplicate_filename_paths, file_repo_api_client
+    file_repo, file_fixture_gen_remote, duplicate_filename_paths, file_repo_api_client, monitor_task
 ):
     remote = file_fixture_gen_remote(manifest_path=duplicate_filename_paths[0], policy="on_demand")
     remote2 = file_fixture_gen_remote(manifest_path=duplicate_filename_paths[1], policy="on_demand")
@@ -112,7 +112,11 @@ def test_duplicate_file_sync(
 
 @pytest.mark.parallel
 def test_filepath_includes_commas(
-    file_repo, file_fixture_gen_remote, manifest_path_with_commas, file_repo_api_client
+    file_repo,
+    file_fixture_gen_remote,
+    manifest_path_with_commas,
+    file_repo_api_client,
+    monitor_task,
 ):
     """Sync a repository using a manifest file with a file whose relative_path includes commas"""
     remote = file_fixture_gen_remote(manifest_path=manifest_path_with_commas, policy="on_demand")
