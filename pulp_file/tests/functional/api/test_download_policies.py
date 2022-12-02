@@ -1,8 +1,10 @@
 """Tests for Pulp`s download policies."""
 from aiohttp.client_exceptions import ClientResponseError
+from bs4 import BeautifulSoup
 import hashlib
 import os
 import pytest
+import subprocess
 import uuid
 from urllib.parse import urljoin
 
@@ -109,6 +111,25 @@ def test_download_policy(
     publish_data = FileFilePublication(repository=file_repo.pulp_href)
     publication = gen_object_with_cleanup(file_pub_api_client, publish_data)
     assert publication.repository_version is not None
+
+    # Assert that the dates on the distribution listing page represent the date that the content
+    # was created in Pulp
+    repo_uuid = file_repo.pulp_href.split("/")[-2]
+    commands = (
+        "from pulpcore.app.models import RepositoryContent;"
+        "from pulp_file.app.models import FileContent;"
+        "content = FileContent.objects.filter(relative_path='foo/0.iso');"
+        f"rc = RepositoryContent.objects.filter(repository='{repo_uuid}', content__in=content);"
+        "print(rc[0].content.contentartifact_set.get().pulp_created.strftime('%d-%b-%Y %H:%M'));"
+    )
+    process = subprocess.run(["pulpcore-manager", "shell", "-c", commands], capture_output=True)
+    assert process.returncode == 0
+    content_artifact_created_date = process.stdout.decode().strip()
+    distribution_html_page = download_file(f"{distribution.base_url}foo/")
+    soup = BeautifulSoup(distribution_html_page.body, "html.parser")
+    all_strings = [s for s in soup.strings if s != "\n"]
+    assert all_strings[3] == "0.iso"
+    assert all_strings[4].strip() == content_artifact_created_date
 
     # Download one of the files and assert that it has the right checksum
     expected_files_list = list(expected_files)
