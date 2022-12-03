@@ -1,0 +1,1 @@
+Added tests for pulpcore-content redirects when trailing slash is missing in the requested path.
