@@ -40,6 +40,7 @@ def test_content_directory_listing(
 
     response = utils.http_get(PULP_CONTENT_BASE_URL).decode("utf-8")
     assert response.count(f'a href="{base_path}/"') == 1
+    assert response.count('a href="../"') == 0
 
     url = urljoin(PULP_CONTENT_BASE_URL, base_path + "/")
     response = utils.http_get(url).decode("utf-8")
@@ -47,6 +48,7 @@ def test_content_directory_listing(
     assert response.count('a href="foo2/"') == (0 if HIDE_GUARDED_DISTRIBUTIONS else 1)
     assert response.count('a href="boo1/"') == 1
     assert response.count('a href="boo2/"') == (0 if HIDE_GUARDED_DISTRIBUTIONS else 1)
+    assert response.count('a href="../"') == 1
 
     response = utils.http_get(urljoin(url, "boo1/")).decode("utf-8")
     assert response.count('a href="foo1/"') == 1
