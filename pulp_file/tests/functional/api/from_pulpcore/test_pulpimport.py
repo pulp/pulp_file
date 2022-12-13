@@ -156,21 +156,24 @@ def _find_path(created_export):
 def perform_import(
     chunked_export, created_export, importers_pulp_imports_api_client, monitor_task_group
 ):
-    def _perform_import(importer, chunked=False, an_export=None):
+    def _perform_import(importer, chunked=False, an_export=None, body=None):
         """Perform an import with importer."""
+        if body is None:
+            body = {}
+
         if not an_export:
             an_export = chunked_export if chunked else created_export
 
         if chunked:
             filenames = [f for f in list(an_export.output_file_info.keys()) if f.endswith("json")]
-            import_response = importers_pulp_imports_api_client.create(
-                importer.pulp_href, {"toc": filenames[0]}
-            )
+            if "toc" not in body:
+                body["toc"] = filenames[0]
         else:
             filenames = [f for f in list(an_export.output_file_info.keys()) if f.endswith("tar.gz")]
-            import_response = importers_pulp_imports_api_client.create(
-                importer.pulp_href, {"path": filenames[0]}
-            )
+            if "path" not in body:
+                body["path"] = filenames[0]
+
+        import_response = importers_pulp_imports_api_client.create(importer.pulp_href, body)
         task_group = monitor_task_group(import_response.task_group)
 
         return task_group
@@ -178,6 +181,7 @@ def perform_import(
     return _perform_import
 
 
+@pytest.mark.parallel
 def test_importer_create(pulp_importer_factory, importers_pulp_api_client):
     """Test creating an importer."""
     name = str(uuid.uuid4())
@@ -188,6 +192,7 @@ def test_importer_create(pulp_importer_factory, importers_pulp_api_client):
     assert importer.name == name
 
 
+@pytest.mark.parallel
 def test_importer_delete(pulp_importer_factory, importers_pulp_api_client):
     """Test deleting an importer."""
     importer = pulp_importer_factory()
@@ -199,6 +204,7 @@ def test_importer_delete(pulp_importer_factory, importers_pulp_api_client):
     assert 404 == ae.value.status
 
 
+@pytest.mark.parallel
 def test_import(
     pulp_importer_factory, file_repo_api_client, import_export_repositories, perform_import
 ):
@@ -215,6 +221,67 @@ def test_import(
     for repo in import_repos:
         repo = file_repo_api_client.read(repo.pulp_href)
         assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
+
+
+@pytest.mark.parallel
+def test_import_auto_repo_creation(
+    basic_manifest_path,
+    exporters_pulp_api_client,
+    file_content_api_client,
+    file_fixture_gen_file_repo,
+    file_fixture_gen_remote_ssl,
+    file_repo_api_client,
+    gen_object_with_cleanup,
+    generate_export,
+    importers_pulp_api_client,
+    monitor_task,
+    perform_import,
+    tmpdir,
+):
+    """Test the automatic repository creation feature where users do not ."""
+    # 1. create and sync a new repository
+    export_repo = file_fixture_gen_file_repo()
+
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+    repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
+    sync_response = file_repo_api_client.sync(export_repo.pulp_href, repository_sync_data)
+    monitor_task(sync_response.task)
+
+    export_repo = file_repo_api_client.read(export_repo.pulp_href)
+    added_content_in_export_repo = file_content_api_client.list(
+        repository_version_added=export_repo.latest_version_href
+    ).results
+
+    # 2. export the synced repository
+    body = {
+        "name": str(uuid.uuid4()),
+        "repositories": [export_repo.pulp_href],
+        "path": str(tmpdir),
+    }
+    exporter = gen_object_with_cleanup(exporters_pulp_api_client, body)
+    export = generate_export(exporter)
+
+    # 3. delete the exported repository
+    monitor_task(file_repo_api_client.delete(export_repo.pulp_href).task)
+    assert len(file_repo_api_client.list(name=export_repo.name).results) == 0
+
+    # 4. import the exported repository without creating an import repository beforehand
+    importer = gen_object_with_cleanup(importers_pulp_api_client, {"name": str(uuid.uuid4())})
+    perform_import(importer, an_export=export, body={"create_repositories": True})
+
+    # 5. run assertions on the automatically created import repository
+    repositories = file_repo_api_client.list(name=export_repo.name).results
+    assert len(repositories) == 1
+
+    imported_repo = repositories[0]
+    assert f"{imported_repo.pulp_href}versions/1/" == imported_repo.latest_version_href
+
+    added_content_in_imported_repo = file_content_api_client.list(
+        repository_version_added=imported_repo.latest_version_href
+    ).results
+    assert len(added_content_in_export_repo) == len(added_content_in_imported_repo)
+
+    monitor_task(file_repo_api_client.delete(imported_repo.pulp_href).task)
 
 
 @pytest.mark.parallel
@@ -411,6 +478,7 @@ def exported_version(
     content_api_client,
     add_to_cleanup,
     monitor_task,
+    tmpdir,
 ):
     import_repos, export_repos = import_export_repositories
 
@@ -430,7 +498,7 @@ def exported_version(
     body = {
         "name": str(uuid.uuid4()),
         "repositories": [file_repo.pulp_href],
-        "path": "/tmp/{}".format(str(uuid.uuid4())),
+        "path": str(tmpdir),
     }
     exporter = gen_object_with_cleanup(exporters_pulp_api_client, body)
 

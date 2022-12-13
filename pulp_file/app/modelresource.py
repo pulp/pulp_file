@@ -1,5 +1,6 @@
 from pulpcore.plugin.importexport import BaseContentResource
-from pulp_file.app.models import FileContent
+from pulpcore.plugin.modelresources import RepositoryResource
+from pulp_file.app.models import FileContent, FileRepository
 
 
 class FileContentResource(BaseContentResource):
@@ -18,4 +19,19 @@ class FileContentResource(BaseContentResource):
         import_id_fields = model.natural_key_fields()
 
 
-IMPORT_ORDER = [FileContentResource]
+class FileRepositoryResource(RepositoryResource):
+    """
+    A resource for importing/exporting file repository entities
+    """
+
+    def set_up_queryset(self):
+        """
+        :return: A queryset containing one repository that will be exported.
+        """
+        return FileRepository.objects.filter(pk=self.repo_version.repository)
+
+    class Meta:
+        model = FileRepository
+
+
+IMPORT_ORDER = [FileContentResource, FileRepositoryResource]
