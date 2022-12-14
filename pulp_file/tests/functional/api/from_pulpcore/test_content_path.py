@@ -7,7 +7,6 @@ from pulp_smash.pulp3.utils import gen_distribution
 from urllib.parse import urljoin
 
 from pulpcore.app import settings
-from pulp_file.tests.functional.utils import get_url
 from .constants import PULP_CONTENT_BASE_URL
 
 
@@ -53,33 +52,3 @@ def test_content_directory_listing(
 
     response = utils.http_get(urljoin(url, "boo1/")).decode("utf-8")
     assert response.count('a href="foo1/"') == 1
-
-    # Assert that not using a trailing slash on the root returns a 301
-    response = get_url(PULP_CONTENT_BASE_URL[:-1])
-    assert response.history[0].status == 301
-    assert response.status == 200
-
-    # Assert that not using a trailing slash returns a 301 for a partial base path
-    url = urljoin(PULP_CONTENT_BASE_URL, base_path)
-    response = get_url(url)
-    assert response.history[0].status == 301
-    assert response.status == 200
-
-    # Assert that not using a trailing slash within a distribution returns a 301
-    url = f"{url}/boo1"
-    response = get_url(url)
-    assert response.history[0].status == 301
-    assert response.status == 200
-
-    # Assert that not using a trailing slash for a full base path returns a 301
-    url = f"{url}/foo1"
-    response = get_url(url)
-    assert response.history[0].status == 301
-    assert response.status == 404
-    assert "Distribution is not pointing to" in response.reason
-
-    # Assert that a non-existing base path does not return a 301
-    url = url[:-1]
-    response = get_url(url)
-    assert len(response.history) == 0
-    assert response.status == 404
