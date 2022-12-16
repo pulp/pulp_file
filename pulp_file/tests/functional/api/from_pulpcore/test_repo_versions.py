@@ -3,9 +3,7 @@ import pytest
 from random import choice
 from tempfile import NamedTemporaryFile
 from hashlib import sha256
-
-from pulp_smash import utils
-from pulp_smash.pulp3.utils import gen_repo, gen_distribution
+from uuid import uuid4
 
 from pulpcore.client.pulpcore import ApiException as CoreApiException
 from pulpcore.tests.functional.utils import PulpTaskError
@@ -21,12 +19,12 @@ def file_populate_pulp(
     file_content_api_client,
     file_fixture_gen_remote_ssl,
     range_header_manifest_path,
-    gen_object_with_cleanup,
+    file_fixture_gen_file_repo,
     orphans_cleanup_api_client,
     monitor_task,
 ):
     """Fixture to populate Pulp with 8 content units."""
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo = file_fixture_gen_file_repo()
     remote = file_fixture_gen_remote_ssl(
         manifest_path=range_header_manifest_path, policy="on_demand"
     )
@@ -42,10 +40,10 @@ def file_populate_pulp(
 
 @pytest.mark.parallel
 def test_add_remove_content(
-    file_repo,
     file_repo_api_client,
     file_repo_ver_api_client,
     file_content_api_client,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
     monitor_task,
@@ -58,6 +56,7 @@ def test_add_remove_content(
     content was removed, and which content was added. This test case explores
     these features.
     """
+    file_repo = file_fixture_gen_file_repo()
     repo_versions = file_repo_ver_api_client.list(file_repo.pulp_href)
     assert repo_versions.count == 1
 
@@ -144,14 +143,15 @@ def test_add_remove_content(
 
 @pytest.mark.parallel
 def test_add_remove_repo_version(
-    file_repo,
     file_repo_api_client,
     file_repo_ver_api_client,
     file_content_api_client,
+    file_fixture_gen_file_repo,
     file_populate_pulp,
     monitor_task,
 ):
     """Create and delete repository versions."""
+    file_repo = file_fixture_gen_file_repo()
     # Setup 8 content units in Pulp to populate test repository with
     contents = file_populate_pulp
 
@@ -364,10 +364,10 @@ def test_squash_repo_version(
 
 @pytest.mark.parallel
 def test_content_immutable_repo_version(
-    file_repo,
     file_repo_api_client,
     file_repo_ver_api_client,
     file_client,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
     monitor_task,
@@ -376,6 +376,7 @@ def test_content_immutable_repo_version(
 
     Test that POST/PUT/PATCH operations are not allowed on repository versions.
     """
+    file_repo = file_fixture_gen_file_repo()
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
     task = file_repo_api_client.sync(file_repo.pulp_href, {"remote": remote.pulp_href}).task
     monitor_task(task)
@@ -415,11 +416,12 @@ def test_content_immutable_repo_version(
 def test_filter_repo_version(
     file_repo_api_client,
     file_repo_ver_api_client,
+    file_fixture_gen_file_repo,
     file_populate_pulp,
-    file_repo,
     monitor_task,
 ):
     """Test whether repository versions can be filtered."""
+    file_repo = file_fixture_gen_file_repo()
     # Setup 8 content units in Pulp to populate test repository with
     for content in file_populate_pulp:
         task = file_repo_api_client.modify(
@@ -431,7 +433,7 @@ def test_filter_repo_version(
     repo_versions = file_repo_ver_api_client.list(repo.pulp_href).results
 
     # Filter repository version by invalid date.
-    criteria = utils.uuid4()
+    criteria = str(uuid4())
     for params in (
         {"pulp_created": criteria},
         {"pulp_created__gt": criteria, "pulp_created__lt": criteria},
@@ -466,7 +468,7 @@ def test_filter_repo_version(
         assert results.count == 0, params
 
     # Filter repository version by an invalid version number.
-    criteria = utils.uuid4()
+    criteria = str(uuid4())
     for params in (
         {"number": criteria},
         {"number__gt": criteria, "number__lt": criteria},
@@ -500,16 +502,16 @@ def test_create_repo_base_version(
     file_repo_api_client,
     file_repo_ver_api_client,
     file_content_api_client,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
     file_random_content_unit,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     """Test whether one can create a repository version from any version."""
     # Test ``base_version`` for the same repository
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo = file_fixture_gen_file_repo()
     monitor_task(file_repo_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task)
     repo = file_repo_api_client.read(repo.pulp_href)
     base_content = file_content_api_client.list(repository_version=repo.latest_version_href)
@@ -540,7 +542,7 @@ def test_create_repo_base_version(
     assert file_random_content_unit.pulp_href not in {c.pulp_href for c in latest_content.results}
 
     # Test ``base_version`` for different repositories
-    repo2 = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo2 = file_fixture_gen_file_repo()
     # create a version for repo B using repo A version 1 as base_version
     monitor_task(
         file_repo_api_client.modify(repo2.pulp_href, {"base_version": base_version.pulp_href}).task
@@ -557,7 +559,7 @@ def test_create_repo_base_version(
     assert latest_content2.results == base_content.results
 
     # Test ``base_version`` can be used together with other parameters
-    repo3 = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo3 = file_fixture_gen_file_repo()
     # create repo version 2 from version 1
     added_content = file_random_content_unit
     removed_content = choice(base_content.results)
@@ -591,15 +593,16 @@ def test_create_repo_base_version(
 
 @pytest.mark.parallel
 def test_filter_artifacts(
-    file_repo,
     file_repo_api_client,
     artifacts_api_client,
     random_artifact_factory,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     duplicate_filename_paths,
     monitor_task,
 ):
     """Filter artifacts by repository version."""
+    file_repo = file_fixture_gen_file_repo()
     # Setup, add artifacts to show proper filtering
     random_artifacts = set()
     for _ in range(3):
@@ -629,10 +632,11 @@ def test_filter_artifacts(
 
 @pytest.mark.parallel
 def test_delete_repo_version_resources(
-    file_repo,
     file_repo_api_client,
     file_repo_ver_api_client,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
+    file_distribution_factory,
     basic_manifest_path,
     file_pub_api_client,
     file_distro_api_client,
@@ -644,6 +648,7 @@ def test_delete_repo_version_resources(
     Test whether removing a repository version will remove a related Publication.
     Test whether removing a repository version a Distribution will not be removed.
     """
+    file_repo = file_fixture_gen_file_repo()
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
     task = file_repo_api_client.sync(file_repo.pulp_href, {"remote": remote.pulp_href}).task
     monitor_task(task)
@@ -654,8 +659,7 @@ def test_delete_repo_version_resources(
     publication = gen_object_with_cleanup(file_pub_api_client, pub_body)
     assert publication.repository_version == repo.latest_version_href
 
-    dis_body = gen_distribution(publication=publication.pulp_href)
-    distribution = gen_object_with_cleanup(file_distro_api_client, dis_body)
+    distribution = file_distribution_factory(publication=publication.pulp_href)
     assert distribution.publication == publication.pulp_href
 
     # delete repo version used to create publication
@@ -675,15 +679,15 @@ def test_clear_all_units_repo_version(
     file_repo_api_client,
     file_repo_ver_api_client,
     file_content_api_client,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
     file_populate_pulp,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     """Test clear of all units of a given repository version."""
     # Test addition and removal of all units for a given repository version.
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo = file_fixture_gen_file_repo()
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
     file_repo_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href})
 
@@ -703,7 +707,7 @@ def test_clear_all_units_repo_version(
     assert latest_content.results[0] == content
 
     # Test clear all units using base version.
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo = file_fixture_gen_file_repo()
     for content in file_populate_pulp:
         task = file_repo_api_client.modify(
             repo.pulp_href, {"add_content_units": [content.pulp_href]}
@@ -739,15 +743,16 @@ def test_repo_version_retention(
     file_content_api_client,
     file_pub_api_client,
     file_distro_api_client,
+    file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
+    file_distribution_factory,
     basic_manifest_path,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     """Test retain_repo_versions for repositories."""
     # Setup
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
-    base_repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    base_repo = file_fixture_gen_file_repo()
     task = file_repo_api_client.sync(base_repo.pulp_href, {"remote": remote.pulp_href}).task
     monitor_task(task)
     base_repo = file_repo_api_client.read(base_repo.pulp_href)
@@ -756,7 +761,7 @@ def test_repo_version_retention(
     assert contents.count == 3
 
     # Test repo version retention.
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo(retain_repo_versions=1))
+    repo = file_fixture_gen_file_repo(retain_repo_versions=1)
     for content in contents.results:
         task = file_repo_api_client.modify(
             repo.pulp_href, {"add_content_units": [content.pulp_href]}
@@ -775,7 +780,7 @@ def test_repo_version_retention(
     assert latest_version.content_summary.added[FILE_CONTENT_NAME]["count"] == 3
 
     # Test repo version retention when retain_repo_versions is set.
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo = file_fixture_gen_file_repo()
     for content in contents.results:
         task = file_repo_api_client.modify(
             repo.pulp_href, {"add_content_units": [content.pulp_href]}
@@ -800,7 +805,7 @@ def test_repo_version_retention(
 
     # Test repo version retention with autopublish/autodistribute.
     body = {"retain_repo_versions": 1, "autopublish": True}
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo(**body))
+    repo = file_fixture_gen_file_repo(**body)
     publications = []
     for content in contents.results:
         task = file_repo_api_client.modify(
@@ -819,9 +824,7 @@ def test_repo_version_retention(
         assert ae.value.status == 404
 
     # check that the last publication is distributed
-    distro = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(repository=repo.pulp_href)
-    )
+    distro = file_distribution_factory(repository=repo.pulp_href)
     manifest_files = get_files_in_manifest(f"{distro.base_url}PULP_MANIFEST")
     assert len(manifest_files) == contents.count
 
@@ -830,8 +833,8 @@ def test_repo_version_retention(
 def test_content_in_repository_version_view(
     file_repo_api_client,
     repository_versions_api_client,
+    file_fixture_gen_file_repo,
     file_random_content_unit,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     """Sync two repositories and check view filter."""
@@ -845,8 +848,8 @@ def test_content_in_repository_version_view(
 
     assert e.value.status == 400
 
-    repo = gen_object_with_cleanup(file_repo_api_client, gen_repo())
-    repo2 = gen_object_with_cleanup(file_repo_api_client, gen_repo())
+    repo = file_fixture_gen_file_repo()
+    repo2 = file_fixture_gen_file_repo()
 
     # Add content to first repo and assert repo-ver list w/ content is correct
     body = {"add_content_units": [file_random_content_unit.pulp_href]}
