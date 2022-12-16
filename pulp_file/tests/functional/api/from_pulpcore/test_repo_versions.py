@@ -228,7 +228,7 @@ def test_squash_repo_version(
     file_repo_api_client,
     file_repo_ver_api_client,
     file_content_api_client,
-    file_repo,
+    file_fixture_gen_file_repo,
     monitor_task,
 ):
     """Test that the deletion of a repository version properly squashes the content.
@@ -246,6 +246,7 @@ def test_squash_repo_version(
     - Delete version 2.
     - Check the content of all remaining versions.
     """
+    bucket_repo = file_fixture_gen_file_repo()
     content_units = {}
     for name in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
         try:
@@ -256,9 +257,15 @@ def test_squash_repo_version(
             with NamedTemporaryFile() as tf:
                 tf.write(name.encode())
                 tf.flush()
-                response = file_content_api_client.create(relative_path=name, file=tf.name)
+                response = file_content_api_client.create(
+                    relative_path=name, file=tf.name, repository=bucket_repo.pulp_href
+                )
                 result = monitor_task(response.task)
-                content_units[name] = file_content_api_client.read(result.created_resources[0])
+                content_href = next(
+                    (item for item in result.created_resources if "content/file/files/" in item)
+                )
+                content_units[name] = file_content_api_client.read(content_href)
+    file_repo = file_fixture_gen_file_repo()
     response1 = file_repo_api_client.modify(
         file_repo.pulp_href,
         {
