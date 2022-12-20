@@ -118,17 +118,19 @@ def import_check_directory(tmpdir):
 def pulp_importer_factory(
     gen_object_with_cleanup, import_export_repositories, importers_pulp_api_client
 ):
-    def _pulp_importer_factory(name=None, exported_repos=None):
+    def _pulp_importer_factory(name=None, exported_repos=None, mapping=None):
         """Create an importer."""
         _import_repos, _exported_repos = import_export_repositories
-        mapping = {}
         if not name:
             name = str(uuid.uuid4())
-        if not exported_repos:
-            exported_repos = _exported_repos
 
-        for idx, repo in enumerate(exported_repos):
-            mapping[repo.name] = _import_repos[idx].name
+        if not mapping:
+            mapping = {}
+            if not exported_repos:
+                exported_repos = _exported_repos
+
+            for idx, repo in enumerate(exported_repos):
+                mapping[repo.name] = _import_repos[idx].name
 
         body = {
             "name": name,
@@ -221,6 +223,20 @@ def test_import(
     for repo in import_repos:
         repo = file_repo_api_client.read(repo.pulp_href)
         assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
+
+
+@pytest.fixture
+def test_import_mapping_missing_repos(
+    pulp_importer_factory, file_repo_api_client, import_export_repositories, perform_import
+):
+    import_repos, exported_repos = import_export_repositories
+    a_map = {"foo": "bar"}
+    for repo in import_repos:
+        a_map[repo.name] = repo.name
+    a_map["blech"] = "bang"
+
+    with pytest.raises(ApiException, match="['bar', 'bang']"):
+        pulp_importer_factory(mapping=a_map)
 
 
 @pytest.mark.parallel
