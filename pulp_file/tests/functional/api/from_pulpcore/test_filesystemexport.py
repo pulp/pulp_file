@@ -21,7 +21,7 @@ NUM_EXPORTERS = 4
 
 @pytest.fixture
 def create_exporter(
-    exporters_filesystem_api_client, cli_client, gen_object_with_cleanup, add_to_filesystem_cleanup
+    exporters_filesystem_api_client, gen_object_with_cleanup, add_to_filesystem_cleanup
 ):
     def _create_exporter(params=None):
         body = {
