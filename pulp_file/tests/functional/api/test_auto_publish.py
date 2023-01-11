@@ -84,3 +84,15 @@ def test_auto_publish_and_distribution(
     assert file_pub_api_client.list(repository_version=repo.latest_version_href).count == 1
     assert len(files_added) == 1
     assert list(files_added)[0][1] == file_random_content_unit.sha256
+
+    # Assert that filtering distributions by repository is possible
+    distros = file_distro_api_client.list(repository=repo.pulp_href).results
+    assert len(distros) == 1
+
+    distros = file_distro_api_client.list(repository__in=[repo.pulp_href]).results
+    assert len(distros) == 1
+
+    # Assert that no results are returned when filtering by non-existent repository
+    nonexistent_repository_href = f"{repo.pulp_href[:-37]}12345678-1234-1234-1234-012345678912/"
+    distros = file_distro_api_client.list(repository=nonexistent_repository_href).results
+    assert len(distros) == 0
