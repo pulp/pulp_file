@@ -2,7 +2,6 @@
 import pytest
 from random import choice
 from tempfile import NamedTemporaryFile
-from hashlib import sha256
 from uuid import uuid4
 
 from pulpcore.client.pulpcore import ApiException as CoreApiException
@@ -14,28 +13,27 @@ from .constants import FILE_CONTENT_NAME
 
 
 @pytest.fixture
-def file_populate_pulp(
-    file_repo_api_client,
+def file_9_contents(
     file_content_api_client,
-    file_fixture_gen_remote_ssl,
-    range_header_manifest_path,
     file_fixture_gen_file_repo,
-    orphans_cleanup_api_client,
     monitor_task,
 ):
-    """Fixture to populate Pulp with 8 content units."""
-    repo = file_fixture_gen_file_repo()
-    remote = file_fixture_gen_remote_ssl(
-        manifest_path=range_header_manifest_path, policy="on_demand"
-    )
-    monitor_task(file_repo_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task)
-    latest_href = f"{repo.versions_href}1/"
-    contents = file_content_api_client.list(repository_version=latest_href)
-    assert contents.count == 8
-    yield contents.results
-    monitor_task(file_repo_api_client.delete(repo.pulp_href).task)
-    body = {"orphan_protection_time": 0, "content_hrefs": [c.pulp_href for c in contents.results]}
-    monitor_task(orphans_cleanup_api_client.cleanup(body).task)
+    """Create 9 content units with relative paths "A" through "I"."""
+    bucket_repo = file_fixture_gen_file_repo()
+    content_units = {}
+    for name in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+        with NamedTemporaryFile() as tf:
+            tf.write(name.encode())
+            tf.flush()
+            response = file_content_api_client.create(
+                relative_path=name, file=tf.name, repository=bucket_repo.pulp_href
+            )
+            result = monitor_task(response.task)
+            content_href = next(
+                (item for item in result.created_resources if "content/file/files/" in item)
+            )
+            content_units[name] = file_content_api_client.read(content_href)
+    return content_units
 
 
 @pytest.mark.parallel
@@ -147,13 +145,13 @@ def test_add_remove_repo_version(
     file_repo_ver_api_client,
     file_content_api_client,
     file_fixture_gen_file_repo,
-    file_populate_pulp,
     monitor_task,
+    file_9_contents,
 ):
     """Create and delete repository versions."""
     file_repo = file_fixture_gen_file_repo()
-    # Setup 8 content units in Pulp to populate test repository with
-    contents = file_populate_pulp
+    # Setup 9 content units in Pulp to populate test repository with
+    contents = list(file_9_contents.values())
 
     # Test trying to delete version 0 on new repository
     task = file_repo_ver_api_client.delete(file_repo.latest_version_href).task
@@ -168,13 +166,13 @@ def test_add_remove_repo_version(
         ).task
     monitor_task(task)
     repo = file_repo_api_client.read(file_repo.pulp_href)
-    assert repo.latest_version_href[-2] == "8"
+    assert repo.latest_version_href[-2] == "9"
 
     # Test trying to delete version 0 with a populated repository
     ver_zero = f"{repo.versions_href}0/"
     monitor_task(file_repo_ver_api_client.delete(ver_zero).task)
     versions = file_repo_ver_api_client.list(repo.pulp_href)
-    assert versions.count == 8
+    assert versions.count == 9
     with pytest.raises(ApiException) as e:
         file_repo_ver_api_client.read(ver_zero)
     assert e.value.status == 404
@@ -183,9 +181,9 @@ def test_add_remove_repo_version(
     last_ver = repo.latest_version_href
     monitor_task(file_repo_ver_api_client.delete(last_ver).task)
     repo = file_repo_api_client.read(repo.pulp_href)
-    assert repo.latest_version_href[-2] == "7"
+    assert repo.latest_version_href[-2] == "8"
     versions = file_repo_ver_api_client.list(repo.pulp_href)
-    assert versions.count == 7
+    assert versions.count == 8
     with pytest.raises(ApiException) as e:
         file_repo_ver_api_client.read(last_ver)
     assert e.value.status == 404
@@ -198,7 +196,7 @@ def test_add_remove_repo_version(
     middle_ver = f"{repo.versions_href}4/"
     monitor_task(file_repo_ver_api_client.delete(middle_ver).task)
     versions = file_repo_ver_api_client.list(repo.pulp_href)
-    assert versions.count == 6
+    assert versions.count == 7
     with pytest.raises(ApiException) as e:
         file_repo_ver_api_client.read(middle_ver)
     assert e.value.status == 404
@@ -208,7 +206,9 @@ def test_add_remove_repo_version(
     next_version = file_repo_ver_api_client.read(next_ver)
     assert next_version.content_summary.added[FILE_CONTENT_NAME]["count"] == 2
     middle_contents = file_content_api_client.list(repository_version=next_ver)
-    assert middle_contents.results == contents[:5]
+    assert set(item.pulp_href for item in middle_contents.results) == set(
+        item.pulp_href for item in contents[:5]
+    )
 
     # Test attempt to delete all versions
     versions = file_repo_ver_api_client.list(repo.pulp_href)
@@ -230,6 +230,7 @@ def test_squash_repo_version(
     file_content_api_client,
     file_fixture_gen_file_repo,
     monitor_task,
+    file_9_contents,
 ):
     """Test that the deletion of a repository version properly squashes the content.
 
@@ -246,25 +247,7 @@ def test_squash_repo_version(
     - Delete version 2.
     - Check the content of all remaining versions.
     """
-    bucket_repo = file_fixture_gen_file_repo()
-    content_units = {}
-    for name in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
-        try:
-            content_units[name] = file_content_api_client.list(
-                relative_path=name, sha256=sha256(name.encode()).hexdigest()
-            ).results[0]
-        except IndexError:
-            with NamedTemporaryFile() as tf:
-                tf.write(name.encode())
-                tf.flush()
-                response = file_content_api_client.create(
-                    relative_path=name, file=tf.name, repository=bucket_repo.pulp_href
-                )
-                result = monitor_task(response.task)
-                content_href = next(
-                    (item for item in result.created_resources if "content/file/files/" in item)
-                )
-                content_units[name] = file_content_api_client.read(content_href)
+    content_units = file_9_contents
     file_repo = file_fixture_gen_file_repo()
     response1 = file_repo_api_client.modify(
         file_repo.pulp_href,
@@ -417,19 +400,19 @@ def test_filter_repo_version(
     file_repo_api_client,
     file_repo_ver_api_client,
     file_fixture_gen_file_repo,
-    file_populate_pulp,
     monitor_task,
+    file_9_contents,
 ):
     """Test whether repository versions can be filtered."""
     file_repo = file_fixture_gen_file_repo()
     # Setup 8 content units in Pulp to populate test repository with
-    for content in file_populate_pulp:
+    for content in file_9_contents.values():
         task = file_repo_api_client.modify(
             file_repo.pulp_href, {"add_content_units": [content.pulp_href]}
         ).task
     monitor_task(task)
     repo = file_repo_api_client.read(file_repo.pulp_href)
-    assert repo.latest_version_href[-2] == "8"
+    assert repo.latest_version_href[-2] == "9"
     repo_versions = file_repo_ver_api_client.list(repo.pulp_href).results
 
     # Filter repository version by invalid date.
@@ -682,8 +665,8 @@ def test_clear_all_units_repo_version(
     file_fixture_gen_file_repo,
     file_fixture_gen_remote_ssl,
     basic_manifest_path,
-    file_populate_pulp,
     monitor_task,
+    file_9_contents,
 ):
     """Test clear of all units of a given repository version."""
     # Test addition and removal of all units for a given repository version.
@@ -691,7 +674,7 @@ def test_clear_all_units_repo_version(
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
     file_repo_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href})
 
-    content = choice(file_populate_pulp)
+    content = choice(list(file_9_contents.values()))
     body = {"add_content_units": [content.pulp_href], "remove_content_units": ["*"]}
     task = file_repo_api_client.modify(repo.pulp_href, body).task
     monitor_task(task)
@@ -708,7 +691,7 @@ def test_clear_all_units_repo_version(
 
     # Test clear all units using base version.
     repo = file_fixture_gen_file_repo()
-    for content in file_populate_pulp:
+    for content in file_9_contents.values():
         task = file_repo_api_client.modify(
             repo.pulp_href, {"add_content_units": [content.pulp_href]}
         ).task
@@ -719,12 +702,12 @@ def test_clear_all_units_repo_version(
     body = {"base_version": base_version_four, "remove_content_units": ["*"]}
     monitor_task(file_repo_api_client.modify(repo.pulp_href, body).task)
     repo = file_repo_api_client.read(repo.pulp_href)
-    assert repo.latest_version_href[-2] == "9"
+    assert repo.latest_version_href[-3:-1] == "10"
 
     latest_version = file_repo_ver_api_client.read(repo.latest_version_href)
     assert latest_version.content_summary.present == {}
     assert latest_version.content_summary.added == {}
-    assert latest_version.content_summary.removed[FILE_CONTENT_NAME]["count"] == 8
+    assert latest_version.content_summary.removed[FILE_CONTENT_NAME]["count"] == 9
 
     # Test http error is raised when invalid remove
     with pytest.raises(ApiException) as e:
