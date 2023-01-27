@@ -1,7 +1,7 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-181-g4bf0583
+# generated with plugin_template@2021.08.26-193-geaaba01
 
 additional_repos:
 - branch: main
@@ -65,6 +65,7 @@ pulp_settings:
   - /tmp
   orphan_protection_time: 0
 pulp_settings_azure: null
+pulp_settings_gcp: null
 pulp_settings_s3: null
 pulp_settings_stream: null
 pulpcore_branch: '3.20'
@@ -90,6 +91,8 @@ test_bindings: false
 test_cli: true
 test_deprecations: true
 test_fips_nightly: false
+test_gcp: false
+test_lowerbounds: true
 test_performance: true
 test_released_plugin_with_next_pulpcore_release: true
 test_reroute: true
