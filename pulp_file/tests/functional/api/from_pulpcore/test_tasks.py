@@ -27,7 +27,7 @@ def test_retrieve_task_with_fields_created_resources_only(
 ):
     """Perform filtering over the task's field created_resources."""
 
-    task, *_ = tasks_api_client.list(created_resources=distribution.pulp_href).results
+    task = tasks_api_client.list(created_resources=distribution.pulp_href).results[0]
 
     auth = BasicAuth(login=bindings_cfg.username, password=bindings_cfg.password)
     full_href = urljoin(bindings_cfg.host, task.pulp_href)
@@ -45,45 +45,34 @@ def setup_filter_fixture(
     file_repo,
     file_repo_api_client,
     file_fixture_gen_remote_ssl,
-    file_random_content_unit,
     basic_manifest_path,
     tasks_api_client,
     monitor_task,
 ):
 
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
 
     body = RepositorySyncURL(remote=remote.pulp_href)
-    synced_repo = monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
-
-    file_repo = file_repo_api_client.read(file_repo.pulp_href)
-
-    monitor_task(
-        file_repo_api_client.modify(
-            file_repo.pulp_href, {"remove_content_units": [file_random_content_unit.pulp_href]}
-        ).task
-    )
+    repo_sync_task = monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
 
     repo_update_action = file_repo_api_client.partial_update(
         file_repo.pulp_href, {"description": str(uuid4())}
     )
     repo_update_task = tasks_api_client.read(repo_update_action.task)
 
-    yield (file_repo, remote, synced_repo, repo_update_task)
-
-    tasks_api_client.delete(repo_update_task.pulp_href)
+    return (repo_sync_task, repo_update_task)
 
 
 def test_filter_tasks_by_reserved_resources(setup_filter_fixture, tasks_api_client):
     """Filter all tasks by a particular reserved resource."""
-    *_, synced_repo, repo_update_task = setup_filter_fixture
-    reserved_resources_record, *_ = repo_update_task.reserved_resources_record
+    repo_sync_task, repo_update_task = setup_filter_fixture
+    reserved_resources_record = repo_update_task.reserved_resources_record[0]
 
     results = tasks_api_client.list(reserved_resources_record=[reserved_resources_record]).results
     # Why reserved_resources_record parameter needs to be a list here? ^
 
-    assert results[0] == repo_update_task
-    assert len(results) == 3
+    assert results[0].pulp_href == repo_update_task.pulp_href
+    assert len(results) == 2
 
     # Filter all tasks by a non-existing reserved resource.
     with pytest.raises(ApiException) as ctx:
@@ -94,13 +83,13 @@ def test_filter_tasks_by_reserved_resources(setup_filter_fixture, tasks_api_clie
     assert ctx.value.status == 400
 
     # Filter all tasks by a particular created resource.
-    created_resources, *_ = synced_repo.created_resources
+    created_resources = repo_sync_task.created_resources[0]
     results = tasks_api_client.list(created_resources=created_resources).results
 
     assert len(results) == 1
-    assert results[0] == synced_repo
+    assert results[0].pulp_href == repo_sync_task.pulp_href
 
-    # Filter all tasks by a non-existing reserved resource.
+    # Filter all tasks by a non-existing created resource.
     created_resources = "a_resource_should_be_never_named_like_this"
 
     with pytest.raises(ApiException) as ctx:
