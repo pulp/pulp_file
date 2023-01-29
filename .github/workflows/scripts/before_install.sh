@@ -30,17 +30,6 @@ fi
 COMMIT_MSG=$(git log --format=%B --no-merges -1)
 export COMMIT_MSG
 
-if [[ "$TEST" == "upgrade" ]]; then
-  pip install -r functest_requirements.txt
-  git checkout -b ci_upgrade_test
-  cp -R .github /tmp/.github
-  cp -R .ci /tmp/.ci
-  git checkout $FROM_PULP_FILE_BRANCH
-  rm -rf .ci .github
-  cp -R /tmp/.github .
-  cp -R /tmp/.ci .
-fi
-
 if [[ "$TEST" == "plugin-from-pypi" ]]; then
   COMPONENT_VERSION=$(http https://pypi.org/pypi/pulp-file/json | jq -r '.info.version')
 else
@@ -115,8 +104,8 @@ if [ -n "$PULP_CLI_PR_NUMBER" ]; then
 fi
 
 cd pulp-cli
-pip install -e .
-pulp config create --base-url https://pulp --location tests/cli.toml 
+pip install .
+pulp config create --base-url https://pulp  --location tests/cli.toml
 mkdir ~/.config/pulp
 cp tests/cli.toml ~/.config/pulp/cli.toml
 cd ..
@@ -155,11 +144,13 @@ then
   echo "Failed to install amazon.aws"
   exit $s
 fi
-# Patch DJANGO_ALLOW_ASYNC_UNSAFE out of the pulpcore tasking_system
-# Don't let it fail. Be opportunistic.
-sed -i -e '/DJANGO_ALLOW_ASYNC_UNSAFE/d' pulpcore/pulpcore/tasking/entrypoint.py || true
 
 cd pulp_file
+
+if [[ "$TEST" = "lowerbounds" ]]; then
+  python3 .ci/scripts/calc_deps_lowerbounds.py > lowerbounds_requirements.txt
+  mv lowerbounds_requirements.txt requirements.txt
+fi
 
 if [ -f $POST_BEFORE_INSTALL ]; then
   source $POST_BEFORE_INSTALL
