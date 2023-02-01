@@ -65,7 +65,6 @@ def sync_repository_distribution(
     monitor_task,
 ):
     def _sync_repository_distribution(policy="immediate"):
-
         remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy=policy)
 
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)

@@ -49,7 +49,6 @@ def setup_filter_fixture(
     tasks_api_client,
     monitor_task,
 ):
-
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
 
     body = RepositorySyncURL(remote=remote.pulp_href)
