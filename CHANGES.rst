@@ -13,6 +13,39 @@ Changelog
 
 .. towncrier release notes start
 
+1.12.0 (2023-02-03)
+===================
+
+
+Features
+--------
+
+- Added a permission check on the used upload in the single shot content creation call.
+  `#747 <https://github.com/pulp/pulp_file/issues/747>`__
+- The upload feature was changed to accept already existing file content. This allows multiple users to own identical files.
+  `#774 <https://github.com/pulp/pulp_file/issues/774>`__
+- Allowed users to publish without manifests by settings the ``manifest`` field to null.
+  `#837 <https://github.com/pulp/pulp_file/issues/837>`__
+- Added a feature that allows Pulp to automatically create missing repositories on import.
+  `#866 <https://github.com/pulp/pulp_file/issues/866>`__
+
+
+Improved Documentation
+----------------------
+
+- Added an overview section, with a pointer to the pulp-manifest tool.
+  `#844 <https://github.com/pulp/pulp_file/issues/844>`__
+
+
+Misc
+----
+
+- `#813 <https://github.com/pulp/pulp_file/issues/813>`__, `#814 <https://github.com/pulp/pulp_file/issues/814>`__, `#815 <https://github.com/pulp/pulp_file/issues/815>`__, `#816 <https://github.com/pulp/pulp_file/issues/816>`__, `#818 <https://github.com/pulp/pulp_file/issues/818>`__, `#819 <https://github.com/pulp/pulp_file/issues/819>`__, `#820 <https://github.com/pulp/pulp_file/issues/820>`__, `#821 <https://github.com/pulp/pulp_file/issues/821>`__, `#822 <https://github.com/pulp/pulp_file/issues/822>`__, `#823 <https://github.com/pulp/pulp_file/issues/823>`__, `#824 <https://github.com/pulp/pulp_file/issues/824>`__, `#825 <https://github.com/pulp/pulp_file/issues/825>`__, `#826 <https://github.com/pulp/pulp_file/issues/826>`__, `#828 <https://github.com/pulp/pulp_file/issues/828>`__, `#862 <https://github.com/pulp/pulp_file/issues/862>`__, `#867 <https://github.com/pulp/pulp_file/issues/867>`__, `#876 <https://github.com/pulp/pulp_file/issues/876>`__, `#881 <https://github.com/pulp/pulp_file/issues/881>`__
+
+
+----
+
+
 1.11.3 (2023-01-27)
 ===================
 
