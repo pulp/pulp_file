@@ -18,6 +18,7 @@ def file_repo_with_auto_publish(file_repo_api_client, gen_object_with_cleanup):
 
 
 @pytest.mark.parallel
+@pytest.mark.skip(reason="needs at least core/3.23, which isn't released yet")
 def test_auto_publish_and_distribution(
     file_repo_with_auto_publish,
     file_fixture_gen_remote_ssl,
