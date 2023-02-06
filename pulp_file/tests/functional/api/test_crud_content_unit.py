@@ -8,6 +8,7 @@ from pulpcore.tests.functional.utils import PulpTaskError
 from pulp_smash.pulp3.utils import get_content_summary, get_added_content_summary
 
 from pulpcore.client.pulpcore.exceptions import ApiException as coreApiException
+from pulpcore.client.pulp_file.exceptions import ApiException
 
 
 @pytest.mark.parallel
@@ -178,6 +179,20 @@ def test_cannot_create_repo_version_with_two_relative_paths_the_same(
     with pytest.raises(PulpTaskError):
         response = file_repo_api_client.modify(file_repo.pulp_href, data)
         monitor_task(response.task)
+
+
+@pytest.mark.parallel
+def test_bad_inputs_to_modify_endpoint(file_repo, file_repo_api_client, needs_pulp_plugin):
+    needs_pulp_plugin("core", min="3.23.0.dev")
+
+    with pytest.raises(ApiException):
+        file_repo_api_client.modify(file_repo.pulp_href, [{}])
+
+    with pytest.raises(ApiException):
+        file_repo_api_client.modify(file_repo.pulp_href, {"a": "b"})
+
+    with pytest.raises(ApiException):
+        file_repo_api_client.modify(file_repo.pulp_href, ["/content/"])
 
 
 @pytest.mark.parallel
