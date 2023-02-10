@@ -139,7 +139,11 @@ def test_download_policy(
     actual_checksum = hashlib.sha256(downloaded_file.body).hexdigest()
     expected_checksum = content_unit[1]
     assert expected_checksum == actual_checksum
-    if download_policy == "immediate" and settings.DEFAULT_FILE_STORAGE in OBJECT_STORAGES:
+    if (
+        download_policy == "immediate"
+        and settings.DEFAULT_FILE_STORAGE != "pulpcore.app.models.storage.FileSystem"
+        and settings.REDIRECT_TO_OBJECT_STORAGE
+    ):
         content_disposition = downloaded_file.response_obj.headers.get("Content-Disposition")
         assert content_disposition is not None
         filename = os.path.basename(content_unit[0])
