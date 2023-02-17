@@ -28,6 +28,7 @@ def test_auto_publish_and_distribution(
     file_distro_api_client,
     file_random_content_unit,
     monitor_task,
+    has_pulp_plugin,
 ):
     """Tests auto-publish and auto-distribution"""
     remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
@@ -85,14 +86,15 @@ def test_auto_publish_and_distribution(
     assert len(files_added) == 1
     assert list(files_added)[0][1] == file_random_content_unit.sha256
 
-    # Assert that filtering distributions by repository is possible
-    distros = file_distro_api_client.list(repository=repo.pulp_href).results
-    assert len(distros) == 1
+    if has_pulp_plugin("core", min="3.23.0"):
+        # Assert that filtering distributions by repository is possible
+        distros = file_distro_api_client.list(repository=repo.pulp_href).results
+        assert len(distros) == 1
 
-    distros = file_distro_api_client.list(repository__in=[repo.pulp_href]).results
-    assert len(distros) == 1
+        distros = file_distro_api_client.list(repository__in=[repo.pulp_href]).results
+        assert len(distros) == 1
 
-    # Assert that no results are returned when filtering by non-existent repository
-    nonexistent_repository_href = f"{repo.pulp_href[:-37]}12345678-1234-1234-1234-012345678912/"
-    distros = file_distro_api_client.list(repository=nonexistent_repository_href).results
-    assert len(distros) == 0
+        # Assert that no results are returned when filtering by non-existent repository
+        nonexistent_repository_href = f"{repo.pulp_href[:-37]}12345678-1234-1234-1234-012345678912/"
+        distros = file_distro_api_client.list(repository=nonexistent_repository_href).results
+        assert len(distros) == 0

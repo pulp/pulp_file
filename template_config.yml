@@ -62,7 +62,6 @@ pulp_settings:
   - /tmp
   allowed_import_paths:
   - /tmp
-  orphan_protection_time: 0
 pulp_settings_azure:
   domain_enabled: true
 pulp_settings_gcp: null
@@ -101,9 +100,5 @@ test_reroute: true
 test_s3: true
 test_stream: true
 update_github: true
-upgrade_range:
-- pulp-certguard_branch: 1.2
-  pulp_file_branch: 1.6
-  pulpcore_branch: 3.11
 use_issue_template: true
 
