@@ -18,19 +18,15 @@ source .github/workflows/scripts/utils.sh
 export PULP_API_ROOT="/pulp/"
 
 if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]; then
+  cd ..
+  git clone https://github.com/pulp/pulpcore.git
+  cd -
   pip install -r ../pulpcore/doc_requirements.txt
   pip install -r doc_requirements.txt
 fi
 
 cd .ci/ansible/
 
-TAG=ci_build
-if [ -e $REPO_ROOT/../pulp-certguard ]; then
-  PULP_CERTGUARD=./pulp-certguard
-else
-  PULP_CERTGUARD=git+https://github.com/pulp/pulp-certguard.git@main
-fi
-PULPCORE=./pulpcore
 if [[ "$TEST" == "plugin-from-pypi" ]]; then
   PLUGIN_NAME=pulp_file
 elif [[ "${RELEASE_WORKFLOW:-false}" == "true" ]]; then
@@ -38,44 +34,24 @@ elif [[ "${RELEASE_WORKFLOW:-false}" == "true" ]]; then
 else
   PLUGIN_NAME=./pulp_file
 fi
-if [[ "${RELEASE_WORKFLOW:-false}" == "true" ]]; then
-  # Install the plugin only and use published PyPI packages for the rest
-  # Quoting ${TAG} ensures Ansible casts the tag as a string.
-  cat >> vars/main.yaml << VARSYAML
+cat >> vars/main.yaml << VARSYAML
 image:
   name: pulp
-  tag: "${TAG}"
-plugins:
-  - name: pulpcore
-    source: pulpcore
-  - name: pulp_file
-    source:  "${PLUGIN_NAME}"
-  - name: pulp-certguard
-    source: pulp-certguard
-  - name: pulp-smash
-    source: ./pulp-smash
-VARSYAML
-else
-  cat >> vars/main.yaml << VARSYAML
-image:
-  name: pulp
-  tag: "${TAG}"
+  tag: "ci_build"
 plugins:
   - name: pulp_file
     source: "${PLUGIN_NAME}"
-  - name: pulp-certguard
-    source: $PULP_CERTGUARD
-  - name: pulpcore
-    source: "${PULPCORE}"
-  - name: pulp-smash
-    source: ./pulp-smash
+VARSYAML
+if [[ -f ../../ci_requirements.txt ]]; then
+  cat >> vars/main.yaml << VARSYAML
+    ci_requirements: true
 VARSYAML
 fi
 
 cat >> vars/main.yaml << VARSYAML
 services:
   - name: pulp
-    image: "pulp:${TAG}"
+    image: "pulp:ci_build"
     volumes:
       - ./settings:/etc/pulp
       - ./ssh:/keys/
@@ -86,7 +62,7 @@ services:
 VARSYAML
 
 cat >> vars/main.yaml << VARSYAML
-pulp_settings: {"allowed_content_checksums": ["sha1", "sha224", "sha256", "sha384", "sha512"], "allowed_export_paths": ["/tmp"], "allowed_import_paths": ["/tmp"], "orphan_protection_time": 0}
+pulp_settings: {"allowed_content_checksums": ["sha1", "sha224", "sha256", "sha384", "sha512"], "allowed_export_paths": ["/tmp"], "allowed_import_paths": ["/tmp"]}
 pulp_scheme: https
 
 pulp_container_tag: https
