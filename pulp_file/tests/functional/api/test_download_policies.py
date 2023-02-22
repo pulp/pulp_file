@@ -56,10 +56,14 @@ def test_download_policy(
     range_header_manifest_path,
     gen_object_with_cleanup,
     file_content_api_client,
-    download_policy,
     monitor_task,
+    pulp_settings,
+    download_policy,
 ):
     """Test that "on_demand" and "streamed" download policies work as expected."""
+    if download_policy == "on_demand" and "SFTP" in pulp_settings.DEFAULT_FILE_STORAGE:
+        pytest.skip("This storage technology is not properly supported.")
+
     remote = file_fixture_gen_remote_ssl(
         manifest_path=range_header_manifest_path, policy=download_policy
     )
