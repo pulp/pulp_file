@@ -13,6 +13,20 @@ Changelog
 
 .. towncrier release notes start
 
+1.13.0 (2023-03-14)
+===================
+
+
+Features
+--------
+
+- Added Domains compatibility.
+  `#859 <https://github.com/pulp/pulp_file/issues/859>`__
+
+
+----
+
+
 1.12.0 (2023-02-03)
 ===================
 
