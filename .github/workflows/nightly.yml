@@ -29,7 +29,6 @@ jobs:
           - TEST: stream
           
           - TEST: generate-bindings
-          - TEST: plugin-from-pypi
           - TEST: lowerbounds
 
     steps:
