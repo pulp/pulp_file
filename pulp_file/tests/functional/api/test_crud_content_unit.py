@@ -61,18 +61,18 @@ def test_same_sha256_same_relative_path_no_repo(
 def test_same_sha256_same_relative_path_repo_specified(
     random_artifact,
     file_content_api_client,
-    file_repo_api_client,
+    file_repository_api_client,
     gen_user,
-    file_fixture_gen_file_repo,
+    file_repository_factory,
     monitor_task,
 ):
     max = gen_user(model_roles=["file.filerepository_creator"])
     john = gen_user(model_roles=["file.filerepository_creator"])
 
     with max:
-        repo1 = file_fixture_gen_file_repo(name=str(uuid.uuid4()))
+        repo1 = file_repository_factory(name=str(uuid.uuid4()))
     with john:
-        repo2 = file_fixture_gen_file_repo(name=str(uuid.uuid4()))
+        repo2 = file_repository_factory(name=str(uuid.uuid4()))
 
     artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
 
@@ -84,7 +84,7 @@ def test_same_sha256_same_relative_path_repo_specified(
     content1 = file_content_api_client.read(monitor_task(response1.task).created_resources[1])
     content2 = file_content_api_client.read(monitor_task(response2.task).created_resources[0])
     assert content1.pulp_href == content2.pulp_href
-    repo1 = file_repo_api_client.read(repo1.pulp_href)
+    repo1 = file_repository_api_client.read(repo1.pulp_href)
     assert repo1.latest_version_href.endswith("/versions/1/")
     assert get_content_summary(repo1.to_dict()) == {"file.file": 1}
     assert get_added_content_summary(repo1.to_dict()) == {"file.file": 1}
@@ -95,7 +95,7 @@ def test_same_sha256_same_relative_path_repo_specified(
 
     content3 = file_content_api_client.read(monitor_task(ctask3).created_resources[1])
     assert content3.pulp_href == content1.pulp_href
-    repo2 = file_repo_api_client.read(repo2.pulp_href)
+    repo2 = file_repository_api_client.read(repo2.pulp_href)
     assert repo2.latest_version_href.endswith("/versions/1/")
     assert get_content_summary(repo2.to_dict()) == {"file.file": 1}
     assert get_added_content_summary(repo2.to_dict()) == {"file.file": 1}
@@ -122,10 +122,10 @@ def test_second_content_unit_with_same_rel_path_replaces_the_first(
     random_artifact_factory,
     file_content_api_client,
     gen_object_with_cleanup,
-    file_repo_ver_api_client,
-    file_repo_api_client,
+    file_repository_version_api_client,
+    file_repository_api_client,
 ):
-    latest_repo_version = file_repo_ver_api_client.read(file_repo.latest_version_href)
+    latest_repo_version = file_repository_version_api_client.read(file_repo.latest_version_href)
     assert latest_repo_version.number == 0
 
     artifact_attrs = {
@@ -135,16 +135,16 @@ def test_second_content_unit_with_same_rel_path_replaces_the_first(
     }
     gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
 
-    file_repo = file_repo_api_client.read(file_repo.pulp_href)
-    latest_repo_version = file_repo_ver_api_client.read(file_repo.latest_version_href)
+    file_repo = file_repository_api_client.read(file_repo.pulp_href)
+    latest_repo_version = file_repository_version_api_client.read(file_repo.latest_version_href)
     assert latest_repo_version.content_summary.present["file.file"]["count"] == 1
     assert latest_repo_version.number == 1
 
     artifact_attrs["artifact"] = random_artifact_factory().pulp_href
     gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
 
-    file_repo = file_repo_api_client.read(file_repo.pulp_href)
-    latest_repo_version = file_repo_ver_api_client.read(file_repo.latest_version_href)
+    file_repo = file_repository_api_client.read(file_repo.pulp_href)
+    latest_repo_version = file_repository_version_api_client.read(file_repo.latest_version_href)
     assert latest_repo_version.content_summary.present["file.file"]["count"] == 1
     assert latest_repo_version.number == 2
 
@@ -155,11 +155,11 @@ def test_cannot_create_repo_version_with_two_relative_paths_the_same(
     random_artifact_factory,
     file_content_api_client,
     gen_object_with_cleanup,
-    file_repo_ver_api_client,
-    file_repo_api_client,
+    file_repository_version_api_client,
+    file_repository_api_client,
     monitor_task,
 ):
-    latest_repo_version = file_repo_ver_api_client.read(file_repo.latest_version_href)
+    latest_repo_version = file_repository_version_api_client.read(file_repo.latest_version_href)
     assert latest_repo_version.number == 0
 
     artifact_attrs = {
@@ -177,22 +177,22 @@ def test_cannot_create_repo_version_with_two_relative_paths_the_same(
     data = {"add_content_units": [first_content_unit.pulp_href, second_content_unit.pulp_href]}
 
     with pytest.raises(PulpTaskError):
-        response = file_repo_api_client.modify(file_repo.pulp_href, data)
+        response = file_repository_api_client.modify(file_repo.pulp_href, data)
         monitor_task(response.task)
 
 
 @pytest.mark.parallel
-def test_bad_inputs_to_modify_endpoint(file_repo, file_repo_api_client, needs_pulp_plugin):
+def test_bad_inputs_to_modify_endpoint(file_repo, file_repository_api_client, needs_pulp_plugin):
     needs_pulp_plugin("core", min="3.23.0.dev")
 
     with pytest.raises(ApiException):
-        file_repo_api_client.modify(file_repo.pulp_href, [{}])
+        file_repository_api_client.modify(file_repo.pulp_href, [{}])
 
     with pytest.raises(ApiException):
-        file_repo_api_client.modify(file_repo.pulp_href, {"a": "b"})
+        file_repository_api_client.modify(file_repo.pulp_href, {"a": "b"})
 
     with pytest.raises(ApiException):
-        file_repo_api_client.modify(file_repo.pulp_href, ["/content/"])
+        file_repository_api_client.modify(file_repo.pulp_href, ["/content/"])
 
 
 @pytest.mark.parallel

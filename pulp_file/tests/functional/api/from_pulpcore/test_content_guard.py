@@ -18,7 +18,7 @@ def test_rbac_content_guard_full_workflow(
     rbac_contentguard_api_client,
     groups_api_client,
     groups_users_api_client,
-    file_distro_api_client,
+    file_distribution_api_client,
     pulp_admin_user,
     anonymous_user,
     gen_user,
@@ -39,7 +39,7 @@ def test_rbac_content_guard_full_workflow(
 
     # Create a distribution
     with creator_user:
-        distro = gen_object_with_cleanup(file_distro_api_client, gen_distribution())
+        distro = gen_object_with_cleanup(file_distribution_api_client, gen_distribution())
 
     def _assert_access(authorized_users):
         """Asserts that only authorized users have access to the distribution's base_url."""
@@ -59,8 +59,8 @@ def test_rbac_content_guard_full_workflow(
     with creator_user:
         guard = gen_object_with_cleanup(rbac_contentguard_api_client, {"name": distro.name})
         body = PatchedfileFileDistribution(content_guard=guard.pulp_href)
-        monitor_task(file_distro_api_client.partial_update(distro.pulp_href, body).task)
-        distro = file_distro_api_client.read(distro.pulp_href)
+        monitor_task(file_distribution_api_client.partial_update(distro.pulp_href, body).task)
+        distro = file_distribution_api_client.read(distro.pulp_href)
         assert guard.pulp_href == distro.content_guard
 
     # Check that now only the creator and admin user can access the distribution

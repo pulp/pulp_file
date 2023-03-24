@@ -27,18 +27,18 @@ if settings.DEFAULT_FILE_STORAGE not in SUPPORTED_STORAGE_FRAMEWORKS:
 
 @pytest.fixture
 def repository_with_corrupted_artifacts(
-    file_repo_api_client,
+    file_repository_api_client,
     file_repo,
     artifacts_api_client,
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     basic_manifest_path,
     monitor_task,
 ):
     # STEP 1: sync content from a remote source
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="immediate")
     sync_data = RepositorySyncURL(remote=remote.pulp_href)
-    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, sync_data).task)
-    repo = file_repo_api_client.read(file_repo.pulp_href)
+    monitor_task(file_repository_api_client.sync(file_repo.pulp_href, sync_data).task)
+    repo = file_repository_api_client.read(file_repo.pulp_href)
 
     # STEP 2: sample artifacts that will be modified on the filesystem later on
     content1, content2 = sample(get_files_in_manifest(remote.url), 2)
@@ -124,7 +124,7 @@ def test_repair_global_without_checksums(
 
 @pytest.mark.parallel
 def test_repair_repository_version_with_checksums(
-    file_repo_ver_api_client, repository_with_corrupted_artifacts, monitor_task
+    file_repository_version_api_client, repository_with_corrupted_artifacts, monitor_task
 ):
     """Test whether corrupted files can be redownloaded.
 
@@ -137,14 +137,18 @@ def test_repair_repository_version_with_checksums(
     """
     # STEP 3
     latest_version = repository_with_corrupted_artifacts.latest_version_href
-    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=True))
+    response = file_repository_version_api_client.repair(
+        latest_version, Repair(verify_checksums=True)
+    )
     results = monitor_task(response.task)
 
     # STEP 4
     _verify_repair_results(results, missing=1, corrupted=1, repaired=2)
 
     # STEP 5
-    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=True))
+    response = file_repository_version_api_client.repair(
+        latest_version, Repair(verify_checksums=True)
+    )
     results = monitor_task(response.task)
 
     # STEP 6
@@ -153,7 +157,7 @@ def test_repair_repository_version_with_checksums(
 
 @pytest.mark.parallel
 def test_repair_repository_version_without_checksums(
-    file_repo_ver_api_client, repository_with_corrupted_artifacts, monitor_task
+    file_repository_version_api_client, repository_with_corrupted_artifacts, monitor_task
 ):
     """Test whether missing files can be redownloaded.
 
@@ -168,21 +172,27 @@ def test_repair_repository_version_without_checksums(
     """
     # STEP 3
     latest_version = repository_with_corrupted_artifacts.latest_version_href
-    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=False))
+    response = file_repository_version_api_client.repair(
+        latest_version, Repair(verify_checksums=False)
+    )
     results = monitor_task(response.task)
 
     # STEP 4
     _verify_repair_results(results, missing=1, repaired=1)
 
     # STEP 5
-    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=False))
+    response = file_repository_version_api_client.repair(
+        latest_version, Repair(verify_checksums=False)
+    )
     results = monitor_task(response.task)
 
     # STEP 6
     _verify_repair_results(results)
 
     # STEP 7
-    response = file_repo_ver_api_client.repair(latest_version, Repair(verify_checksums=True))
+    response = file_repository_version_api_client.repair(
+        latest_version, Repair(verify_checksums=True)
+    )
     results = monitor_task(response.task)
 
     # STEP 8

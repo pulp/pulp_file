@@ -8,10 +8,10 @@ from pulpcore.client.pulp_file import (
 
 
 def _run_basic_sync_and_assert(
-    remote, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+    remote, file_repo, file_repository_api_client, file_content_api_client, monitor_task
 ):
     body = RepositorySyncURL(remote=remote.pulp_href)
-    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
+    monitor_task(file_repository_api_client.sync(file_repo.pulp_href, body).task)
 
     # Check content is present, but no artifacts are there
     content_response = file_content_api_client.list(
@@ -27,9 +27,9 @@ def _run_basic_sync_and_assert(
 
 @pytest.mark.parallel
 def test_http_sync_no_ssl(
-    file_fixture_gen_remote,
+    file_remote_factory,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     basic_manifest_path,
     monitor_task,
@@ -37,20 +37,22 @@ def test_http_sync_no_ssl(
     """
     Test file on_demand sync with plain http://
     """
-    remote_on_demand = file_fixture_gen_remote(
-        manifest_path=basic_manifest_path, policy="on_demand"
-    )
+    remote_on_demand = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+        remote_on_demand,
+        file_repo,
+        file_repository_api_client,
+        file_content_api_client,
+        monitor_task,
     )
 
 
 @pytest.mark.parallel
 def test_http_sync_ssl_tls_validation_off(
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     basic_manifest_path,
     monitor_task,
@@ -58,20 +60,24 @@ def test_http_sync_ssl_tls_validation_off(
     """
     Test file on_demand sync with https:// serving from an untrusted certificate.
     """
-    remote_on_demand = file_fixture_gen_remote_ssl(
+    remote_on_demand = file_remote_ssl_factory(
         manifest_path=basic_manifest_path, policy="on_demand", tls_validation="false"
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+        remote_on_demand,
+        file_repo,
+        file_repository_api_client,
+        file_content_api_client,
+        monitor_task,
     )
 
 
 @pytest.mark.parallel
 def test_http_sync_ssl_tls_validation_on(
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     basic_manifest_path,
     monitor_task,
@@ -79,20 +85,24 @@ def test_http_sync_ssl_tls_validation_on(
     """
     Test file on_demand sync with https:// and a client connection configured to trust it.
     """
-    remote_on_demand = file_fixture_gen_remote_ssl(
+    remote_on_demand = file_remote_ssl_factory(
         manifest_path=basic_manifest_path, policy="on_demand", tls_validation="true"
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+        remote_on_demand,
+        file_repo,
+        file_repository_api_client,
+        file_content_api_client,
+        monitor_task,
     )
 
 
 @pytest.mark.parallel
 def test_http_sync_ssl_tls_validation_defaults_to_on(
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     basic_manifest_path,
     monitor_task,
@@ -101,20 +111,24 @@ def test_http_sync_ssl_tls_validation_defaults_to_on(
     Test file on_demand sync with https:// and that tls validation is on by default.
     """
 
-    remote_on_demand = file_fixture_gen_remote_ssl(
+    remote_on_demand = file_remote_ssl_factory(
         manifest_path=basic_manifest_path, policy="on_demand"
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+        remote_on_demand,
+        file_repo,
+        file_repository_api_client,
+        file_content_api_client,
+        monitor_task,
     )
 
 
 @pytest.mark.parallel
 def test_http_sync_ssl_with_client_cert_req(
-    file_fixture_gen_remote_client_cert_req,
+    file_remote_client_cert_req_factory,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     basic_manifest_path,
     monitor_task,
@@ -122,20 +136,24 @@ def test_http_sync_ssl_with_client_cert_req(
     """
     Test file on_demand sync with https:// and mutual authentication between client and server.
     """
-    remote_on_demand = file_fixture_gen_remote_client_cert_req(
+    remote_on_demand = file_remote_client_cert_req_factory(
         manifest_path=basic_manifest_path, policy="on_demand"
     )
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+        remote_on_demand,
+        file_repo,
+        file_repository_api_client,
+        file_content_api_client,
+        monitor_task,
     )
 
 
 @pytest.mark.parallel
 def test_ondemand_to_immediate_sync(
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     basic_manifest_path,
     monitor_task,
@@ -143,26 +161,26 @@ def test_ondemand_to_immediate_sync(
     """
     Test file on_demand sync does not bring in Artifacts, but a later sync with "immediate" will.
     """
-    remote_on_demand = file_fixture_gen_remote_ssl(
+    remote_on_demand = file_remote_ssl_factory(
         manifest_path=basic_manifest_path, policy="on_demand"
     )
 
     _run_basic_sync_and_assert(
         remote_on_demand,
         file_repo,
-        file_repo_api_client,
+        file_repository_api_client,
         file_content_api_client,
         monitor_task,
     )
 
-    remote_immediate = file_fixture_gen_remote_ssl(
+    remote_immediate = file_remote_ssl_factory(
         manifest_path=basic_manifest_path, policy="immediate"
     )
 
     _run_basic_sync_and_assert(
         remote_immediate,
         file_repo,
-        file_repo_api_client,
+        file_repository_api_client,
         file_content_api_client,
         monitor_task,
     )
@@ -174,7 +192,7 @@ def test_header_for_sync(
     tls_certificate_authority_cert,
     file_remote_api_client,
     file_repo,
-    file_repo_api_client,
+    file_repository_api_client,
     file_content_api_client,
     gen_object_with_cleanup,
     basic_manifest_path,
@@ -200,7 +218,11 @@ def test_header_for_sync(
     remote_on_demand = gen_object_with_cleanup(file_remote_api_client, remote_on_demand_data)
 
     _run_basic_sync_and_assert(
-        remote_on_demand, file_repo, file_repo_api_client, file_content_api_client, monitor_task
+        remote_on_demand,
+        file_repo,
+        file_repository_api_client,
+        file_content_api_client,
+        monitor_task,
     )
 
     assert len(requests_record) == 1

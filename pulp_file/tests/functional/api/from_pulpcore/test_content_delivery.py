@@ -21,25 +21,25 @@ from pulp_file.tests.functional.utils import (
 @pytest.mark.parallel
 def test_delete_remote_on_demand(
     file_repo_with_auto_publish,
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     file_remote_api_client,
-    file_repo_api_client,
-    file_distro_api_client,
+    file_repository_api_client,
+    file_distribution_api_client,
     basic_manifest_path,
     gen_object_with_cleanup,
     monitor_task,
 ):
     # Create a remote with on_demand download policy
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
 
     # Sync from the remote
     body = RepositorySyncURL(remote=remote.pulp_href)
-    monitor_task(file_repo_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
-    repo = file_repo_api_client.read(file_repo_with_auto_publish.pulp_href)
+    monitor_task(file_repository_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
+    repo = file_repository_api_client.read(file_repo_with_auto_publish.pulp_href)
 
     # Create a distribution pointing to the repository
     distribution = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(repository=repo.pulp_href)
+        file_distribution_api_client, gen_distribution(repository=repo.pulp_href)
     )
 
     # Download the manifest from the remote
@@ -53,9 +53,9 @@ def test_delete_remote_on_demand(
     assert exc.value.status == 404
 
     # Recreate the remote and sync into the repository using it
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
     body = RepositorySyncURL(remote=remote.pulp_href)
-    monitor_task(file_repo_api_client.sync(repo.pulp_href, body).task)
+    monitor_task(file_repository_api_client.sync(repo.pulp_href, body).task)
 
     # Assert that files can now be downloaded from the distribution
     content_unit_url = urljoin(distribution.base_url, expected_file_list[0][0])
@@ -68,25 +68,25 @@ def test_delete_remote_on_demand(
 @pytest.mark.parallel
 def test_remote_artifact_url_update(
     file_repo_with_auto_publish,
-    file_fixture_gen_remote_ssl,
-    file_repo_api_client,
-    file_distro_api_client,
+    file_remote_ssl_factory,
+    file_repository_api_client,
+    file_distribution_api_client,
     basic_manifest_path,
     basic_manifest_only_path,
     gen_object_with_cleanup,
     monitor_task,
 ):
     # Create a remote that points to a repository that only has the manifest, but no content
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_only_path, policy="on_demand")
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_only_path, policy="on_demand")
 
     # Sync from the remote
     body = RepositorySyncURL(remote=remote.pulp_href)
-    monitor_task(file_repo_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
-    repo = file_repo_api_client.read(file_repo_with_auto_publish.pulp_href)
+    monitor_task(file_repository_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
+    repo = file_repository_api_client.read(file_repo_with_auto_publish.pulp_href)
 
     # Create a distribution from the publication
     distribution = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(repository=repo.pulp_href)
+        file_distribution_api_client, gen_distribution(repository=repo.pulp_href)
     )
 
     # Download the manifest from the remote
@@ -99,11 +99,11 @@ def test_remote_artifact_url_update(
     assert exc.value.status == 404
 
     # Create a new remote that points to a repository that does have the missing content
-    remote2 = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
+    remote2 = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
 
     # Sync from the remote and assert that content can now be downloaded
     body = RepositorySyncURL(remote=remote2.pulp_href)
-    monitor_task(file_repo_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
+    monitor_task(file_repository_api_client.sync(file_repo_with_auto_publish.pulp_href, body).task)
     content_unit_url = urljoin(distribution.base_url, expected_file_list[0][0])
     downloaded_file = download_file(content_unit_url)
     actual_checksum = hashlib.sha256(downloaded_file.body).hexdigest()

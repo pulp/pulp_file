@@ -35,24 +35,24 @@ if "/tmp" not in settings.ALLOWED_IMPORT_PATHS:
 
 @pytest.fixture
 def import_export_repositories(
-    file_repo_api_client,
-    file_fixture_gen_file_repo,
-    file_fixture_gen_remote_ssl,
+    file_repository_api_client,
+    file_repository_factory,
+    file_remote_ssl_factory,
     basic_manifest_path,
     monitor_task,
 ):
     import_repos = []
     export_repos = []
     for r in range(NUM_REPOS):
-        import_repo = file_fixture_gen_file_repo()
-        export_repo = file_fixture_gen_file_repo()
+        import_repo = file_repository_factory()
+        export_repo = file_repository_factory()
 
-        remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+        remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="immediate")
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = file_repo_api_client.sync(export_repo.pulp_href, repository_sync_data)
+        sync_response = file_repository_api_client.sync(export_repo.pulp_href, repository_sync_data)
         monitor_task(sync_response.task)
 
-        export_repo = file_repo_api_client.read(export_repo.pulp_href)
+        export_repo = file_repository_api_client.read(export_repo.pulp_href)
 
         export_repos.append(export_repo)
         import_repos.append(import_repo)
@@ -212,7 +212,7 @@ def test_importer_delete(pulp_importer_factory, importers_pulp_api_client):
 
 @pytest.mark.parallel
 def test_import(
-    pulp_importer_factory, file_repo_api_client, import_export_repositories, perform_import
+    pulp_importer_factory, file_repository_api_client, import_export_repositories, perform_import
 ):
     """Test an import."""
     import_repos, exported_repos = import_export_repositories
@@ -225,13 +225,13 @@ def test_import(
             assert report.done == len(import_repos)
 
     for repo in import_repos:
-        repo = file_repo_api_client.read(repo.pulp_href)
+        repo = file_repository_api_client.read(repo.pulp_href)
         assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
 
 @pytest.fixture
 def test_import_mapping_missing_repos(
-    pulp_importer_factory, file_repo_api_client, import_export_repositories, perform_import
+    pulp_importer_factory, file_repository_api_client, import_export_repositories, perform_import
 ):
     import_repos, exported_repos = import_export_repositories
     a_map = {"foo": "bar"}
@@ -248,9 +248,9 @@ def test_import_auto_repo_creation(
     basic_manifest_path,
     exporters_pulp_api_client,
     file_content_api_client,
-    file_fixture_gen_file_repo,
-    file_fixture_gen_remote_ssl,
-    file_repo_api_client,
+    file_repository_factory,
+    file_remote_ssl_factory,
+    file_repository_api_client,
     gen_object_with_cleanup,
     generate_export,
     importers_pulp_api_client,
@@ -260,14 +260,14 @@ def test_import_auto_repo_creation(
 ):
     """Test the automatic repository creation feature where users do not ."""
     # 1. create and sync a new repository
-    export_repo = file_fixture_gen_file_repo()
+    export_repo = file_repository_factory()
 
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="immediate")
     repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-    sync_response = file_repo_api_client.sync(export_repo.pulp_href, repository_sync_data)
+    sync_response = file_repository_api_client.sync(export_repo.pulp_href, repository_sync_data)
     monitor_task(sync_response.task)
 
-    export_repo = file_repo_api_client.read(export_repo.pulp_href)
+    export_repo = file_repository_api_client.read(export_repo.pulp_href)
     added_content_in_export_repo = file_content_api_client.list(
         repository_version_added=export_repo.latest_version_href
     ).results
@@ -282,15 +282,15 @@ def test_import_auto_repo_creation(
     export = generate_export(exporter)
 
     # 3. delete the exported repository
-    monitor_task(file_repo_api_client.delete(export_repo.pulp_href).task)
-    assert len(file_repo_api_client.list(name=export_repo.name).results) == 0
+    monitor_task(file_repository_api_client.delete(export_repo.pulp_href).task)
+    assert len(file_repository_api_client.list(name=export_repo.name).results) == 0
 
     # 4. import the exported repository without creating an import repository beforehand
     importer = gen_object_with_cleanup(importers_pulp_api_client, {"name": str(uuid.uuid4())})
     perform_import(importer, an_export=export, body={"create_repositories": True})
 
     # 5. run assertions on the automatically created import repository
-    repositories = file_repo_api_client.list(name=export_repo.name).results
+    repositories = file_repository_api_client.list(name=export_repo.name).results
     assert len(repositories) == 1
 
     imported_repo = repositories[0]
@@ -301,7 +301,7 @@ def test_import_auto_repo_creation(
     ).results
     assert len(added_content_in_export_repo) == len(added_content_in_imported_repo)
 
-    monitor_task(file_repo_api_client.delete(imported_repo.pulp_href).task)
+    monitor_task(file_repository_api_client.delete(imported_repo.pulp_href).task)
 
 
 @pytest.mark.parallel
@@ -309,7 +309,7 @@ def test_double_import(
     pulp_importer_factory,
     importers_pulp_imports_api_client,
     import_export_repositories,
-    file_repo_api_client,
+    file_repository_api_client,
     perform_import,
 ):
     """Test two imports of our export."""
@@ -323,14 +323,14 @@ def test_double_import(
     assert len(imports) == 2
 
     for repo in import_repos:
-        repo = file_repo_api_client.read(repo.pulp_href)
+        repo = file_repository_api_client.read(repo.pulp_href)
         # still only one version as pulp won't create a new version if nothing changed
         assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
 
 @pytest.mark.parallel
 def test_chunked_import(
-    pulp_importer_factory, import_export_repositories, file_repo_api_client, perform_import
+    pulp_importer_factory, import_export_repositories, file_repository_api_client, perform_import
 ):
     """Test an import."""
     import_repos, exported_repos = import_export_repositories
@@ -339,7 +339,7 @@ def test_chunked_import(
     assert (len(import_repos) + 1) == task_group.completed
 
     for repo in import_repos:
-        repo = file_repo_api_client.read(repo.pulp_href)
+        repo = file_repository_api_client.read(repo.pulp_href)
         assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
 
@@ -493,8 +493,8 @@ def exported_version(
     generate_export,
     perform_import,
     file_repo,
-    file_repo_api_client,
-    file_repo_ver_api_client,
+    file_repository_api_client,
+    file_repository_version_api_client,
     content_api_client,
     add_to_cleanup,
     monitor_task,
@@ -508,12 +508,12 @@ def exported_version(
     results = file_list.results
     for a_file in results:
         href = a_file.pulp_href
-        modify_response = file_repo_api_client.modify(
+        modify_response = file_repository_api_client.modify(
             file_repo.pulp_href, {"add_content_units": [href]}
         )
         monitor_task(modify_response.task)
     # get all versions of that repo
-    versions = file_repo_ver_api_client.list(file_repo.pulp_href, ordering=["number"])
+    versions = file_repository_version_api_client.list(file_repo.pulp_href, ordering=["number"])
 
     body = {
         "name": str(uuid.uuid4()),
@@ -537,12 +537,12 @@ def exported_version(
 
 
 @pytest.mark.parallel
-def test_import_not_latest_version(exported_version, file_repo_api_client):
+def test_import_not_latest_version(exported_version, file_repository_api_client):
     """Test an import."""
     import_repos, task_group = exported_version
     for report in task_group.group_progress_reports:
         if report.code == "import.repo.versions":
             assert report.done == 1
 
-    imported_repo = file_repo_api_client.read(import_repos[0].pulp_href)
+    imported_repo = file_repository_api_client.read(import_repos[0].pulp_href)
     assert f"{imported_repo.pulp_href}versions/0/" != imported_repo.latest_version_href
