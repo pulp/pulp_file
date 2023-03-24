@@ -1,28 +1,32 @@
 # Makefile for Sphinx documentation
 #
 
+SHELL := /bin/bash
 # You can set these variables from the command line.
-SPHINXOPTS    = -W -n
-SPHINXBUILD   = sphinx-build
-PAPER         =
-BUILDDIR      = _build
-STATIC_BUILD_DIR     = _static
+SPHINXOPTS           = -W -n
+SPHINXBUILD          = sphinx-build
+PAPER                =
+BUILDDIR             = _build
 DIAGRAM_BUILD_DIR    = _diagrams
 DIAGRAM_SOURCE_DIR    = diagrams_src
-PULP_URL      = "http://localhost:24817"
+PULP_URL            ?= http://localhost:24817
+PULP_API_ROOT       ?= /pulp/
+
 
 # Internal variables.
+PULP_V3_API_JSON_URL := ${PULP_URL}${PULP_API_ROOT}api/v3/docs/api.json
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext diagrams
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html       to make standalone HTML files"
+	@echo "  diagrams   to make diagram images"
 	@echo "  dirhtml    to make HTML files named index.html in directories"
 	@echo "  singlehtml to make a single large HTML file"
 	@echo "  pickle     to make pickle files"
@@ -43,28 +47,41 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
+	rm -rf $(BUILDDIR)/*
+	rm -rf $(DIAGRAM_BUILD_DIR)/*
+
+install:
+	python3 -m venv pulpdocs
+	source pulpdocs/bin/activate && pip install -r ../doc_requirements.txt
 
 diagrams:
 ifneq ($(wildcard $(DIAGRAM_SOURCE_DIR)), )
 	mkdir -p $(DIAGRAM_BUILD_DIR)
+ifneq ("$(wildcard pulpdocs/bin/activate)","")
+	source pulpdocs/bin/activate && python3 -m plantuml diagrams_src/*.dot
+else
 	python3 -m plantuml diagrams_src/*.dot
-	# cp + rm = mv  workaround https://pulp.plan.io/issues/4791#note-3
-	cp diagrams_src/*.png $(DIAGRAM_BUILD_DIR)/
-	rm diagrams_src/*.png
+endif
+	mv diagrams_src/*.png $(DIAGRAM_BUILD_DIR)/
 else
 	@echo "Did not find diagrams_src."
 endif
 
-html:
-	mkdir -p $(STATIC_BUILD_DIR)
-	curl --fail -o $(STATIC_BUILD_DIR)/api.json "$(PULP_URL)/pulp/api/v3/docs/api.json?plugin=pulp_file&include_html=1"
+$(BUILDDIR)/html/api.json:
+	mkdir -p $(BUILDDIR)/html
+	curl --fail -o $(BUILDDIR)/html/api.json "$(PULP_V3_API_JSON_URL)"
+
+html: $(BUILDDIR)/html/api.json
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
 dirhtml:
-	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+ifneq ("$(wildcard pulpdocs/bin/activate)","")
+	source pulpdocs/bin/activate && PULP_CONTENT_ORIGIN=localhost $(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+else
+	PULP_CONTENT_ORIGIN=localhost $(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+endif
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
 
@@ -87,13 +104,13 @@ htmlhelp:
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 	@echo
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
-		  ".hhp project file in $(BUILDDIR)/htmlhelp."
+	      ".hhp project file in $(BUILDDIR)/htmlhelp."
 
 qthelp:
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
-		  ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
+	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
 	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/PulpFileSupport.qhcp"
 	@echo "To view the help file:"
 	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/PulpFileSupport.qhc"
@@ -117,7 +134,7 @@ latex:
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
-		  "(use \`make latexpdf' here to do that automatically)."
+	      "(use \`make latexpdf' here to do that automatically)."
 
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
@@ -140,7 +157,7 @@ texinfo:
 	@echo
 	@echo "Build finished. The Texinfo files are in $(BUILDDIR)/texinfo."
 	@echo "Run \`make' in that directory to run these through makeinfo" \
-		  "(use \`make info' here to do that automatically)."
+	      "(use \`make info' here to do that automatically)."
 
 info:
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
@@ -162,9 +179,9 @@ linkcheck:
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
-		  "or in $(BUILDDIR)/linkcheck/output.txt."
+	      "or in $(BUILDDIR)/linkcheck/output.txt."
 
 doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
-		  "results in $(BUILDDIR)/doctest/output.txt."
+	      "results in $(BUILDDIR)/doctest/output.txt."
