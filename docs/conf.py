@@ -72,7 +72,7 @@ release = "1.14.0.dev"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', 'pulpdocs']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -128,7 +128,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()] if sphinx_rtd_theme e
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()] if sphinx_rtd_theme else []
+html_static_path = ['static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -144,9 +144,6 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()] if sphinx_rtd_theme e
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 html_additional_pages = {'restapi': 'restapi.html'}
-
-html_static_path = ['_static']
-
 
 # If false, no module index is generated.
 #html_domain_indices = True
