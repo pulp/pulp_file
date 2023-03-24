@@ -11,7 +11,7 @@ from .constants import PULP_CONTENT_BASE_URL
 
 @pytest.mark.parallel
 def test_content_directory_listing(
-    file_distro_api_client,
+    file_distribution_api_client,
     gen_object_with_cleanup,
     tls_certificate_authority_cert,
     x509_content_guards_api_client,
@@ -34,7 +34,7 @@ def test_content_directory_listing(
         ("/boo2/foo1", content_guard1.pulp_href),
     ]:
         gen_object_with_cleanup(
-            file_distro_api_client,
+            file_distribution_api_client,
             gen_distribution(base_path=base_path + path, content_guard=content_guard),
         )
 

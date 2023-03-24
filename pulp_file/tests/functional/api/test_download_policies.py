@@ -48,11 +48,11 @@ def _do_range_request_download_and_assert(url, range_header, expected_bytes):
 def test_download_policy(
     artifacts_api_client,
     file_repo,
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     file_remote_api_client,
-    file_repo_api_client,
-    file_pub_api_client,
-    file_distro_api_client,
+    file_repository_api_client,
+    file_publication_api_client,
+    file_distribution_api_client,
     range_header_manifest_path,
     gen_object_with_cleanup,
     file_content_api_client,
@@ -64,10 +64,10 @@ def test_download_policy(
     if download_policy == "on_demand" and "SFTP" in pulp_settings.DEFAULT_FILE_STORAGE:
         pytest.skip("This storage technology is not properly supported.")
 
-    remote = file_fixture_gen_remote_ssl(
+    remote = file_remote_ssl_factory(
         manifest_path=range_header_manifest_path, policy=download_policy
     )
-    file_repo = file_repo_api_client.read(file_repo.pulp_href)
+    file_repo = file_repository_api_client.read(file_repo.pulp_href)
     assert file_repo.latest_version_href.endswith("/versions/0/")
 
     # Check what content and artifacts are in the fixture repository
@@ -75,16 +75,16 @@ def test_download_policy(
 
     # Sync from the remote and assert that a new repository version is created
     body = RepositorySyncURL(remote=remote.pulp_href)
-    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
-    file_repo = file_repo_api_client.read(file_repo.pulp_href)
+    monitor_task(file_repository_api_client.sync(file_repo.pulp_href, body).task)
+    file_repo = file_repository_api_client.read(file_repo.pulp_href)
     assert file_repo.latest_version_href.endswith("/versions/1/")
     assert get_content_summary(file_repo.to_dict()) == {"file.file": len(expected_files)}
     assert get_added_content_summary(file_repo.to_dict()) == {"file.file": len(expected_files)}
 
     # Sync again and assert that nothing changes
     latest_version_href = file_repo.latest_version_href
-    monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
-    file_repo = file_repo_api_client.read(file_repo.pulp_href)
+    monitor_task(file_repository_api_client.sync(file_repo.pulp_href, body).task)
+    file_repo = file_repository_api_client.read(file_repo.pulp_href)
     assert latest_version_href == file_repo.latest_version_href
     assert get_content_summary(file_repo.to_dict()) == {"file.file": len(expected_files)}
 
@@ -96,7 +96,7 @@ def test_download_policy(
 
     # Create a Distribution
     distribution = gen_object_with_cleanup(
-        file_distro_api_client,
+        file_distribution_api_client,
         {
             "name": str(uuid.uuid4()),
             "base_path": str(uuid.uuid4()),
@@ -113,7 +113,7 @@ def test_download_policy(
 
     # Create a File Publication and assert that the repository_version is set on the Publication.
     publish_data = FileFilePublication(repository=file_repo.pulp_href)
-    publication = gen_object_with_cleanup(file_pub_api_client, publish_data)
+    publication = gen_object_with_cleanup(file_publication_api_client, publish_data)
     assert publication.repository_version is not None
 
     # Assert that the dates on the distribution listing page represent the date that the content
@@ -227,6 +227,6 @@ def test_download_policy(
         assert remote.policy == "immediate"
 
         # Sync from the remote and assert that artifacts are downloaded
-        monitor_task(file_repo_api_client.sync(file_repo.pulp_href, body).task)
+        monitor_task(file_repository_api_client.sync(file_repo.pulp_href, body).task)
         for f in expected_files:
             assert len(artifacts_api_client.list(sha256=f[1]).results) == 1

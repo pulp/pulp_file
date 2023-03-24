@@ -11,11 +11,11 @@ from pulp_file.tests.functional.utils import get_files_in_manifest, download_fil
 
 @pytest.mark.parallel
 def test_reclaim_immediate_content(
-    file_repo_api_client,
+    file_repository_api_client,
     file_repo,
     repositories_reclaim_space_api_client,
     artifacts_api_client,
-    file_fixture_gen_remote_ssl,
+    file_remote_ssl_factory,
     basic_manifest_path,
     monitor_task,
 ):
@@ -23,11 +23,11 @@ def test_reclaim_immediate_content(
     Test whether immediate repository content can be reclaimed
     and then re-populated back after sync.
     """
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="immediate")
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="immediate")
 
     # sync the repository with immediate policy
     repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-    sync_response = file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data)
+    sync_response = file_repository_api_client.sync(file_repo.pulp_href, repository_sync_data)
     monitor_task(sync_response.task)
 
     # reclaim disk space
@@ -44,7 +44,7 @@ def test_reclaim_immediate_content(
 
     # sync repo again
     repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-    sync_response = file_repo_api_client.sync(file_repo.pulp_href, repository_sync_data)
+    sync_response = file_repository_api_client.sync(file_repo.pulp_href, repository_sync_data)
     monitor_task(sync_response.task)
 
     # assert re-sync populated missing artifacts
@@ -56,25 +56,25 @@ def test_reclaim_immediate_content(
 @pytest.fixture
 def sync_repository_distribution(
     gen_object_with_cleanup,
-    file_repo_api_client,
-    file_pub_api_client,
-    file_distro_api_client,
-    file_fixture_gen_remote_ssl,
+    file_repository_api_client,
+    file_publication_api_client,
+    file_distribution_api_client,
+    file_remote_ssl_factory,
     file_repo_with_auto_publish,
     basic_manifest_path,
     monitor_task,
 ):
     def _sync_repository_distribution(policy="immediate"):
-        remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy=policy)
+        remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy=policy)
 
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
-        sync_response = file_repo_api_client.sync(
+        sync_response = file_repository_api_client.sync(
             file_repo_with_auto_publish.pulp_href, repository_sync_data
         )
         monitor_task(sync_response.task)
 
         body = gen_distribution(repository=file_repo_with_auto_publish.pulp_href)
-        distribution = gen_object_with_cleanup(file_distro_api_client, body)
+        distribution = gen_object_with_cleanup(file_distribution_api_client, body)
 
         return file_repo_with_auto_publish, remote, distribution
 
@@ -147,12 +147,14 @@ def test_immediate_reclaim_becomes_on_demand(
 
 def test_specified_all_repos(
     gen_object_with_cleanup,
-    file_repo_api_client,
+    file_repository_api_client,
     repositories_reclaim_space_api_client,
     monitor_task,
 ):
     """Tests that specifying all repos w/ '*' properly grabs all the repos."""
-    repos = [gen_object_with_cleanup(file_repo_api_client, gen_repo()).pulp_href for _ in range(10)]
+    repos = [
+        gen_object_with_cleanup(file_repository_api_client, gen_repo()).pulp_href for _ in range(10)
+    ]
 
     reclaim_response = repositories_reclaim_space_api_client.reclaim({"repo_hrefs": ["*"]})
     task_status = monitor_task(reclaim_response.task)

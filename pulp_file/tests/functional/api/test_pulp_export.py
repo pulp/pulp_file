@@ -74,36 +74,39 @@ def pulp_export_factory(exporters_pulp_exports_api_client, monitor_task):
 
 @pytest.fixture
 def three_synced_repositories(
-    file_repo_api_client,
-    file_fixture_gen_file_repo,
-    file_fixture_gen_remote,
+    file_repository_api_client,
+    file_repository_factory,
+    file_remote_factory,
     write_3_iso_file_fixture_data_factory,
     monitor_task,
 ):
     remotes = [
-        file_fixture_gen_remote(
+        file_remote_factory(
             manifest_path=write_3_iso_file_fixture_data_factory(f"pie_{i}"), policy="immediate"
         )
         for i in range(3)
     ]
-    repositories = [file_fixture_gen_file_repo(remote=remote.pulp_href) for remote in remotes]
+    repositories = [file_repository_factory(remote=remote.pulp_href) for remote in remotes]
     sync_tasks = [
-        file_repo_api_client.sync(repository.pulp_href, {}).task for repository in repositories
+        file_repository_api_client.sync(repository.pulp_href, {}).task
+        for repository in repositories
     ]
     [monitor_task(task) for task in sync_tasks]
-    repositories = [file_repo_api_client.read(repository.pulp_href) for repository in repositories]
+    repositories = [
+        file_repository_api_client.read(repository.pulp_href) for repository in repositories
+    ]
     return repositories
 
 
 @pytest.fixture
 def repository_with_four_versions(
-    file_repo_api_client,
-    file_fixture_gen_file_repo,
+    file_repository_api_client,
+    file_repository_factory,
     file_content_api_client,
     random_artifact,
     monitor_task,
 ):
-    repository = file_fixture_gen_file_repo()
+    repository = file_repository_factory()
     for i in range(3):
         monitor_task(
             file_content_api_client.create(
@@ -230,14 +233,14 @@ def test_export_by_version_and_chunked(
 
 @pytest.mark.parallel
 def test_export_incremental(
-    file_repo_ver_api_client,
+    file_repository_version_api_client,
     pulp_exporter_factory,
     pulp_export_factory,
     file_repo,
     repository_with_four_versions,
 ):
     repository = repository_with_four_versions
-    versions = file_repo_ver_api_client.list(repository.pulp_href).results
+    versions = file_repository_version_api_client.list(repository.pulp_href).results
 
     # create exporter for that repository
     exporter = pulp_exporter_factory(repositories=[repository])

@@ -52,16 +52,16 @@ def _check_delete_report(task, expected):
 @pytest.fixture
 def sync_results(
     file_remote_api_client,
-    file_repo_api_client,
+    file_repository_api_client,
     tasks_api_client,
     gen_object_with_cleanup,
-    file_fixture_gen_remote_ssl,
-    file_fixture_gen_file_repo,
+    file_remote_ssl_factory,
+    file_repository_factory,
     basic_manifest_path,
     monitor_task,
 ):
-    good_remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
-    good_repo = file_fixture_gen_file_repo()
+    good_remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
+    good_repo = file_repository_factory()
     good_sync_data = RepositorySyncURL(remote=good_remote.pulp_href)
 
     bad_remote = gen_object_with_cleanup(
@@ -70,19 +70,19 @@ def sync_results(
             "https://fixtures.pulpproject.org/THEREISNOFILEREPOHERE/", policy="on_demand"
         ),
     )
-    bad_repo = file_fixture_gen_file_repo()
+    bad_repo = file_repository_factory()
     bad_sync_data = RepositorySyncURL(remote=bad_remote.pulp_href)
 
     pre_total, pre_final, pre_summary = _task_summary(tasks_api_client)
 
     # good sync
-    sync_response = file_repo_api_client.sync(good_repo.pulp_href, good_sync_data)
+    sync_response = file_repository_api_client.sync(good_repo.pulp_href, good_sync_data)
     task = monitor_task(sync_response.task)
     assert "completed" == task.state
     completed_sync_task = task
 
     # bad sync
-    sync_response = file_repo_api_client.sync(bad_repo.pulp_href, bad_sync_data)
+    sync_response = file_repository_api_client.sync(bad_repo.pulp_href, bad_sync_data)
     with pytest.raises(PulpTaskError):
         monitor_task(sync_response.task)
     task = tasks_api_client.read(sync_response.task)
@@ -204,19 +204,17 @@ def test_not_final_state(tasks_api_client, sync_results):
 
 def test_purge_with_different_users(
     tasks_api_client,
-    file_repo_api_client,
-    file_fixture_gen_remote_ssl,
-    file_fixture_gen_file_repo,
+    file_repository_api_client,
+    file_remote_ssl_factory,
+    file_repository_factory,
     basic_manifest_path,
     gen_user,
     monitor_task,
 ):
     # create admin related data
-    admin_remote = file_fixture_gen_remote_ssl(
-        manifest_path=basic_manifest_path, policy="on_demand"
-    )
+    admin_remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
     admin_sync_data = RepositorySyncURL(remote=admin_remote.pulp_href)
-    admin_repo = file_fixture_gen_file_repo()
+    admin_repo = file_repository_factory()
 
     # create random user related data
     user = gen_user(
@@ -227,14 +225,12 @@ def test_purge_with_different_users(
         ]
     )
     with user:
-        user_remote = file_fixture_gen_remote_ssl(
-            manifest_path=basic_manifest_path, policy="on_demand"
-        )
+        user_remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
         user_sync_data = RepositorySyncURL(remote=user_remote.pulp_href)
-        user_repo = file_fixture_gen_file_repo()
+        user_repo = file_repository_factory()
 
     # Sync as admin
-    sync_response = file_repo_api_client.sync(admin_repo.pulp_href, admin_sync_data)
+    sync_response = file_repository_api_client.sync(admin_repo.pulp_href, admin_sync_data)
     monitor_task(sync_response.task)
 
     # Purge as user
@@ -249,7 +245,7 @@ def test_purge_with_different_users(
 
     # Sync as user
     with user:
-        sync_response = file_repo_api_client.sync(user_repo.pulp_href, user_sync_data)
+        sync_response = file_repository_api_client.sync(user_repo.pulp_href, user_sync_data)
         sync_task = monitor_task(sync_response.task)
 
     # Purge as user
@@ -265,7 +261,7 @@ def test_purge_with_different_users(
 
     # Sync as user
     with user:
-        sync_response = file_repo_api_client.sync(user_repo.pulp_href, user_sync_data)
+        sync_response = file_repository_api_client.sync(user_repo.pulp_href, user_sync_data)
         monitor_task(sync_response.task)
 
     # Purge as ADMIN

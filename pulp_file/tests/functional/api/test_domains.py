@@ -14,7 +14,7 @@ if not settings.DOMAIN_ENABLED:
 
 @pytest.mark.parallel
 def test_object_creation(
-    domains_api_client, gen_object_with_cleanup, file_repo_api_client, file_remote_api_client
+    domains_api_client, gen_object_with_cleanup, file_repository_api_client, file_remote_api_client
 ):
     """Test basic object creation in a separate domain."""
     body = {
@@ -26,22 +26,22 @@ def test_object_creation(
     domain_name = domain.name
 
     repo_body = {"name": str(uuid.uuid4())}
-    repo = gen_object_with_cleanup(file_repo_api_client, repo_body, pulp_domain=domain_name)
+    repo = gen_object_with_cleanup(file_repository_api_client, repo_body, pulp_domain=domain_name)
     assert f"{domain_name}/api/v3/" in repo.pulp_href
 
-    repos = file_repo_api_client.list(pulp_domain=domain_name)
+    repos = file_repository_api_client.list(pulp_domain=domain_name)
     assert repos.count == 1
     assert repo.pulp_href == repos.results[0].pulp_href
 
     # Will list repos on default domain
-    default_repos = file_repo_api_client.list(name=repo.name)
+    default_repos = file_repository_api_client.list(name=repo.name)
     assert default_repos.count == 0
 
     # Try to create an object w/ cross domain relations
     default_remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
     with pytest.raises(ApiException) as e:
         repo_body = {"name": str(uuid.uuid4()), "remote": default_remote.pulp_href}
-        file_repo_api_client.create(repo_body, pulp_domain=domain.name)
+        file_repository_api_client.create(repo_body, pulp_domain=domain.name)
     assert e.value.status == 400
     # What key should this error be under? non-field-errors seems wrong
     assert json.loads(e.value.body) == {
@@ -50,7 +50,7 @@ def test_object_creation(
 
     with pytest.raises(ApiException) as e:
         sync_body = {"remote": default_remote.pulp_href}
-        file_repo_api_client.sync(repo.pulp_href, sync_body)
+        file_repository_api_client.sync(repo.pulp_href, sync_body)
     assert e.value.status == 400
     assert json.loads(e.value.body) == {
         "non_field_errors": [f"Objects must all be apart of the {domain_name} domain."]
@@ -176,10 +176,10 @@ def test_content_upload(
 @pytest.mark.parallel
 def test_content_promotion(
     domains_api_client,
-    file_repo_api_client,
+    file_repository_api_client,
     basic_manifest_path,
-    file_fixture_gen_remote,
-    file_pub_api_client,
+    file_remote_factory,
+    file_publication_api_client,
     file_distribution_factory,
     gen_object_with_cleanup,
     orphans_cleanup_api_client,
@@ -194,26 +194,26 @@ def test_content_promotion(
     domain = gen_object_with_cleanup(domains_api_client, body)
 
     # Sync task
-    remote = file_fixture_gen_remote(
+    remote = file_remote_factory(
         manifest_path=basic_manifest_path, policy="immediate", pulp_domain=domain.name
     )
     repo_body = {"name": str(uuid.uuid4()), "remote": remote.pulp_href}
-    repo = file_repo_api_client.create(repo_body, pulp_domain=domain.name)
+    repo = file_repository_api_client.create(repo_body, pulp_domain=domain.name)
 
-    task = file_repo_api_client.sync(repo.pulp_href, {}).task
+    task = file_repository_api_client.sync(repo.pulp_href, {}).task
     response = monitor_task(task)
     assert len(response.created_resources) == 1
 
-    repo = file_repo_api_client.read(repo.pulp_href)
+    repo = file_repository_api_client.read(repo.pulp_href)
     assert repo.latest_version_href[-2] == "1"
 
     # Publish task
     pub_body = {"repository": repo.pulp_href}
-    task = file_pub_api_client.create(pub_body, pulp_domain=domain.name).task
+    task = file_publication_api_client.create(pub_body, pulp_domain=domain.name).task
     response = monitor_task(task)
     assert len(response.created_resources) == 1
     pub_href = response.created_resources[0]
-    pub = file_pub_api_client.read(pub_href)
+    pub = file_publication_api_client.read(pub_href)
 
     assert pub.repository == repo.pulp_href
 
@@ -231,7 +231,7 @@ def test_content_promotion(
         assert len(download.body) == 1024
 
     # Cleanup to delete the domain
-    task = file_repo_api_client.delete(repo.pulp_href).task
+    task = file_repository_api_client.delete(repo.pulp_href).task
     monitor_task(task)
     body = {"orphan_protection_time": 0}
     task = orphans_cleanup_api_client.cleanup(body, pulp_domain=domain.name).task
@@ -239,7 +239,9 @@ def test_content_promotion(
 
 
 @pytest.mark.parallel
-def test_domain_rbac(domains_api_client, gen_user, gen_object_with_cleanup, file_repo_api_client):
+def test_domain_rbac(
+    domains_api_client, gen_user, gen_object_with_cleanup, file_repository_api_client
+):
     """Test domain level-roles."""
     body = {
         "name": str(uuid.uuid4()),
@@ -254,30 +256,30 @@ def test_domain_rbac(domains_api_client, gen_user, gen_object_with_cleanup, file
     user_b = gen_user(username="b", domain_roles=[(file_creator, domain.pulp_href)])
 
     # Create two repos in different domains w/ admin user
-    gen_object_with_cleanup(file_repo_api_client, {"name": str(uuid.uuid4())})
+    gen_object_with_cleanup(file_repository_api_client, {"name": str(uuid.uuid4())})
     gen_object_with_cleanup(
-        file_repo_api_client, {"name": str(uuid.uuid4())}, pulp_domain=domain.name
+        file_repository_api_client, {"name": str(uuid.uuid4())}, pulp_domain=domain.name
     )
 
     with user_b:
         repo = gen_object_with_cleanup(
-            file_repo_api_client, {"name": str(uuid.uuid4())}, pulp_domain=domain.name
+            file_repository_api_client, {"name": str(uuid.uuid4())}, pulp_domain=domain.name
         )
-        repos = file_repo_api_client.list(pulp_domain=domain.name)
+        repos = file_repository_api_client.list(pulp_domain=domain.name)
         assert repos.count == 1
         assert repos.results[0].pulp_href == repo.pulp_href
         # Try to create a repository in default domain
         with pytest.raises(ApiException) as e:
-            file_repo_api_client.create({"name": str(uuid.uuid4())})
+            file_repository_api_client.create({"name": str(uuid.uuid4())})
         assert e.value.status == 403
 
     with user_a:
-        repos = file_repo_api_client.list(pulp_domain=domain.name)
+        repos = file_repository_api_client.list(pulp_domain=domain.name)
         assert repos.count == 2
         # Try to read repos in the default domain
-        repos = file_repo_api_client.list()
+        repos = file_repository_api_client.list()
         assert repos.count == 0
         # Try to create a repo
         with pytest.raises(ApiException) as e:
-            file_repo_api_client.create({"name": str(uuid.uuid4())}, pulp_domain=domain.name)
+            file_repository_api_client.create({"name": str(uuid.uuid4())}, pulp_domain=domain.name)
         assert e.value.status == 403

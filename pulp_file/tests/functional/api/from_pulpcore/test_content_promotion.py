@@ -17,17 +17,17 @@ from pulpcore.client.pulp_file import RepositorySyncURL
 @pytest.mark.parallel
 def test_content_promotion(
     file_repo_with_auto_publish,
-    file_fixture_gen_remote_ssl,
-    file_repo_api_client,
-    file_pub_api_client,
-    file_distro_api_client,
+    file_remote_ssl_factory,
+    file_repository_api_client,
+    file_publication_api_client,
+    file_distribution_api_client,
     basic_manifest_path,
     gen_object_with_cleanup,
     monitor_task,
 ):
     # Create a repository, publication, and 2 distributions
-    remote = file_fixture_gen_remote_ssl(manifest_path=basic_manifest_path, policy="on_demand")
-    file_repo = file_repo_api_client.read(file_repo_with_auto_publish.pulp_href)
+    remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
+    file_repo = file_repository_api_client.read(file_repo_with_auto_publish.pulp_href)
 
     # Check what content and artifacts are in the fixture repository
     expected_files = get_files_in_manifest(remote.url)
@@ -35,23 +35,23 @@ def test_content_promotion(
     # Sync from the remote and assert that a new repository version is created
     body = RepositorySyncURL(remote=remote.pulp_href)
     created = monitor_task(
-        file_repo_api_client.sync(file_repo.pulp_href, body).task
+        file_repository_api_client.sync(file_repo.pulp_href, body).task
     ).created_resources
-    pub = file_pub_api_client.read(created[1])
+    pub = file_publication_api_client.read(created[1])
 
     # Create two Distributions pointing to the publication
     distribution1 = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(publication=pub.pulp_href)
+        file_distribution_api_client, gen_distribution(publication=pub.pulp_href)
     )
     distribution2 = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(publication=pub.pulp_href)
+        file_distribution_api_client, gen_distribution(publication=pub.pulp_href)
     )
     assert distribution1.publication == pub.pulp_href
     assert distribution2.publication == pub.pulp_href
 
     # Create a Distribution using the repository
     distribution3 = gen_object_with_cleanup(
-        file_distro_api_client, gen_distribution(repository=file_repo.pulp_href)
+        file_distribution_api_client, gen_distribution(repository=file_repo.pulp_href)
     )
 
     for distro in [distribution1, distribution2, distribution3]:
