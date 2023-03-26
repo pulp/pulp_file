@@ -3,8 +3,15 @@ from uuid import uuid4
 from django.test import TestCase
 from rest_framework.serializers import ValidationError as DRFValidationError
 
-from pulpcore.constants import API_ROOT
 from pulp_file.app import models, viewsets
+
+
+try:
+    from pulpcore.constants import API_ROOT
+except ImportError:
+    from django.conf import settings
+
+    API_ROOT = settings.V3_API_ROOT_NO_FRONT_SLASH
 
 
 class TestGetResource(TestCase):
