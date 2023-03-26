@@ -4,6 +4,7 @@ include pyproject.toml
 include CHANGES.rst
 include COMMITMENT
 include COPYRIGHT
+include ci_requirements.txt
 include functest_requirements.txt
 include test_requirements.txt
 include unittest_requirements.txt
