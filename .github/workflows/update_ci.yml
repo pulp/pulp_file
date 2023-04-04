@@ -53,7 +53,7 @@ jobs:
         run: echo short_ref=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
       - name: Dispatching
         if: github.event_name == 'schedule' || github.event.inputs.all_branches == 'yes'
-        run: python .ci/scripts/update_ci_branches.py 1.10 1.11 1.12 1.13
+        run: python .ci/scripts/update_ci_branches.py 1.10 1.11 1.12 1.13 1.14
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
