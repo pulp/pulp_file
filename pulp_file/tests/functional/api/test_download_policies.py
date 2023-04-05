@@ -58,6 +58,7 @@ def test_download_policy(
     file_content_api_client,
     monitor_task,
     pulp_settings,
+    has_pulp_plugin,
     download_policy,
 ):
     """Test that "on_demand" and "streamed" download policies work as expected."""
@@ -107,7 +108,7 @@ def test_download_policy(
     # Assert that un-published content is not available
     for expected_file in expected_files:
         with pytest.raises(ClientResponseError) as exc:
-            content_unit_url = urljoin(distribution.base_url, expected_file[1])
+            content_unit_url = urljoin(distribution.base_url, expected_file[0])
             download_file(content_unit_url)
         assert exc.value.code == 404
 
@@ -124,7 +125,7 @@ def test_download_policy(
         "from pulp_file.app.models import FileContent;"
         "content = FileContent.objects.filter(relative_path='foo/0.iso');"
         f"rc = RepositoryContent.objects.filter(repository='{repo_uuid}', content__in=content);"
-        "print(rc[0].content.contentartifact_set.get().pulp_created.strftime('%d-%b-%Y %H:%M'));"
+        "print(rc[0].pulp_created.strftime('%d-%b-%Y %H:%M'));"
     )
     process = subprocess.run(["pulpcore-manager", "shell", "-c", commands], capture_output=True)
     assert process.returncode == 0
@@ -133,7 +134,10 @@ def test_download_policy(
     soup = BeautifulSoup(distribution_html_page.body, "html.parser")
     all_strings = [s for s in soup.strings if s != "\n"]
     assert all_strings[3] == "0.iso"
-    assert all_strings[4].strip() == content_artifact_created_date
+    content_properties_string = all_strings[4].strip()
+    if has_pulp_plugin("core", min="3.24.0.dev"):
+        assert "4.2 MB" in content_properties_string
+    assert content_artifact_created_date in content_properties_string
 
     # Download one of the files and assert that it has the right checksum
     expected_files_list = list(expected_files)
