@@ -386,3 +386,5 @@ def has_pulp_plugin(pulp_versions):
         if max is not None and pulp_versions[plugin] >= parse_version(max):
             return False
         return True
+
+    return _has_pulp_plugin
