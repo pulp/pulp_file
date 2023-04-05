@@ -13,6 +13,26 @@ Changelog
 
 .. towncrier release notes start
 
+1.14.0 (2023-04-04)
+===================
+
+
+Features
+--------
+
+- Added the ability to replicate File distributions/repositories from an upstream Pulp instance.
+  `#909 <https://github.com/pulp/pulp_file/issues/909>`__
+
+
+Misc
+----
+
+- `#933 <https://github.com/pulp/pulp_file/issues/933>`__
+
+
+----
+
+
 1.13.1 (2023-03-23)
 ===================
 
