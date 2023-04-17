@@ -21,8 +21,7 @@ if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]; then
   cd ..
   git clone https://github.com/pulp/pulpcore.git
   cd -
-  pip install -r ../pulpcore/doc_requirements.txt
-  pip install -r doc_requirements.txt
+  pip install pulp-cli psycopg2-binary -r ../pulpcore/doc_requirements.txt -r doc_requirements.txt
 fi
 
 cd .ci/ansible/
@@ -131,7 +130,9 @@ if [ "${PULP_API_ROOT:-}" ]; then
 fi
 
 pulp config create --base-url https://pulp --api-root "$PULP_API_ROOT"
-cp ~/.config/pulp/cli.toml "${REPO_ROOT}/../pulp-cli/tests/cli.toml"
+if [[ "$TEST" != "docs" ]]; then
+  cp ~/.config/pulp/cli.toml "${REPO_ROOT}/../pulp-cli/tests/cli.toml"
+fi
 
 ansible-playbook build_container.yaml
 ansible-playbook start_container.yaml
