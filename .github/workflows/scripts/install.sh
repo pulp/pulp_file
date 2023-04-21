@@ -17,11 +17,18 @@ source .github/workflows/scripts/utils.sh
 
 export PULP_API_ROOT="/pulp/"
 
-if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]; then
-  cd ..
-  git clone https://github.com/pulp/pulpcore.git
-  cd -
-  pip install pulp-cli psycopg2-binary -r ../pulpcore/doc_requirements.txt -r doc_requirements.txt
+PIP_REQUIREMENTS=("pulp-cli")
+if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]
+then
+  PIP_REQUIREMENTS+=("-r" "doc_requirements.txt")
+fi
+
+pip install ${PIP_REQUIREMENTS[*]}
+
+if [[ "$TEST" != "docs" ]]
+then
+  PULP_CLI_VERSION="$(pip freeze | sed -n -e 's/pulp-cli==//p')"
+  git clone --depth 1 --branch "$PULP_CLI_VERSION" https://github.com/pulp/pulp-cli.git ../pulp-cli
 fi
 
 cd .ci/ansible/
