@@ -13,6 +13,20 @@ Changelog
 
 .. towncrier release notes start
 
+1.14.2 (2023-05-04)
+===================
+
+
+Bugfixes
+--------
+
+- Allows for compatibility with pulpcore>3.25.
+  `#954 <https://github.com/pulp/pulp_file/issues/954>`__
+
+
+----
+
+
 1.14.1 (2023-04-18)
 ===================
 
