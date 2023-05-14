@@ -2,6 +2,7 @@ import logging
 import os
 import uuid
 from collections import defaultdict
+from packaging.version import parse as parse_version
 from pathlib import Path
 
 import aiofiles
@@ -359,3 +360,29 @@ def gen_bad_response_fixture_server(gen_threaded_aiohttp_server):
 @pytest.fixture
 def bad_response_fixture_server(file_fixtures_root, gen_bad_response_fixture_server):
     yield gen_bad_response_fixture_server(file_fixtures_root, None)
+
+
+# Fixtures backported from pulpcore
+
+
+@pytest.fixture(scope="session")
+def pulp_status(status_api_client):
+    return status_api_client.status_read()
+
+
+@pytest.fixture(scope="session")
+def pulp_versions(pulp_status):
+    """A dictionary containing pulp plugin versions."""
+    return {item.component: parse_version(item.version) for item in pulp_status.versions}
+
+
+@pytest.fixture
+def has_pulp_plugin(pulp_versions):
+    def _has_pulp_plugin(plugin, min=None, max=None):
+        if plugin not in pulp_versions:
+            return False
+        if min is not None and pulp_versions[plugin] < parse_version(min):
+            return False
+        if max is not None and pulp_versions[plugin] >= parse_version(max):
+            return False
+        return True
