@@ -340,6 +340,10 @@ def test_chunked_import(
         repo = file_repository_api_client.read(repo.pulp_href)
         assert f"{repo.pulp_href}versions/1/" == repo.latest_version_href
 
+    # We should be able to import a second time, even though the chunks have now been reassembled.
+    task_group = perform_import(importer, chunked=True)
+    assert (len(import_repos) + 1) == task_group.completed
+
 
 @pytest.mark.parallel
 def test_import_check_valid_path(created_export, importers_pulp_imports_check_api_client):
