@@ -110,7 +110,7 @@ def test_download_policy(
         with pytest.raises(ClientResponseError) as exc:
             content_unit_url = urljoin(distribution.base_url, expected_file[0])
             download_file(content_unit_url)
-        assert exc.value.code == 404
+        assert exc.value.status == 404
 
     # Create a File Publication and assert that the repository_version is set on the Publication.
     publish_data = FileFilePublication(repository=file_repo.pulp_href)
@@ -192,7 +192,7 @@ def test_download_policy(
         with pytest.raises(ClientResponseError) as exc:
             range_header = {"Range": "bytes=-1-11"}
             download_file(content_unit_url, headers=range_header)
-        assert exc.value.code == 416
+        assert exc.value.status == 416
 
     # Assert that a range request with a start value larger than the content errors
     content_unit = expected_files_list[5]
@@ -200,7 +200,7 @@ def test_download_policy(
     with pytest.raises(ClientResponseError) as exc:
         range_header = {"Range": "bytes=10485860-10485870"}
         download_file(content_unit_url, headers=range_header)
-    assert exc.value.code == 416
+    assert exc.value.status == 416
 
     # Assert that a range request with an end value that is larger than the data works
     range_header = {"Range": "bytes=4193804-4294304"}
