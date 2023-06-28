@@ -1,14 +1,8 @@
 import pytest
 import uuid
 
-from pulp_smash.pulp3.utils import gen_distribution, gen_repo
-
-from pulpcore.client.pulp_file import (
-    ApiException,
-)
+from pulpcore.client.pulp_file import ApiException
 from pulpcore.client.pulp_file import AsyncOperationResponse
-
-from pulp_file.tests.functional.utils import gen_file_remote, gen_artifact
 
 
 @pytest.fixture()
@@ -46,9 +40,7 @@ def try_action(monitor_task):
     return _try_action
 
 
-def test_basic_actions(
-    gen_users, file_repository_api_client, gen_object_with_cleanup, try_action, file_repo
-):
+def test_basic_actions(gen_users, file_repository_api_client, try_action, file_repo):
     """Test list, read, create, update and delete apis."""
     alice, bob, charlie = gen_users("filerepository")
 
@@ -59,9 +51,9 @@ def test_basic_actions(
     assert (b_list.count, c_list.count) == (0, 0)
 
     # Create testing
-    try_action(alice, file_repository_api_client, "create", 403, gen_repo())
-    repo = try_action(bob, file_repository_api_client, "create", 201, gen_repo())
-    try_action(charlie, file_repository_api_client, "create", 403, gen_repo())
+    try_action(alice, file_repository_api_client, "create", 403, {"name": str(uuid.uuid4())})
+    repo = try_action(bob, file_repository_api_client, "create", 201, {"name": str(uuid.uuid4())})
+    try_action(charlie, file_repository_api_client, "create", 403, {"name": str(uuid.uuid4())})
 
     # View testing
     try_action(alice, file_repository_api_client, "read", 200, repo.pulp_href)
@@ -82,12 +74,12 @@ def test_basic_actions(
 
 @pytest.mark.parallel
 def test_role_management(
-    gen_users, file_repository_api_client, gen_object_with_cleanup, try_action
+    gen_users, file_repository_api_client, file_repository_factory, try_action
 ):
     """Check that role management apis."""
     alice, bob, charlie = gen_users("filerepository")
     with bob:
-        href = gen_object_with_cleanup(file_repository_api_client, gen_repo()).pulp_href
+        href = file_repository_factory().pulp_href
     # Permission check testing
     aperm_response = try_action(alice, file_repository_api_client, "my_permissions", 200, href)
     assert aperm_response.permissions == []
@@ -120,12 +112,13 @@ def test_content_apis(
     gen_users,
     file_content_api_client,
     file_repository_api_client,
-    file_remote_api_client,
+    file_repository_factory,
+    file_remote_factory,
     file_fixture_server,
     basic_manifest_path,
-    gen_object_with_cleanup,
     monitor_task,
     try_action,
+    random_artifact,
 ):
     """Check content listing, scoping and upload APIs."""
     alice, bob, charlie = gen_users()
@@ -136,8 +129,8 @@ def test_content_apis(
     assert aresponse.count == bresponse.count == cresponse.count == 0
 
     alice, bob, charlie = gen_users(["filerepository"])
-    repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
-    remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    repo = file_repository_factory()
+    remote = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
     monitor_task(file_repository_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task)
 
     aresponse = try_action(alice, file_content_api_client, "list", 200)
@@ -153,11 +146,8 @@ def test_content_apis(
     cresponse = try_action(charlie, file_content_api_client, "list", 200)
     assert cresponse.count > bresponse.count
 
-    file_url = file_fixture_server.make_url("/basic")
     # This might need to change if we change Artifact's default upload policy
-    artifact1 = gen_artifact(url=file_url + "/1.iso")["pulp_href"]
-
-    body = {"artifact": artifact1}
+    body = {"artifact": random_artifact.pulp_href}
     try_action(alice, file_content_api_client, "create", 400, "1.iso", **body)
     body["repository"] = repo.pulp_href
     try_action(bob, file_content_api_client, "create", 403, "1.iso", **body)
@@ -172,16 +162,18 @@ def test_content_apis(
 def test_repository_apis(
     gen_users,
     file_repository_api_client,
+    file_repository_factory,
+    file_remote_factory,
     file_remote_api_client,
-    gen_object_with_cleanup,
     try_action,
+    basic_manifest_path,
 ):
     """Test repository specific actions, Modify & Sync."""
     alice, bob, charlie = gen_users(["filerepository", "fileremote"])
     # Sync tests
     with bob:
-        repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
-        bob_remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+        repo = file_repository_factory()
+        bob_remote = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
     body = {"remote": bob_remote.pulp_href}
     try_action(alice, file_repository_api_client, "sync", 403, repo.pulp_href, body)
     try_action(bob, file_repository_api_client, "sync", 202, repo.pulp_href, body)
@@ -195,15 +187,14 @@ def test_repository_apis(
 @pytest.mark.parallel
 def test_repository_version_repair(
     gen_users,
-    file_repository_api_client,
+    file_repository_factory,
     file_repository_version_api_client,
-    gen_object_with_cleanup,
     try_action,
 ):
     """Test the repository version repair action"""
     alice, bob, charlie = gen_users("filerepository")
     with bob:
-        repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
+        repo = file_repository_factory()
         ver_href = repo.latest_version_href
     body = {"verify_checksums": True}
     try_action(alice, file_repository_version_api_client, "repair", 403, ver_href, body)
@@ -214,17 +205,16 @@ def test_repository_version_repair(
 @pytest.mark.parallel
 def test_acs_apis(
     gen_users,
-    file_remote_api_client,
+    file_remote_factory,
     file_acs_api_client,
-    gen_object_with_cleanup,
     monitor_task,
     try_action,
+    basic_manifest_path,
 ):
     """Test acs refresh action."""
     alice, bob, charlie = gen_users(["filealternatecontentsource", "fileremote"])
     with bob:
-        remote_body = gen_file_remote(policy="on_demand")
-        remote = gen_object_with_cleanup(file_remote_api_client, remote_body)
+        remote = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
         body = {"name": str(uuid.uuid4()), "remote": remote.pulp_href}
         acs = file_acs_api_client.create(body)
     # Test that only bob can do the refresh action
@@ -238,18 +228,17 @@ def test_acs_apis(
 @pytest.mark.parallel
 def test_object_creation(
     gen_users,
-    file_repository_api_client,
+    file_repository_factory,
     file_publication_api_client,
     file_distribution_api_client,
-    gen_object_with_cleanup,
     monitor_task,
     try_action,
 ):
     """Test that objects can only be created when having all the required permissions."""
     alice, bob, charlie = gen_users(["filerepository", "filepublication", "filedistribution"])
-    admin_repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
+    admin_repo = file_repository_factory()
     with bob:
-        repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
+        repo = file_repository_factory()
     try_action(
         bob, file_publication_api_client, "create", 403, {"repository": admin_repo.pulp_href}
     )
@@ -257,14 +246,40 @@ def test_object_creation(
         bob, file_publication_api_client, "create", 202, {"repository": repo.pulp_href}
     )
     pub = pub.created_resources[0]
-    admin_body = gen_distribution(repository=admin_repo.pulp_href)
-    bob_body = gen_distribution(publication=pub)
-    try_action(bob, file_distribution_api_client, "create", 403, admin_body)
-    dis = try_action(bob, file_distribution_api_client, "create", 202, bob_body).created_resources[
-        0
-    ]
-    admin_body = {"repository": admin_repo.pulp_href, "publication": None}
-    bob_body = {"repository": repo.pulp_href, "publication": None}
+    try_action(
+        bob,
+        file_distribution_api_client,
+        "create",
+        403,
+        {
+            "repository": admin_repo.pulp_href,
+            "name": str(uuid.uuid4()),
+            "base_path": str(uuid.uuid4()),
+        },
+    )
+    dis = try_action(
+        bob,
+        file_distribution_api_client,
+        "create",
+        202,
+        {
+            "publication": pub,
+            "name": str(uuid.uuid4()),
+            "base_path": str(uuid.uuid4()),
+        },
+    ).created_resources[0]
+    admin_body = {
+        "repository": admin_repo.pulp_href,
+        "publication": None,
+        "name": str(uuid.uuid4()),
+        "base_path": str(uuid.uuid4()),
+    }
+    bob_body = {
+        "repository": repo.pulp_href,
+        "publication": None,
+        "name": str(uuid.uuid4()),
+        "base_path": str(uuid.uuid4()),
+    }
     try_action(bob, file_distribution_api_client, "partial_update", 403, dis, admin_body)
     try_action(bob, file_distribution_api_client, "partial_update", 202, dis, bob_body)
     monitor_task(file_distribution_api_client.delete(dis).task)

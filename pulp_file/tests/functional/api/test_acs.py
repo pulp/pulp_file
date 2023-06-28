@@ -204,7 +204,6 @@ def test_serving_acs_content(
     file_repo,
     file_repository_api_client,
     file_acs_api_client,
-    file_distribution_api_client,
     file_distribution_factory,
     basic_manifest_path,
     gen_object_with_cleanup,

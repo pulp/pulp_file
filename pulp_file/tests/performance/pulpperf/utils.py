@@ -1,18 +1,6 @@
 import logging
-import random
 import time
-import string
 import requests
-
-
-def get_random_string():
-    """Return random string."""
-    return "".join(random.choice(string.ascii_lowercase) for i in range(5))
-
-
-def urljoin(*args):
-    """This sucks, but works. Better ways welcome."""
-    return "/".join([i.lstrip("/").rstrip("/") for i in args])
 
 
 def measureit(func, *args, **kwargs):

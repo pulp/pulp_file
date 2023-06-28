@@ -5,7 +5,7 @@ import json
 from pulpcore.app import settings
 from pulpcore.client.pulp_file import ApiException
 from pulpcore.client.pulpcore import ApiException as CoreApiException
-from pulp_file.tests.functional.utils import generate_iso, download_file, gen_file_remote
+from pulp_file.tests.functional.utils import generate_iso, download_file
 
 
 if not settings.DOMAIN_ENABLED:
@@ -14,7 +14,11 @@ if not settings.DOMAIN_ENABLED:
 
 @pytest.mark.parallel
 def test_object_creation(
-    domains_api_client, gen_object_with_cleanup, file_repository_api_client, file_remote_api_client
+    domains_api_client,
+    gen_object_with_cleanup,
+    file_repository_api_client,
+    file_remote_factory,
+    basic_manifest_path,
 ):
     """Test basic object creation in a separate domain."""
     body = {
@@ -38,7 +42,7 @@ def test_object_creation(
     assert default_repos.count == 0
 
     # Try to create an object w/ cross domain relations
-    default_remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    default_remote = file_remote_factory(manifest_path=basic_manifest_path, policy="immediate")
     with pytest.raises(ApiException) as e:
         repo_body = {"name": str(uuid.uuid4()), "remote": default_remote.pulp_href}
         file_repository_api_client.create(repo_body, pulp_domain=domain.name)

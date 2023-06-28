@@ -5,16 +5,13 @@ import pytest
 import uuid
 
 from pulpcore.tests.functional.utils import PulpTaskError
-from pulp_smash.pulp3.utils import get_content_summary, get_added_content_summary
 
 from pulpcore.client.pulpcore.exceptions import ApiException as coreApiException
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 
 @pytest.mark.parallel
-def test_crud_content_unit(
-    random_artifact, file_random_content_unit, file_content_api_client, gen_object_with_cleanup
-):
+def test_crud_content_unit(random_artifact, file_content_api_client, gen_object_with_cleanup):
     artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
     content_unit = gen_object_with_cleanup(file_content_api_client, **artifact_attrs)
     assert content_unit.artifact == random_artifact.pulp_href
@@ -42,7 +39,6 @@ def test_crud_content_unit(
 def test_same_sha256_same_relative_path_no_repo(
     random_artifact,
     file_content_api_client,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     artifact_attrs = {"artifact": random_artifact.pulp_href, "relative_path": str(uuid.uuid4())}
@@ -62,6 +58,7 @@ def test_same_sha256_same_relative_path_repo_specified(
     random_artifact,
     file_content_api_client,
     file_repository_api_client,
+    file_repository_version_api_client,
     gen_user,
     file_repository_factory,
     monitor_task,
@@ -86,8 +83,10 @@ def test_same_sha256_same_relative_path_repo_specified(
     assert content1.pulp_href == content2.pulp_href
     repo1 = file_repository_api_client.read(repo1.pulp_href)
     assert repo1.latest_version_href.endswith("/versions/1/")
-    assert get_content_summary(repo1.to_dict()) == {"file.file": 1}
-    assert get_added_content_summary(repo1.to_dict()) == {"file.file": 1}
+
+    version = file_repository_version_api_client.read(repo1.latest_version_href)
+    assert version.content_summary.present["file.file"]["count"] == 1
+    assert version.content_summary.added["file.file"]["count"] == 1
 
     artifact_attrs["repository"] = repo2.pulp_href
     with john:
@@ -97,8 +96,10 @@ def test_same_sha256_same_relative_path_repo_specified(
     assert content3.pulp_href == content1.pulp_href
     repo2 = file_repository_api_client.read(repo2.pulp_href)
     assert repo2.latest_version_href.endswith("/versions/1/")
-    assert get_content_summary(repo2.to_dict()) == {"file.file": 1}
-    assert get_added_content_summary(repo2.to_dict()) == {"file.file": 1}
+
+    version = file_repository_version_api_client.read(repo2.latest_version_href)
+    assert version.content_summary.present["file.file"]["count"] == 1
+    assert version.content_summary.added["file.file"]["count"] == 1
 
 
 @pytest.mark.parallel

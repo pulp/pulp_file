@@ -230,9 +230,7 @@ def test_import(
 
 
 @pytest.fixture
-def test_import_mapping_missing_repos(
-    pulp_importer_factory, file_repository_api_client, import_export_repositories, perform_import
-):
+def test_import_mapping_missing_repos(pulp_importer_factory, import_export_repositories):
     import_repos, exported_repos = import_export_repositories
     a_map = {"foo": "bar"}
     for repo in import_repos:
@@ -489,14 +487,12 @@ def exported_version(
     gen_object_with_cleanup,
     import_export_repositories,
     exporters_pulp_api_client,
-    exporters_pulp_exports_api_client,
     generate_export,
     perform_import,
     file_repo,
     file_repository_api_client,
     file_repository_version_api_client,
     content_api_client,
-    add_to_cleanup,
     monitor_task,
     tmpdir,
 ):

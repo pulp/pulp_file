@@ -8,11 +8,6 @@ import subprocess
 import uuid
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.utils import (
-    get_added_content_summary,
-    get_content_summary,
-)
-
 from pulp_file.tests.functional.utils import get_files_in_manifest, download_file
 
 from pulpcore.app import settings
@@ -51,6 +46,7 @@ def test_download_policy(
     file_remote_ssl_factory,
     file_remote_api_client,
     file_repository_api_client,
+    file_repository_version_api_client,
     file_publication_api_client,
     file_distribution_api_client,
     range_header_manifest_path,
@@ -79,15 +75,19 @@ def test_download_policy(
     monitor_task(file_repository_api_client.sync(file_repo.pulp_href, body).task)
     file_repo = file_repository_api_client.read(file_repo.pulp_href)
     assert file_repo.latest_version_href.endswith("/versions/1/")
-    assert get_content_summary(file_repo.to_dict()) == {"file.file": len(expected_files)}
-    assert get_added_content_summary(file_repo.to_dict()) == {"file.file": len(expected_files)}
+
+    version = file_repository_version_api_client.read(file_repo.latest_version_href)
+    assert version.content_summary.present["file.file"]["count"] == len(expected_files)
+    assert version.content_summary.added["file.file"]["count"] == len(expected_files)
 
     # Sync again and assert that nothing changes
     latest_version_href = file_repo.latest_version_href
     monitor_task(file_repository_api_client.sync(file_repo.pulp_href, body).task)
     file_repo = file_repository_api_client.read(file_repo.pulp_href)
     assert latest_version_href == file_repo.latest_version_href
-    assert get_content_summary(file_repo.to_dict()) == {"file.file": len(expected_files)}
+
+    version = file_repository_version_api_client.read(file_repo.latest_version_href)
+    assert version.content_summary.present["file.file"]["count"] == len(expected_files)
 
     # Assert that no HTTP error was raised when list on_demand content
     content = file_content_api_client.list(

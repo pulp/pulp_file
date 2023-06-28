@@ -1,8 +1,6 @@
 """Tests that sync file plugin repositories."""
 import pytest
 
-from pulp_smash.pulp3.utils import gen_repo
-
 from pulp_file.tests.functional.utils import get_files_in_manifest
 
 from pulpcore.client.pulp_file import (
@@ -11,10 +9,8 @@ from pulpcore.client.pulp_file import (
 
 
 @pytest.fixture
-def file_repo_with_auto_publish(file_repository_api_client, gen_object_with_cleanup):
-    return gen_object_with_cleanup(
-        file_repository_api_client, gen_repo(autopublish=True, manifest="TEST_MANIFEST")
-    )
+def file_repo_with_auto_publish(file_repository_factory):
+    return file_repository_factory(autopublish=True, manifest="TEST_MANIFEST")
 
 
 @pytest.mark.parallel

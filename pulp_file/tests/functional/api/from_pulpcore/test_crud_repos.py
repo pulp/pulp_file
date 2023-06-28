@@ -2,27 +2,30 @@
 import json
 import pytest
 import re
+
+from uuid import uuid4
 from aiohttp import BasicAuth
 from subprocess import run
 from urllib.parse import urljoin
 
-from pulp_smash import utils
-from pulp_smash.pulp3.utils import gen_repo
-
 from pulpcore.client.pulp_file.exceptions import ApiException
-from pulp_file.tests.functional.utils import gen_file_remote, download_file
+from pulpcore.tests.functional.utils import download_file
 
 
 @pytest.mark.parallel
 def test_crud_repo_full_workflow(
-    file_repository_api_client, file_remote_api_client, gen_object_with_cleanup, monitor_task
+    file_repository_api_client,
+    file_repository_factory,
+    file_remote_factory,
+    basic_manifest_path,
+    monitor_task,
 ):
     # Create repository
-    repo = file_repository_api_client.create(gen_repo())
+    repo = file_repository_factory()
 
     # Try to create another with the same name
     with pytest.raises(ApiException) as e:
-        file_repository_api_client.create(gen_repo(name=repo.name))
+        file_repository_api_client.create({"name": repo.name})
 
     assert e.value.status == 400
     error_body = json.loads(e.value.body)
@@ -67,7 +70,7 @@ def test_crud_repo_full_workflow(
         """Update a repository attribute."""
         body = {} if partial else repo.to_dict()
         function = getattr(file_repository_api_client, "partial_update" if partial else "update")
-        string = utils.uuid4()
+        string = str(uuid4())
         body[attr] = string
         response = function(repo.pulp_href, body)
         monitor_task(response.task)
@@ -88,7 +91,7 @@ def test_crud_repo_full_workflow(
     _do_update_attr("description", partial=True)
 
     # Test setting remotes on repositories.
-    remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    remote = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
 
     # verify that syncing with no remote raises an error
     with pytest.raises(ApiException):
@@ -118,7 +121,7 @@ def test_crud_repo_full_workflow(
     # Attempt to create repository passing extraneous invalid parameter.
     # Assert response returns an error 400 including ["Unexpected field"].
     with pytest.raises(ApiException) as e:
-        file_repository_api_client.create(gen_repo(foo="bar"))
+        file_repository_api_client.create({"name": str(uuid4()), "foo": "bar"})
 
     assert e.value.status == 400
     error_body = json.loads(e.value.body)
@@ -127,26 +130,31 @@ def test_crud_repo_full_workflow(
 
 
 @pytest.mark.parallel
-def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_cleanup, monitor_task):
-    remote_attrs = gen_file_remote(
-        **{
-            "name": utils.uuid4(),
-            "ca_cert": None,
-            "client_cert": None,
-            "client_key": None,
-            "tls_validation": False,
-            "proxy_url": None,
-            "username": "pulp",
-            "password": "pulp",
-            "download_concurrency": 10,
-            "policy": "on_demand",
-            "total_timeout": None,
-            "connect_timeout": None,
-            "sock_connect_timeout": None,
-            "sock_read_timeout": None,
-        }
-    )
-    remote = file_remote_api_client.create(remote_attrs)
+def test_crud_remotes_full_workflow(
+    file_remote_factory,
+    file_remote_api_client,
+    monitor_task,
+    basic_manifest_path,
+    file_fixture_server,
+):
+    remote_attrs = {
+        "url": file_fixture_server.make_url(basic_manifest_path),
+        "name": str(uuid4()),
+        "ca_cert": None,
+        "client_cert": None,
+        "client_key": None,
+        "tls_validation": False,
+        "proxy_url": None,
+        "username": "pulp",
+        "password": "pulp",
+        "download_concurrency": 10,
+        "policy": "on_demand",
+        "total_timeout": None,
+        "connect_timeout": None,
+        "sock_connect_timeout": None,
+        "sock_read_timeout": None,
+    }
+    remote = file_remote_factory(**remote_attrs)
 
     def _compare_results(data, received):
         assert not hasattr(received, "password")
@@ -170,8 +178,8 @@ def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_clea
     _compare_results(data, new_remote)
 
     # Test that a password can be updated with a PUT request.
-    temp_remote = gen_object_with_cleanup(
-        file_remote_api_client, gen_file_remote(url="http://", password="new")
+    temp_remote = file_remote_factory(
+        manifest_path=basic_manifest_path, url="http://", password="new"
     )
     href = temp_remote.pulp_href
     uuid = re.search(r"/api/v3/remotes/file/file/([\w-]+)/", href).group(1)
@@ -180,16 +188,14 @@ def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_clea
     )
 
     # test a PUT request with a new password
-    remote_update = gen_file_remote(name=temp_remote.name, url="http://", password="changed")
+    remote_update = {"name": temp_remote.name, "url": "http://", "password": "changed"}
     response = file_remote_api_client.update(href, remote_update)
     monitor_task(response.task)
     exc = run(["pulpcore-manager", "shell", "-c", shell_cmd], text=True, capture_output=True)
     assert exc.stdout.rstrip("\n") == "changed"
 
     # Test that password doesn't get unset when not passed with a PUT request.
-    temp_remote = gen_object_with_cleanup(
-        file_remote_api_client, gen_file_remote(url="http://", password="new")
-    )
+    temp_remote = file_remote_factory(url="http://", password="new")
     href = temp_remote.pulp_href
     uuid = re.search(r"/api/v3/remotes/file/file/([\w-]+)/", href).group(1)
     shell_cmd = (
@@ -197,7 +203,7 @@ def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_clea
     )
 
     # test a PUT request without a password
-    remote_update = gen_file_remote(name=temp_remote.name, url="http://")
+    remote_update = {"name": temp_remote.name, "url": "http://"}
     response = file_remote_api_client.update(href, remote_update)
     monitor_task(response.task)
     exc = run(["pulpcore-manager", "shell", "-c", shell_cmd], text=True, capture_output=True)
@@ -261,14 +267,14 @@ def test_crud_remotes_full_workflow(file_remote_api_client, gen_object_with_clea
 
 
 @pytest.mark.parallel
-def test_remote_pulp_labels(file_remote_api_client, gen_object_with_cleanup):
+def test_remote_pulp_labels(file_remote_factory, basic_manifest_path):
     """A test case for verifying whether pulp_labels are correctly assigned to a new remote."""
 
     pulp_labels = {"environment": "dev"}
 
     # Test if a created remote contains pulp_labels when passing JSON data.
-    remote = gen_object_with_cleanup(
-        file_remote_api_client, gen_file_remote(pulp_labels=pulp_labels)
+    remote = file_remote_factory(
+        manifest_path=basic_manifest_path, policy="on_demand", pulp_labels=pulp_labels
     )
 
     assert remote.pulp_labels == pulp_labels
@@ -286,34 +292,34 @@ def test_file_remote_url_validation(file_remote_api_client, gen_object_with_clea
 
     # Test the validation of an invalid absolute pathname.
     remote_attrs = {
-        "name": utils.uuid4(),
+        "name": str(uuid4()),
         "url": "file://tmp/good",
     }
     raise_for_invalid_request(remote_attrs)
 
     # Test the validation of an invalid import pathname.
     remote_attrs = {
-        "name": utils.uuid4(),
+        "name": str(uuid4()),
         "url": "file:///error/path/name",
     }
     raise_for_invalid_request(remote_attrs)
 
     # Test the creation of a remote after passing a valid URL.
     remote_attrs = {
-        "name": utils.uuid4(),
+        "name": str(uuid4()),
         "url": "file:///tmp/good",
     }
     gen_object_with_cleanup(file_remote_api_client, remote_attrs)
 
     # Test that the remote url can't contain username/password.
     remote_attrs = {
-        "name": utils.uuid4(),
+        "name": str(uuid4()),
         "url": "http://elladan@rivendell.org",
     }
     raise_for_invalid_request(remote_attrs)
 
     remote_attrs = {
-        "name": utils.uuid4(),
+        "name": str(uuid4()),
         "url": "http://elladan:pass@rivendell.org",
     }
     raise_for_invalid_request(remote_attrs)
@@ -321,18 +327,22 @@ def test_file_remote_url_validation(file_remote_api_client, gen_object_with_clea
 
 @pytest.mark.parallel
 def test_repository_remote_filter(
-    file_repository_api_client, file_remote_api_client, gen_object_with_cleanup
+    file_repository_api_client,
+    file_repository_factory,
+    gen_object_with_cleanup,
+    file_remote_factory,
+    basic_manifest_path,
 ):
     """Test repository's remote filter and full functionality of a HREF filter."""
 
-    remote1 = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
-    remote2 = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
-    remote3 = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+    remote1 = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
+    remote2 = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
+    remote3 = file_remote_factory(manifest_path=basic_manifest_path, policy="on_demand")
 
-    repo1 = gen_object_with_cleanup(file_repository_api_client, gen_repo())
-    repo2 = gen_object_with_cleanup(file_repository_api_client, gen_repo(remote=remote1.pulp_href))
-    repo3 = gen_object_with_cleanup(file_repository_api_client, gen_repo(remote=remote2.pulp_href))
-    repo4 = gen_object_with_cleanup(file_repository_api_client, gen_repo(remote=remote2.pulp_href))
+    repo1 = file_repository_factory()
+    repo2 = file_repository_factory(remote=remote1.pulp_href)
+    repo3 = file_repository_factory(remote=remote2.pulp_href)
+    repo4 = file_repository_factory(remote=remote2.pulp_href)
     name_in = [repo1.name, repo2.name, repo3.name, repo4.name]
 
     # Check that name__in filter is working

@@ -1,7 +1,10 @@
 import pytest
 from packaging.version import parse as parse_version
 
+from pulpcore.tests.functional import get_bindings_config
+
 from pulpcore.client.pulp_file import (
+    ApiClient,
     FileFileAlternateContentSource,
 )
 from pulp_file.tests.functional import (
@@ -14,7 +17,6 @@ from pulp_file.tests.functional import (
     file_remote_client_cert_req_factory,
     file_repository_factory,
 )
-from pulp_file.tests.functional.utils import gen_file_client
 
 # Aliases for fixtures to go away...
 file_repo_api_client = file_repository_api_client
@@ -28,7 +30,7 @@ file_fixture_gen_file_repo = file_repository_factory
 
 
 def pytest_check_for_leftover_pulp_objects(config):
-    file_client = gen_file_client()
+    file_client = ApiClient(get_bindings_config())
 
     types_to_check = [FileFileAlternateContentSource(file_client)]
     for type_to_check in types_to_check:

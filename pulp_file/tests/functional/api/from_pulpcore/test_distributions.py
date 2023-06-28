@@ -3,11 +3,6 @@ import pytest
 import json
 from uuid import uuid4
 
-from pulp_smash.pulp3.utils import (
-    gen_distribution,
-    gen_repo,
-)
-
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,
     FileFileDistribution,
@@ -27,6 +22,7 @@ def test_crud_publication_distribution(
     basic_manifest_path,
     gen_object_with_cleanup,
     file_distribution_api_client,
+    file_distribution_factory,
     monitor_task,
 ):
     # Create a remote and sync from it to create the first repository version
@@ -51,8 +47,12 @@ def test_crud_publication_distribution(
     repo_versions = file_repository_version_api_client.list(file_repo.pulp_href).results
     publish_data = FileFilePublication(repository_version=repo_versions[2].pulp_href)
     publication = gen_object_with_cleanup(file_publication_api_client, publish_data)
-    distribution_data = gen_distribution(publication=publication.pulp_href)
-    distribution = gen_object_with_cleanup(file_distribution_api_client, distribution_data)
+    distribution_data = {
+        "publication": publication.pulp_href,
+        "name": str(uuid4()),
+        "base_path": str(uuid4()),
+    }
+    distribution = file_distribution_factory(**distribution_data)
 
     # Refresh the publication data
     publication = file_publication_api_client.read(publication.pulp_href)
@@ -109,67 +109,54 @@ def test_crud_publication_distribution(
         file_distribution_api_client.read(distribution.pulp_href)
 
 
-def _create_distribution_and_assert(client, data):
-    with pytest.raises(ApiException) as exc:
-        client.create(data)
-    assert json.loads(exc.value.body)["base_path"] is not None
-
-
-def _update_distribution_and_assert(client, distribution_href, data):
-    with pytest.raises(ApiException) as exc:
-        client.update(distribution_href, data)
-    assert json.loads(exc.value.body)["base_path"] is not None
-
-
 @pytest.mark.parallel
 def test_distribution_base_path(
-    gen_object_with_cleanup,
+    file_distribution_factory,
     file_distribution_api_client,
 ):
-    distribution_data = gen_distribution(base_path=str(uuid4()).replace("-", "/"))
-    distribution = gen_object_with_cleanup(file_distribution_api_client, distribution_data)
+    distribution = file_distribution_factory(base_path=str(uuid4()).replace("-", "/"))
 
     # Test that spaces can not be part of ``base_path``.
-    _create_distribution_and_assert(
-        file_distribution_api_client, gen_distribution(base_path=str(uuid4()).replace("-", " "))
-    )
+    with pytest.raises(ApiException) as exc:
+        file_distribution_factory(base_path=str(uuid4()).replace("-", " "))
+    assert json.loads(exc.value.body)["base_path"] is not None
 
-    # Test that slash cannot be in the begin of ``base_path``.
-    _create_distribution_and_assert(
-        file_distribution_api_client, gen_distribution(base_path=f"/{str(uuid4())}")
-    )
-    _update_distribution_and_assert(
-        file_distribution_api_client,
-        distribution.pulp_href,
-        gen_distribution(base_path=f"/{str(uuid4())}"),
-    )
+    # Test that slash cannot be used in the beginning of ``base_path``.
+    with pytest.raises(ApiException) as exc:
+        file_distribution_factory(base_path=f"/{str(uuid4())}")
+    assert json.loads(exc.value.body)["base_path"] is not None
+
+    with pytest.raises(ApiException) as exc:
+        file_distribution_api_client.update(
+            distribution.pulp_href, {"base_path": f"/{str(uuid4())}", "name": distribution.name}
+        )
+    assert json.loads(exc.value.body)["base_path"] is not None
 
     # Test that slash cannot be in the end of ``base_path``."""
-    _create_distribution_and_assert(
-        file_distribution_api_client, gen_distribution(base_path=f"{str(uuid4())}/")
-    )
+    with pytest.raises(ApiException) as exc:
+        file_distribution_factory(base_path=f"{str(uuid4())}/")
+    assert json.loads(exc.value.body)["base_path"] is not None
 
-    _update_distribution_and_assert(
-        file_distribution_api_client,
-        distribution.pulp_href,
-        gen_distribution(base_path=f"{str(uuid4())}/"),
-    )
+    with pytest.raises(ApiException) as exc:
+        file_distribution_api_client.update(
+            distribution.pulp_href, {"base_path": f"{str(uuid4())}/", "name": str(uuid4())}
+        )
+    assert json.loads(exc.value.body)["base_path"] is not None
 
     # Test that ``base_path`` can not be duplicated.
-    _create_distribution_and_assert(
-        file_distribution_api_client, gen_distribution(base_path=distribution.base_path)
-    )
+    with pytest.raises(ApiException) as exc:
+        file_distribution_factory(base_path=distribution.base_path)
+    assert json.loads(exc.value.body)["base_path"] is not None
 
     # Test that distributions can't have overlapping ``base_path``.
-    base_path = distribution.base_path.rsplit("/", 1)[0]
-    _create_distribution_and_assert(
-        file_distribution_api_client, gen_distribution(base_path=base_path)
-    )
+    with pytest.raises(ApiException) as exc:
+        file_distribution_factory(base_path=distribution.base_path.rsplit("/", 1)[0])
+    assert json.loads(exc.value.body)["base_path"] is not None
 
     base_path = "/".join((distribution.base_path, str(uuid4()).replace("-", "/")))
-    _create_distribution_and_assert(
-        file_distribution_api_client, gen_distribution(base_path=base_path)
-    )
+    with pytest.raises(ApiException) as exc:
+        file_distribution_factory(base_path=base_path)
+    assert json.loads(exc.value.body)["base_path"] is not None
 
 
 @pytest.mark.parallel
@@ -179,6 +166,7 @@ def test_distribution_filtering(
     file_remote_factory,
     file_random_content_unit,
     file_repository_api_client,
+    file_repository_factory,
     file_publication_api_client,
     gen_object_with_cleanup,
     write_3_iso_file_fixture_data_factory,
@@ -187,7 +175,7 @@ def test_distribution_filtering(
     """Test distribution filtering based on the content exposed from the distribution."""
 
     def generate_repo_with_content():
-        repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
+        repo = file_repository_factory()
         repo_manifest_path = write_3_iso_file_fixture_data_factory(str(uuid4()))
         remote = file_remote_factory(manifest_path=repo_manifest_path, policy="on_demand")
         body = RepositorySyncURL(remote=remote.pulp_href)

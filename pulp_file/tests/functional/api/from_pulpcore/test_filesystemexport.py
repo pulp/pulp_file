@@ -7,14 +7,10 @@ the case.
 import pytest
 import uuid
 
-from pulp_smash.pulp3.utils import gen_repo
-
 from pulpcore.app import settings
 from pulpcore.client.pulpcore.exceptions import ApiException
 
 from pulpcore.client.pulp_file import RepositorySyncURL
-
-from pulp_file.tests.functional.utils import gen_file_remote
 
 NUM_REPOS = 1
 NUM_EXPORTERS = 4
@@ -106,17 +102,18 @@ def test_delete_exporter(exporters_filesystem_api_client, monitor_task):
 
 @pytest.fixture
 def publications(
-    gen_object_with_cleanup,
     file_repository_api_client,
-    file_remote_api_client,
+    file_repository_factory,
+    file_remote_factory,
     file_publication_api_client,
     monitor_task,
+    basic_manifest_path,
 ):
     publications = []
 
     for r in range(NUM_REPOS):
-        repo = gen_object_with_cleanup(file_repository_api_client, gen_repo(autopublish=True))
-        remote = gen_object_with_cleanup(file_remote_api_client, gen_file_remote())
+        repo = file_repository_factory(autopublish=True)
+        remote = file_remote_factory(manifest_path=basic_manifest_path, policy="immediate")
 
         repository_sync_data = RepositorySyncURL(remote=remote.pulp_href)
         sync_response = file_repository_api_client.sync(repo.pulp_href, repository_sync_data)

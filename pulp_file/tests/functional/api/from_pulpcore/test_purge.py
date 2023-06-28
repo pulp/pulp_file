@@ -11,8 +11,6 @@ from pulpcore.constants import TASK_STATES, TASK_FINAL_STATES
 
 from pulpcore.tests.functional.utils import PulpTaskError
 
-from pulp_file.tests.functional.utils import gen_file_remote
-
 TOMORROW_STR = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M")
 
 
@@ -51,10 +49,9 @@ def _check_delete_report(task, expected):
 
 @pytest.fixture
 def sync_results(
-    file_remote_api_client,
     file_repository_api_client,
     tasks_api_client,
-    gen_object_with_cleanup,
+    file_remote_factory,
     file_remote_ssl_factory,
     file_repository_factory,
     basic_manifest_path,
@@ -64,11 +61,8 @@ def sync_results(
     good_repo = file_repository_factory()
     good_sync_data = RepositorySyncURL(remote=good_remote.pulp_href)
 
-    bad_remote = gen_object_with_cleanup(
-        file_remote_api_client,
-        gen_file_remote(
-            "https://fixtures.pulpproject.org/THEREISNOFILEREPOHERE/", policy="on_demand"
-        ),
+    bad_remote = file_remote_factory(
+        url="https://fixtures.pulpproject.org/THEREISNOFILEREPOHERE/", policy="on_demand"
     )
     bad_repo = file_repository_factory()
     bad_sync_data = RepositorySyncURL(remote=bad_remote.pulp_href)
