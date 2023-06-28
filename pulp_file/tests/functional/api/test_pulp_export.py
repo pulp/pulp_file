@@ -100,7 +100,6 @@ def three_synced_repositories(
 
 @pytest.fixture
 def repository_with_four_versions(
-    file_repository_api_client,
     file_repository_factory,
     file_content_api_client,
     random_artifact,

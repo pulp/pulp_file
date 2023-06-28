@@ -3,7 +3,6 @@ import pytest
 
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.utils import gen_repo, gen_distribution
 from pulpcore.client.pulp_file import RepositorySyncURL
 
 from pulp_file.tests.functional.utils import get_files_in_manifest, download_file
@@ -55,10 +54,8 @@ def test_reclaim_immediate_content(
 
 @pytest.fixture
 def sync_repository_distribution(
-    gen_object_with_cleanup,
     file_repository_api_client,
-    file_publication_api_client,
-    file_distribution_api_client,
+    file_distribution_factory,
     file_remote_ssl_factory,
     file_repo_with_auto_publish,
     basic_manifest_path,
@@ -73,8 +70,7 @@ def sync_repository_distribution(
         )
         monitor_task(sync_response.task)
 
-        body = gen_distribution(repository=file_repo_with_auto_publish.pulp_href)
-        distribution = gen_object_with_cleanup(file_distribution_api_client, body)
+        distribution = file_distribution_factory(repository=file_repo_with_auto_publish.pulp_href)
 
         return file_repo_with_auto_publish, remote, distribution
 
@@ -146,15 +142,12 @@ def test_immediate_reclaim_becomes_on_demand(
 
 
 def test_specified_all_repos(
-    gen_object_with_cleanup,
-    file_repository_api_client,
+    file_repository_factory,
     repositories_reclaim_space_api_client,
     monitor_task,
 ):
     """Tests that specifying all repos w/ '*' properly grabs all the repos."""
-    repos = [
-        gen_object_with_cleanup(file_repository_api_client, gen_repo()).pulp_href for _ in range(10)
-    ]
+    repos = [file_repository_factory().pulp_href for _ in range(10)]
 
     reclaim_response = repositories_reclaim_space_api_client.reclaim({"repo_hrefs": ["*"]})
     task_status = monitor_task(reclaim_response.task)

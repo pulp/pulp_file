@@ -1,5 +1,6 @@
 import os
 import uuid
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 
@@ -231,9 +232,15 @@ def file_fixture_server(file_fixtures_root, gen_fixture_server):
 
 @pytest.fixture
 def file_remote_factory(file_fixture_server, file_remote_api_client, gen_object_with_cleanup):
-    def _file_remote_factory(*, manifest_path, policy, pulp_domain=None, **body):
-        url = file_fixture_server.make_url(manifest_path)
-        body.update({"url": str(url), "policy": policy, "name": str(uuid.uuid4())})
+    def _file_remote_factory(
+        manifest_path=None, url=None, policy="immediate", pulp_domain=None, **body
+    ):
+        if not url:
+            assert manifest_path is not None
+            url = file_fixture_server.make_url(manifest_path)
+
+        name = body.get("name") or str(uuid.uuid4())
+        body.update({"url": str(url), "policy": policy, "name": name})
         kwargs = {}
         if pulp_domain:
             kwargs["pulp_domain"] = pulp_domain
@@ -358,3 +365,21 @@ def gen_bad_response_fixture_server(gen_threaded_aiohttp_server):
 @pytest.fixture
 def bad_response_fixture_server(file_fixtures_root, gen_bad_response_fixture_server):
     return gen_bad_response_fixture_server(file_fixtures_root, None)
+
+
+@pytest.fixture
+def wget_recursive_download_on_host():
+    def _wget_recursive_download_on_host(url, destination):
+        subprocess.check_output(
+            [
+                "wget",
+                "--recursive",
+                "--no-parent",
+                "--no-host-directories",
+                "--directory-prefix",
+                destination,
+                url,
+            ]
+        )
+
+    return _wget_recursive_download_on_host

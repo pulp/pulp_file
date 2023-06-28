@@ -1,15 +1,14 @@
 """Tests that perform action over remotes"""
 import pytest
-from pulp_smash.pulp3.utils import gen_repo
 
 
 @pytest.mark.parallel
 def test_shared_remote_usage(
     file_repository_api_client,
+    file_repository_factory,
     file_content_api_client,
     file_remote_ssl_factory,
     basic_manifest_path,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     """Verify remotes can be used with different repos."""
@@ -18,7 +17,7 @@ def test_shared_remote_usage(
     # Create and sync repos.
     repos = []
     for _ in range(2):
-        repo = gen_object_with_cleanup(file_repository_api_client, gen_repo())
+        repo = file_repository_factory()
         monitor_task(
             file_repository_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task
         )

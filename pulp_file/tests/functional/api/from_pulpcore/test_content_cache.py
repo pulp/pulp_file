@@ -9,17 +9,10 @@ from pulpcore.client.pulp_file import (
     PatchedfileFileDistribution,
 )
 
-from pulp_file.tests.functional.utils import (
-    get_redis_status,
-    get_url,
-)
-from .constants import PULP_CONTENT_BASE_URL
-
-is_redis_connected = get_redis_status()
+from pulp_file.tests.functional.utils import get_url
 
 
 @pytest.mark.parallel
-@pytest.mark.skipif(is_redis_connected is False, reason="Could not connect to the Redis server")
 def test_full_workflow(
     file_repo_with_auto_publish,
     basic_manifest_path,
@@ -29,9 +22,13 @@ def test_full_workflow(
     file_distribution_api_client,
     file_content_api_client,
     file_distribution_factory,
-    gen_object_with_cleanup,
     monitor_task,
+    redis_status,
+    pulp_content_url,
 ):
+    if not redis_status:
+        pytest.skip("Could not connect to the Redis server")
+
     def _check_cache(url):
         """Helper to check if cache miss or hit"""
         r = get_url(url)
@@ -77,7 +74,7 @@ def test_full_workflow(
 
     # Add a new distribution and check that its responses are cached separately
     distro2 = file_distribution_factory(repository=repo.pulp_href)
-    url = urljoin(PULP_CONTENT_BASE_URL, f"{distro2.base_path}/")
+    url = urljoin(pulp_content_url, f"{distro2.base_path}/")
     files = ["", "", "PULP_MANIFEST", "PULP_MANIFEST", "1.iso", "1.iso"]
     for i, file in enumerate(files):
         url = urljoin(distro2.base_url, file)
@@ -131,5 +128,5 @@ def test_full_workflow(
     # Tests that accessing a file that doesn't exist on content app gives 404
     files = ["invalid", "another/bad-one", "DNE/"]
     for file in files:
-        url = urljoin(PULP_CONTENT_BASE_URL, file)
+        url = urljoin(pulp_content_url, file)
         assert (404, None) == _check_cache(url), file

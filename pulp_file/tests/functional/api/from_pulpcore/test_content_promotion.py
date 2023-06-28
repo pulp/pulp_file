@@ -3,13 +3,8 @@ import hashlib
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.utils import gen_distribution
-
-from pulp_file.tests.functional.utils import (
-    get_files_in_manifest,
-    get_url,
-    download_file,
-)
+from pulp_file.tests.functional.utils import get_files_in_manifest, get_url
+from pulpcore.tests.functional.utils import download_file
 
 from pulpcore.client.pulp_file import RepositorySyncURL
 
@@ -20,9 +15,8 @@ def test_content_promotion(
     file_remote_ssl_factory,
     file_repository_api_client,
     file_publication_api_client,
-    file_distribution_api_client,
+    file_distribution_factory,
     basic_manifest_path,
-    gen_object_with_cleanup,
     monitor_task,
 ):
     # Create a repository, publication, and 2 distributions
@@ -40,19 +34,13 @@ def test_content_promotion(
     pub = file_publication_api_client.read(created[1])
 
     # Create two Distributions pointing to the publication
-    distribution1 = gen_object_with_cleanup(
-        file_distribution_api_client, gen_distribution(publication=pub.pulp_href)
-    )
-    distribution2 = gen_object_with_cleanup(
-        file_distribution_api_client, gen_distribution(publication=pub.pulp_href)
-    )
+    distribution1 = file_distribution_factory(publication=pub.pulp_href)
+    distribution2 = file_distribution_factory(publication=pub.pulp_href)
     assert distribution1.publication == pub.pulp_href
     assert distribution2.publication == pub.pulp_href
 
     # Create a Distribution using the repository
-    distribution3 = gen_object_with_cleanup(
-        file_distribution_api_client, gen_distribution(repository=file_repo.pulp_href)
-    )
+    distribution3 = file_distribution_factory(repository=file_repo.pulp_href)
 
     for distro in [distribution1, distribution2, distribution3]:
         # Assert that all 3 distributions can be accessed

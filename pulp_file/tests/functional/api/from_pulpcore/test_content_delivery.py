@@ -4,18 +4,12 @@ import hashlib
 import pytest
 from urllib.parse import urljoin
 
-from pulp_smash.pulp3.utils import (
-    gen_distribution,
-)
-
 from pulpcore.client.pulp_file import (
     RepositorySyncURL,
 )
 
-from pulp_file.tests.functional.utils import (
-    get_files_in_manifest,
-    download_file,
-)
+from pulp_file.tests.functional.utils import get_files_in_manifest
+from pulpcore.tests.functional.utils import download_file
 
 
 @pytest.mark.parallel
@@ -24,10 +18,9 @@ def test_delete_remote_on_demand(
     file_remote_ssl_factory,
     file_remote_api_client,
     file_repository_api_client,
-    file_distribution_api_client,
     basic_manifest_path,
-    gen_object_with_cleanup,
     monitor_task,
+    file_distribution_factory,
 ):
     # Create a remote with on_demand download policy
     remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
@@ -38,9 +31,7 @@ def test_delete_remote_on_demand(
     repo = file_repository_api_client.read(file_repo_with_auto_publish.pulp_href)
 
     # Create a distribution pointing to the repository
-    distribution = gen_object_with_cleanup(
-        file_distribution_api_client, gen_distribution(repository=repo.pulp_href)
-    )
+    distribution = file_distribution_factory(repository=repo.pulp_href)
 
     # Download the manifest from the remote
     expected_file_list = list(get_files_in_manifest(remote.url))
@@ -70,11 +61,10 @@ def test_remote_artifact_url_update(
     file_repo_with_auto_publish,
     file_remote_ssl_factory,
     file_repository_api_client,
-    file_distribution_api_client,
     basic_manifest_path,
     basic_manifest_only_path,
-    gen_object_with_cleanup,
     monitor_task,
+    file_distribution_factory,
 ):
     # Create a remote that points to a repository that only has the manifest, but no content
     remote = file_remote_ssl_factory(manifest_path=basic_manifest_only_path, policy="on_demand")
@@ -85,9 +75,7 @@ def test_remote_artifact_url_update(
     repo = file_repository_api_client.read(file_repo_with_auto_publish.pulp_href)
 
     # Create a distribution from the publication
-    distribution = gen_object_with_cleanup(
-        file_distribution_api_client, gen_distribution(repository=repo.pulp_href)
-    )
+    distribution = file_distribution_factory(repository=repo.pulp_href)
 
     # Download the manifest from the remote
     expected_file_list = list(get_files_in_manifest(remote.url))

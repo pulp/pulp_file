@@ -2,15 +2,11 @@ from aiohttp import BasicAuth
 import pytest
 import uuid
 
-from pulp_smash.pulp3.utils import gen_distribution
-
 from pulpcore.client.pulp_file import (
     PatchedfileFileDistribution,
 )
 
-from pulp_file.tests.functional.utils import (
-    get_url,
-)
+from pulp_file.tests.functional.utils import get_url
 
 
 @pytest.mark.parallel
@@ -24,6 +20,7 @@ def test_rbac_content_guard_full_workflow(
     gen_user,
     gen_object_with_cleanup,
     monitor_task,
+    file_distribution_factory,
 ):
     # Create all of the users and groups
     creator_user = gen_user(
@@ -39,7 +36,7 @@ def test_rbac_content_guard_full_workflow(
 
     # Create a distribution
     with creator_user:
-        distro = gen_object_with_cleanup(file_distribution_api_client, gen_distribution())
+        distro = file_distribution_factory()
 
     def _assert_access(authorized_users):
         """Asserts that only authorized users have access to the distribution's base_url."""

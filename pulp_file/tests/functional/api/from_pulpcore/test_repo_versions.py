@@ -9,7 +9,6 @@ from pulpcore.tests.functional.utils import PulpTaskError
 from pulpcore.client.pulp_file.exceptions import ApiException
 
 from pulp_file.tests.functional.utils import get_files_in_manifest
-from .constants import FILE_CONTENT_NAME
 
 
 @pytest.fixture
@@ -77,16 +76,16 @@ def test_add_remove_content(
     latest_version = file_repository_version_api_client.read(repo.latest_version_href)
 
     present_summary = latest_version.content_summary.present
-    assert present_summary[FILE_CONTENT_NAME]["count"] == 3
-    base_href, _, latest_version_href = present_summary[FILE_CONTENT_NAME]["href"].partition(
+    assert present_summary["file.file"]["count"] == 3
+    base_href, _, latest_version_href = present_summary["file.file"]["href"].partition(
         "?repository_version="
     )
     assert base_href[-len(CONTENT_BASE_HREF) :] == CONTENT_BASE_HREF
     assert latest_version_href == latest_version.pulp_href == repo.latest_version_href
 
     added_summary = latest_version.content_summary.added
-    assert added_summary[FILE_CONTENT_NAME]["count"] == 3
-    base_href, _, latest_version_href = added_summary[FILE_CONTENT_NAME]["href"].partition(
+    assert added_summary["file.file"]["count"] == 3
+    base_href, _, latest_version_href = added_summary["file.file"]["href"].partition(
         "?repository_version_added="
     )
     assert base_href[-len(CONTENT_BASE_HREF) :] == CONTENT_BASE_HREF
@@ -110,13 +109,13 @@ def test_add_remove_content(
 
     latest_version = file_repository_version_api_client.read(repo.latest_version_href)
 
-    assert latest_version.content_summary.present[FILE_CONTENT_NAME]["count"] == 2
+    assert latest_version.content_summary.present["file.file"]["count"] == 2
 
     assert latest_version.content_summary.added == {}
 
     removed_summary = latest_version.content_summary.removed
-    assert removed_summary[FILE_CONTENT_NAME]["count"] == 1
-    base_href, _, latest_version_href = removed_summary[FILE_CONTENT_NAME]["href"].partition(
+    assert removed_summary["file.file"]["count"] == 1
+    base_href, _, latest_version_href = removed_summary["file.file"]["href"].partition(
         "?repository_version_removed="
     )
     assert base_href[-len(CONTENT_BASE_HREF) :] == CONTENT_BASE_HREF
@@ -134,8 +133,8 @@ def test_add_remove_content(
 
     latest_version = file_repository_version_api_client.read(repo.latest_version_href)
 
-    assert latest_version.content_summary.present[FILE_CONTENT_NAME]["count"] == 3
-    assert latest_version.content_summary.added[FILE_CONTENT_NAME]["count"] == 1
+    assert latest_version.content_summary.present["file.file"]["count"] == 3
+    assert latest_version.content_summary.added["file.file"]["count"] == 1
     assert latest_version.content_summary.removed == {}
 
 
@@ -204,7 +203,7 @@ def test_add_remove_repo_version(
     # Check added count is updated properly
     next_ver = f"{repo.versions_href}5/"
     next_version = file_repository_version_api_client.read(next_ver)
-    assert next_version.content_summary.added[FILE_CONTENT_NAME]["count"] == 2
+    assert next_version.content_summary.added["file.file"]["count"] == 2
     middle_contents = file_content_api_client.list(repository_version=next_ver)
     assert set(item.pulp_href for item in middle_contents.results) == set(
         item.pulp_href for item in contents[:5]
@@ -696,9 +695,9 @@ def test_clear_all_units_repo_version(
     assert repo.latest_version_href[-2] == "2"
 
     latest_version = file_repository_version_api_client.read(repo.latest_version_href)
-    assert latest_version.content_summary.present[FILE_CONTENT_NAME]["count"] == 1
-    assert latest_version.content_summary.added[FILE_CONTENT_NAME]["count"] == 1
-    assert latest_version.content_summary.removed[FILE_CONTENT_NAME]["count"] == 3
+    assert latest_version.content_summary.present["file.file"]["count"] == 1
+    assert latest_version.content_summary.added["file.file"]["count"] == 1
+    assert latest_version.content_summary.removed["file.file"]["count"] == 3
 
     latest_content = file_content_api_client.list(repository_version=repo.latest_version_href)
     assert latest_content.results[0] == content
@@ -721,7 +720,7 @@ def test_clear_all_units_repo_version(
     latest_version = file_repository_version_api_client.read(repo.latest_version_href)
     assert latest_version.content_summary.present == {}
     assert latest_version.content_summary.added == {}
-    assert latest_version.content_summary.removed[FILE_CONTENT_NAME]["count"] == 9
+    assert latest_version.content_summary.removed["file.file"]["count"] == 9
 
     # Test http error is raised when invalid remove
     with pytest.raises(ApiException) as e:
@@ -739,7 +738,6 @@ def test_repo_version_retention(
     file_repository_version_api_client,
     file_content_api_client,
     file_publication_api_client,
-    file_distribution_api_client,
     file_repository_factory,
     file_remote_ssl_factory,
     file_distribution_factory,
@@ -773,8 +771,8 @@ def test_repo_version_retention(
 
     latest_version = file_repository_version_api_client.read(repo.latest_version_href)
     assert latest_version.number == 3
-    assert latest_version.content_summary.present[FILE_CONTENT_NAME]["count"] == 3
-    assert latest_version.content_summary.added[FILE_CONTENT_NAME]["count"] == 3
+    assert latest_version.content_summary.present["file.file"]["count"] == 3
+    assert latest_version.content_summary.added["file.file"]["count"] == 3
 
     # Test repo version retention when retain_repo_versions is set.
     repo = file_repository_factory()
