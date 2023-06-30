@@ -1,4 +1,4 @@
-.. _pulp-file-changes:
+.. _pulp_file-changes:
 
 .. include:: ../CHANGES.rst
 
