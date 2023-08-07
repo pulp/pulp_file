@@ -1,5 +1,8 @@
 aiofiles
 aiohttp
 beautifulsoup4
-pulp-smash @ git+https://github.com/pulp/pulp-smash.git
 pytest
+pytest-custom_exit_code
+pytest-xdist
+proxy.py~=2.4.1
+trustme~=1.0.0
