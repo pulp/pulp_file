@@ -16,13 +16,15 @@ def test_shared_remote_usage(
     remote = file_remote_ssl_factory(manifest_path=basic_manifest_path, policy="on_demand")
 
     # Create and sync repos.
-    repos = []
-    for _ in range(2):
-        repo = file_repository_factory()
-        monitor_task(
-            file_repository_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task
-        )
-        repos.append(file_repository_api_client.read(repo.pulp_href))
+    repos = [file_repository_factory() for dummy in range(4)]
+    sync_tasks = [
+        file_repository_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href}).task
+        for repo in repos
+    ]
+
+    for task in sync_tasks:
+        monitor_task(task)
+    repos = [(file_repository_api_client.read(repo.pulp_href)) for repo in repos]
 
     # Compare contents of repositories.
     contents = set()
