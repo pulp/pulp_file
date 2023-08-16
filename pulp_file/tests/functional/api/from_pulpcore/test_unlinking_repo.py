@@ -4,6 +4,7 @@ from pulp_smash.pulp3.utils import gen_repo
 
 
 @pytest.mark.parallel
+@pytest.mark.skip("Makes S3 runner get stuck, skipping for now")
 def test_shared_remote_usage(
     file_repo_api_client,
     file_content_api_client,
