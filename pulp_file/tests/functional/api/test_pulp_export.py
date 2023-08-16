@@ -53,7 +53,11 @@ def pulp_export_factory(exporters_pulp_exports_api_client, monitor_task):
             exporters_pulp_exports_api_client.create(exporter.pulp_href, body or {}).task
         )
         assert len(task.created_resources) == 1
-        shared_resources = [r for r in task.reserved_resources_record if r.startswith("shared:")]
+        shared_resources = [
+            r
+            for r in task.reserved_resources_record
+            if r.startswith("shared:") and "repositories/file/file" in r
+        ]
         assert len(exporter.repositories) == len(shared_resources)
 
         export = exporters_pulp_exports_api_client.read(task.created_resources[0])
