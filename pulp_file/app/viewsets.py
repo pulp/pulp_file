@@ -140,7 +140,7 @@ class FileRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Role
                 ],
             },
             {
-                "action": ["update", "partial_update"],
+                "action": ["update", "partial_update", "set_label", "unset_label"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
@@ -302,7 +302,7 @@ class FileRemoteViewSet(RemoteViewSet, RolesMixin):
                 "condition": "has_model_or_domain_or_obj_perms:file.view_fileremote",
             },
             {
-                "action": ["update", "partial_update"],
+                "action": ["update", "partial_update", "set_label", "unset_label"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
@@ -483,7 +483,7 @@ class FileDistributionViewSet(DistributionViewSet, RolesMixin):
                 "condition": "has_model_or_domain_or_obj_perms:file.view_filedistribution",
             },
             {
-                "action": ["update", "partial_update"],
+                "action": ["update", "partial_update", "set_label", "unset_label"],
                 "principal": "authenticated",
                 "effect": "allow",
                 "condition": [
