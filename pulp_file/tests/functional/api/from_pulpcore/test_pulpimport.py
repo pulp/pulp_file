@@ -154,7 +154,11 @@ def _find_toc(chunked_export):
 
 
 def _find_path(created_export):
-    filenames = [f for f in list(created_export.output_file_info.keys()) if f.endswith("tar.gz")]
+    filenames = [
+        f
+        for f in list(created_export.output_file_info.keys())
+        if f.endswith("tar") or f.endswith(".tar.gz")
+    ]
     return filenames[0]
 
 
@@ -171,13 +175,11 @@ def perform_import(
             an_export = chunked_export if chunked else created_export
 
         if chunked:
-            filenames = [f for f in list(an_export.output_file_info.keys()) if f.endswith("json")]
             if "toc" not in body:
-                body["toc"] = filenames[0]
+                body["toc"] = _find_toc(an_export)
         else:
-            filenames = [f for f in list(an_export.output_file_info.keys()) if f.endswith("tar.gz")]
             if "path" not in body:
-                body["path"] = filenames[0]
+                body["path"] = _find_path(an_export)
 
         import_response = importers_pulp_imports_api_client.create(importer.pulp_href, body)
         task_group = monitor_task_group(import_response.task_group)
