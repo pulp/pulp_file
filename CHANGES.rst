@@ -13,6 +13,33 @@ Changelog
 
 .. towncrier release notes start
 
+1.15.0 (2023-10-19)
+===================
+
+
+Features
+--------
+
+- Adjusted default access policies for new labels API.
+  `#1039 <https://github.com/pulp/pulp_file/issues/1039>`__
+
+
+Bugfixes
+--------
+
+- Allows for compatibility with pulpcore>3.25.
+  `#954 <https://github.com/pulp/pulp_file/issues/954>`__
+
+
+Misc
+----
+
+- `#804 <https://github.com/pulp/pulp_file/issues/804>`__
+
+
+----
+
+
 1.14.5 (2023-09-26)
 ===================
 
