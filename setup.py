@@ -11,7 +11,7 @@ with open("requirements.txt") as requirements:
 setup(
     name="pulp-file",
     version="1.16.0.dev",
-    description="File plugin for the Pulp Project",
+    description="File plugin for the Pulp Project (transitional dummy package)",
     long_description=long_description,
     license="GPLv2+",
     author="Pulp Project Developers",
@@ -31,10 +31,4 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    entry_points={
-        "pulpcore.plugin": [
-            "pulp_file = pulp_file:default_app_config",
-        ],
-        "pytest11": ["pulp_file = pulp_file.tests.functional"],
-    },
 )
