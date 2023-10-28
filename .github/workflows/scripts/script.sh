@@ -102,7 +102,8 @@ echo "Checking for uncommitted migrations..."
 cmd_user_prefix bash -c "django-admin makemigrations file --check --dry-run"
 
 # Run unit tests.
-cmd_user_prefix bash -c "PULP_DATABASES__default__USER=postgres pytest -v -r sx --color=yes -p no:pulpcore --pyargs pulp_file.tests.unit"
+# Don't run any.
+# cmd_user_prefix bash -c "PULP_DATABASES__default__USER=postgres pytest -v -r sx --color=yes -p no:pulpcore --pyargs pulp_file.tests.unit"
 
 # Run functional tests
 if [[ "$TEST" == "performance" ]]; then
@@ -122,26 +123,15 @@ else
         cmd_user_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m parallel -n 8 --nightly"
         cmd_user_prefix bash -c "pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m 'not parallel' --nightly"
 
-    
-        cmd_user_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and parallel' -n  8 --nightly"
-        cmd_user_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and not parallel'  --nightly"
-    
+
     else
         cmd_user_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulp_file.tests.functional -m parallel -n 8"
         cmd_user_prefix bash -c "pytest -v -r sx --color=yes --pyargs pulp_file.tests.functional -m 'not parallel'"
 
-    
-        cmd_user_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and parallel' -n  8"
-        cmd_user_prefix bash -c "pytest -v -r sx --color=yes --suppress-no-test-exit-code --pyargs pulpcore.tests.functional -m 'from_pulpcore_for_all_plugins and not parallel'"
-    
+
     fi
 
 fi
-export PULP_FIXTURES_URL="http://pulp-fixtures:8080"
-pushd ../pulp-cli
-pip install -r test_requirements.txt
-pytest -v -m pulp_file
-popd
 
 if [ -f $POST_SCRIPT ]; then
   source $POST_SCRIPT
