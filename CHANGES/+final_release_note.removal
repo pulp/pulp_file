@@ -1,3 +1,0 @@
-This is the last release of ``pulp_file`` as an independent package.
-Its bits have been moved to ``pulpcore>=3.40.0`` and this is essentially an empty package.
-You can safely remove it.

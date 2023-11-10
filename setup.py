@@ -10,7 +10,7 @@ with open("requirements.txt") as requirements:
 
 setup(
     name="pulp-file",
-    version="1.16.0.dev",
+    version="1.17.0.dev",
     description="File plugin for the Pulp Project (transitional dummy package)",
     long_description=long_description,
     license="GPLv2+",
