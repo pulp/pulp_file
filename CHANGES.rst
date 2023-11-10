@@ -13,6 +13,22 @@ Changelog
 
 .. towncrier release notes start
 
+1.16.0 (2023-11-10)
+===================
+
+
+Deprecations and Removals
+-------------------------
+
+- This is the last release of ``pulp_file`` as an independent package.
+  Its bits have been moved to ``pulpcore>=3.40.0`` and this is essentially an empty package.
+  You can safely remove it.
+  `#+final_release_note <https://github.com/pulp/pulp_file/issues/+final_release_note>`__
+
+
+----
+
+
 1.15.1 (2023-10-27)
 ===================
 
