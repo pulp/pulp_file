@@ -20,8 +20,6 @@ echo "$PULP_DOCS_KEY" > ~/.ssh/pulp-infra
 echo "docs.pulpproject.org,8.43.85.236 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGXG+8vjSQvnAkq33i0XWgpSrbco3rRqNZr0SfVeiqFI7RN/VznwXMioDDhc+hQtgVhd6TYBOrV07IMcKj+FAzg=" >> ~/.ssh/known_hosts
 chmod 644 ~/.ssh/known_hosts
 
-pip3 install packaging
-
 export PYTHONUNBUFFERED=1
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 export PULP_SETTINGS=$PWD/.ci/ansible/settings/settings.py
@@ -38,24 +36,9 @@ if [[ "$GITHUB_WORKFLOW" == "File changelog update" ]]; then
   exit
 fi
 
-pip install mkdocs pymdown-extensions "Jinja2<3.1"
-
 mkdir -p ../file-bindings
 tar -xvf file-python-client-docs.tar --directory ../file-bindings
 pushd ../file-bindings
-cat >> mkdocs.yml << DOCSYAML
----
-site_name: PulpFile Client
-site_description: File bindings
-site_author: Pulp Team
-site_url: https://docs.pulpproject.org/pulp_file_client/
-repo_name: pulp/pulp_file
-repo_url: https://github.com/pulp/pulp_file
-theme: readthedocs
-DOCSYAML
-
-# Building the bindings docs
-mkdocs build
 
 # publish to docs.pulpproject.org/pulp_file_client
 rsync -avzh site/ doc_builder_pulp_file@docs.pulpproject.org:/var/www/docs.pulpproject.org/pulp_file_client/
