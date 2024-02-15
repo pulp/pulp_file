@@ -1,7 +1,7 @@
 aiofiles
 aiohttp
 beautifulsoup4
-pytest
+pytest<8
 pytest-custom_exit_code
 pytest-xdist
 proxy.py~=2.4.1
