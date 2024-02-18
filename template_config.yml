@@ -1,25 +1,18 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-248-g4bfc3e1
+# generated with plugin_template@2021.08.26-319-g77224b3-dirty
 
-additional_repos: []
 api_root: /pulp/
 black: true
 check_commit_message: true
 check_gettext: true
 check_manifest: true
 check_stray_pulpcore_imports: true
+ci_base_image: ghcr.io/pulp/pulp-ci-centos9
 ci_env: {}
 ci_trigger: '{pull_request: {branches: [''*'']}}'
-ci_update_branches:
-- '1.10'
-- '1.11'
-- '1.12'
-- '1.13'
-- '1.15'
 ci_update_docs: true
-ci_update_release_behavior: replace-previous-version
 cli_package: pulp-cli
 cli_repo: https://github.com/pulp/pulp-cli.git
 core_import_allowed: []
@@ -29,7 +22,7 @@ deploy_to_pypi: true
 disabled_redis_runners:
 - s3
 doc_requirements_from_pulpcore: false
-docker_fixtures: true
+docker_fixtures: false
 docs_test: true
 extra_docs_requirements: []
 flake8: true
@@ -37,19 +30,14 @@ flake8_ignore: []
 github_org: pulp
 issue_tracker: github
 kanban: true
+latest_release_branch: null
 lint_requirements: false
 noissue_marker: '[noissue]'
 parallel_test_workers: 8
 plugin_app_label: file
-plugin_camel: PulpFile
-plugin_camel_short: File
-plugin_caps: PULP_FILE
-plugin_caps_short: FILE
-plugin_dash: pulp-file
-plugin_dash_short: file
 plugin_default_branch: main
 plugin_name: pulp_file
-plugin_snake: pulp_file
+plugins: []
 post_job_template: null
 pre_job_template: null
 publish_docs_to_pulpprojectdotorg: true
@@ -62,18 +50,19 @@ pulp_settings: null
 pulp_settings_azure: null
 pulp_settings_gcp: null
 pulp_settings_s3: null
-pulpprojectdotorg_key_id: aa499d7938ed
 pydocstyle: true
-pypi_username: pulp
-python_version: '3.8'
 release_email: pulp-infra@redhat.com
 release_user: pulpbot
-run_pulpcore_tests_for_plugins: false
-single_commit_check: true
 stalebot: true
 stalebot_days_until_close: 30
 stalebot_days_until_stale: 90
 stalebot_limit_to_pulls: true
+supported_release_branches:
+- '1.10'
+- '1.11'
+- '1.12'
+- '1.13'
+- '1.15'
 sync_ci: true
 test_azure: false
 test_cli: false
@@ -83,6 +72,5 @@ test_lowerbounds: false
 test_performance: false
 test_reroute: false
 test_s3: false
-update_github: true
 use_issue_template: true
 
