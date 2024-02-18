@@ -9,7 +9,7 @@ if [ -z "$(pip freeze | grep pulp-cli)" ]; then
   pip install pulp-cli[pygments]
 fi
 
-if [ ! -f ~/.config/pulp/settings.toml ]; then
+if [ ! -f ~/.config/pulp/cli.toml ]; then
   echo "Configuring pulp-cli"
   mkdir -p ~/.config/pulp
   cat > ~/.config/pulp/cli.toml << EOF

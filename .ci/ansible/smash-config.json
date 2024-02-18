@@ -30,8 +30,5 @@
         }
       }
     }
-  ],
-  "custom": {
-    "fixtures_origin": "http://pulp-fixtures:8080/"
-  }
+  ]
 }

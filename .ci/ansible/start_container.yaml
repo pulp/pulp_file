@@ -83,6 +83,15 @@
           command: "docker logs pulp"
           failed_when: true
 
+    - name: "Check version of component being tested"
+      assert:
+        that:
+          - (result.json.versions | items2dict(key_name="component", value_name="version"))[item.app_label] | canonical_semver == (component_version | canonical_semver)
+        fail_msg: |
+          Component {{ item.app_label }} was expected to be installed in version {{ component_version }}.
+          Instead it is reported as version {{ (result.json.versions | items2dict(key_name="component", value_name="version"))[item.app_label] }}.
+      loop: "{{ 'plugins' | ansible.builtin.extract(lookup('ansible.builtin.file', '../../template_config.yml') | from_yaml) }}"
+
     - name: "Set pulp password in .netrc"
       copy:
         dest: "~/.netrc"
