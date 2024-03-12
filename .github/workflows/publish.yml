@@ -107,18 +107,6 @@ jobs:
           name: "ruby-client.tar"
           path: "pulp_file/file-ruby-client.tar"
           if-no-files-found: "error"
-      - name: Build docs
-        run: |
-          export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
-          export PULP_SETTINGS=$PWD/.ci/ansible/settings/settings.py
-          make -C docs/ PULP_URL="https://pulp" diagrams html
-          tar -cvf docs/docs.tar docs/_build
-
-      - name: "Upload built docs"
-        uses: actions/upload-artifact@v3
-        with:
-          name: "docs.tar"
-          path: "pulp_file/docs/docs.tar"
 
       - name: "Logs"
         if: always()
@@ -249,52 +237,6 @@ jobs:
       - name: "Publish client to rubygems"
         run: |
           bash .github/workflows/scripts/publish_client_gem.sh ${{ github.ref_name }}
-  publish-docs:
-    runs-on: "ubuntu-latest"
-    needs:
-      - "build-bindings-docs"
-
-    env:
-      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
-    steps:
-      - uses: "actions/checkout@v4"
-        with:
-          fetch-depth: 1
-          path: "pulp_file"
-
-      - uses: "actions/setup-python@v4"
-        with:
-          python-version: "3.11"
-
-      - name: "Install python dependencies"
-        run: |
-          echo ::group::PYDEPS
-          pip install 'packaging~=21.3' requests
-          echo ::endgroup::
-
-      - name: "Setting secrets"
-        run: |
-          python3 .github/workflows/scripts/secrets.py "$SECRETS_CONTEXT"
-        env:
-          SECRETS_CONTEXT: "${{ toJson(secrets) }}"
-
-      - name: "Download built docs"
-        uses: "actions/download-artifact@v3"
-        with:
-          name: "docs.tar"
-          path: "pulp_file/"
-
-      - name: "Download Python client docs"
-        uses: "actions/download-artifact@v3"
-        with:
-          name: "python-client-docs.tar"
-          path: "pulp_file/"
-
-      - name: "Publish docs to pulpproject.org"
-        run: |
-          tar -xvf docs.tar
-          .github/workflows/scripts/publish_docs.sh tag ${{ github.ref_name }}
 
   create-gh-release:
     runs-on: "ubuntu-latest"
@@ -303,7 +245,6 @@ jobs:
       - "publish-package"
       - "publish-python-bindings"
       - "publish-ruby-bindings"
-      - "publish-docs"
 
     steps:
       - name: "Create release on GitHub"
