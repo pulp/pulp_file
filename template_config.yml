@@ -40,7 +40,7 @@ plugin_name: pulp_file
 plugins: []
 post_job_template: null
 pre_job_template: null
-publish_docs_to_pulpprojectdotorg: true
+publish_docs_to_pulpprojectdotorg: false
 pulp_env: {}
 pulp_env_azure: {}
 pulp_env_gcp: {}
