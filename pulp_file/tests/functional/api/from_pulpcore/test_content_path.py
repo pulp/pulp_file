@@ -1,4 +1,5 @@
 """Tests related to content path."""
+
 import pytest
 
 from pulp_smash import utils
