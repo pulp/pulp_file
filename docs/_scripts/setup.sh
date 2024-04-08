@@ -16,6 +16,8 @@ if [ ! -f ~/.config/pulp/settings.toml ]; then
 [cli]
 base_url = "$BASE_ADDR"
 verify_ssl = false
+username = "admin"
+password = "password"
 format = "json"
 EOF
 fi
