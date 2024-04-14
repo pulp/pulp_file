@@ -1,4 +1,5 @@
 """Constants for Pulp File plugin tests."""
+
 from urllib.parse import urljoin
 
 from pulp_smash import config
