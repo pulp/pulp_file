@@ -1,4 +1,5 @@
 """Tests that sync file plugin repositories."""
+
 import uuid
 
 import pytest
