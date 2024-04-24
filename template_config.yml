@@ -73,6 +73,6 @@ test_performance: false
 test_reroute: false
 test_s3: false
 use_issue_template: true
-use_legacy_docs: true
+use_legacy_docs: false
 use_unified_docs: false
 
