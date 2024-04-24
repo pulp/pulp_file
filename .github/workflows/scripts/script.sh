@@ -31,15 +31,6 @@ if [[ "$TEST" = "docs" ]]; then
   if [[ "$GITHUB_WORKFLOW" == "File CI" ]]; then
     towncrier build --yes --version 4.0.0.ci
   fi
-  # Legacy Docs Build
-  cd docs
-  make PULP_URL="$PULP_URL" diagrams html
-  tar -cvf docs.tar ./_build
-  cd ..
-
-  if [ -f "$POST_DOCS_TEST" ]; then
-    source "$POST_DOCS_TEST"
-  fi
   exit
 fi
 
