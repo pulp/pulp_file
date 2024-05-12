@@ -39,11 +39,11 @@ jobs:
           repository: "pulp/pulp-openapi-generator"
           path: "pulp-openapi-generator"
 
-      - uses: "actions/setup-python@v4"
+      - uses: "actions/setup-python@v5"
         with:
           python-version: "3.11"
 
-      - uses: "actions/download-artifact@v3"
+      - uses: "actions/download-artifact@v4"
         with:
           name: "plugin_package"
           path: "pulp_file/dist/"
@@ -114,12 +114,12 @@ jobs:
           fetch-depth: 1
           path: "pulp_file"
 
-      - uses: "actions/download-artifact@v3"
+      - uses: "actions/download-artifact@v4"
         with:
           name: "plugin_package"
           path: "pulp_file/dist/"
 
-      - uses: "actions/setup-python@v4"
+      - uses: "actions/setup-python@v5"
         with:
           python-version: "3.11"
 
@@ -153,7 +153,7 @@ jobs:
           path: "pulp_file"
 
       - name: "Download Python client"
-        uses: "actions/download-artifact@v3"
+        uses: "actions/download-artifact@v4"
         with:
           name: "python-client.tar"
           path: "pulp_file/"
@@ -161,7 +161,7 @@ jobs:
       - name: "Untar python client packages"
         run: |
 
-      - uses: "actions/setup-python@v4"
+      - uses: "actions/setup-python@v5"
         with:
           python-version: "3.11"
 
@@ -195,7 +195,7 @@ jobs:
           path: "pulp_file"
 
       - name: "Download Ruby client"
-        uses: "actions/download-artifact@v3"
+        uses: "actions/download-artifact@v4"
         with:
           name: "ruby-client.tar"
           path: "pulp_file/"
