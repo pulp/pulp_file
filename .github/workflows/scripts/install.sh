@@ -45,6 +45,11 @@ if [[ -f ../../ci_requirements.txt ]]; then
     ci_requirements: true
 VARSYAML
 fi
+if [ "$TEST" = "pulp" ]; then
+  cat >> vars/main.yaml << VARSYAML
+    upperbounds: true
+VARSYAML
+fi
 
 cat >> vars/main.yaml << VARSYAML
 services:

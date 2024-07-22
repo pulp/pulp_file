@@ -23,13 +23,18 @@ jobs:
         with:
           fetch-depth: 1
           path: "pulp_file"
+      - uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 1
+          repository: "pulp/pulp-openapi-generator"
+          path: "pulp-openapi-generator"
       - uses: "actions/setup-python@v5"
         with:
           python-version: "3.11"
       - name: "Install python dependencies"
         run: |
           echo ::group::PYDEPS
-          pip install packaging twine wheel
+          pip install packaging twine wheel mkdocs jq
           echo ::endgroup::
       - name: "Build package"
         run: |
@@ -37,7 +42,7 @@ jobs:
           twine check dist/*
       - name: "Install built packages"
         run: |
-          pip install dist/pulp_file-*-py3-none-any.whl
+          pip install dist/pulp_file-*-py3-none-any.whl -c .ci/assets/ci_constraints.txt
       - name: "Generate api specs"
         run: |
           pulpcore-manager openapi --file "api.json"
@@ -58,3 +63,4 @@ jobs:
           if-no-files-found: "error"
           retention-days: 5
           overwrite: true
+...

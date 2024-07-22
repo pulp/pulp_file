@@ -1,7 +1,7 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-342-g13e7dc5
+# generated with plugin_template@2021.08.26-362-g5add0ff
 
 api_root: /pulp/
 black: true
@@ -24,7 +24,6 @@ disabled_redis_runners:
 doc_requirements_from_pulpcore: false
 docker_fixtures: false
 docs_test: false
-extra_docs_requirements: []
 flake8: true
 flake8_ignore: []
 github_org: pulp
@@ -33,6 +32,7 @@ kanban: true
 latest_release_branch: null
 lint_requirements: false
 noissue_marker: '[noissue]'
+os_required_packages: []
 parallel_test_workers: 8
 plugin_app_label: file
 plugin_default_branch: main
@@ -40,7 +40,6 @@ plugin_name: pulp_file
 plugins: []
 post_job_template: null
 pre_job_template: null
-publish_docs_to_pulpprojectdotorg: false
 pulp_env: {}
 pulp_env_azure: {}
 pulp_env_gcp: {}
@@ -71,6 +70,4 @@ test_performance: false
 test_reroute: false
 test_s3: false
 use_issue_template: true
-use_legacy_docs: false
-use_unified_docs: false
 
