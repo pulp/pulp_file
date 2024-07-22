@@ -39,15 +39,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      - uses: "actions/download-artifact@v4"
+      - name: "Download plugin package"
+        uses: "actions/download-artifact@v4"
         with:
           name: "plugin_package"
           path: "pulp_file/dist/"
 
+      - name: "Download API specs"
+        uses: "actions/download-artifact@v4"
+        with:
+          name: "api_spec"
+          path: "pulp_file/"
+
       - name: "Install python dependencies"
         run: |
           echo ::group::PYDEPS
-          pip install towncrier twine wheel httpie docker netaddr boto3 ansible mkdocs
+          pip install towncrier twine wheel httpie docker netaddr boto3 ansible mkdocs jq jsonpatch
           echo "HTTPIE_CONFIG_DIR=$GITHUB_WORKSPACE/pulp_file/.ci/assets/httpie/" >> $GITHUB_ENV
           echo ::endgroup::
 
@@ -90,16 +97,6 @@ jobs:
           GITHUB_CONTEXT: "${{ github.event.pull_request.commits_url }}"
           REDIS_DISABLED: "${{ contains('s3', matrix.env.TEST) }}"
 
-      - name: "Install Python client"
-        run: |
-          .github/workflows/scripts/install_python_client.sh
-        shell: "bash"
-      - name: "Install Ruby client"
-        if: "${{ env.TEST == 'pulp' }}"
-        run: |
-          .github/workflows/scripts/install_ruby_client.sh
-        shell: "bash"
-
       - name: "Script"
         run: |
           .github/workflows/scripts/script.sh
@@ -121,3 +118,4 @@ jobs:
           docker exec pulp ls -latr /etc/yum.repos.d/ || true
           docker exec pulp cat /etc/yum.repos.d/* || true
           docker exec pulp bash -c "pip3 list && pip3 install pipdeptree && pipdeptree"
+...
