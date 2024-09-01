@@ -2,3 +2,5 @@ aiofiles
 aiohttp
 pulp-smash @ git+https://github.com/pulp/pulp-smash.git
 pytest<8
+pytest-xdist
+pytest-timeout
