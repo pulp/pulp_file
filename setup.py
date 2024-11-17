@@ -20,7 +20,7 @@ setup(
     python_requires=">=3.8",
     install_requires=requirements,
     include_package_data=True,
-    packages=find_packages(exclude=["test"]),
+    packages=find_packages(),
     classifiers=[
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: POSIX :: Linux",
