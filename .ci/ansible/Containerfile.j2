@@ -9,6 +9,7 @@ ADD ./{{ item.name }} ./{{ item.name }}
 # S3 botocore needs to be patched to handle responses from minio during 0-byte uploads
 # Hacking botocore (https://github.com/boto/botocore/pull/1990)
 
+# This MUST be the ONLY call to pip install in inside the container.
 RUN pip3 install --upgrade pip setuptools wheel && \
   rm -rf /root/.cache/pip && \
   pip3 install
