@@ -53,6 +53,9 @@ jobs:
   test:
     needs: "build"
     uses: "./.github/workflows/test.yml"
+    with:
+      matrix_env: |
+        [{"TEST": "pulp"}]
 
   ready-to-ship:
     # This is a dummy dependent task to have a single entry for the branch protection rules.
