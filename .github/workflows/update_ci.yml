@@ -67,6 +67,7 @@ jobs:
           base: "main"
           delete-branch: true
       - name: "Experiment: Mark PR automerge"
+        working-directory: "pulp_file"
         run: |
           gh pr merge --rebase --auto "${{ steps.create_pr_main.outputs.pull-request-number }}"
         if: "steps.create_pr_main.outputs.pull-request-number"
@@ -97,6 +98,7 @@ jobs:
           base: "1.11"
           delete-branch: true
       - name: "Experiment: Mark PR automerge"
+        working-directory: "pulp_file"
         run: |
           gh pr merge --rebase --auto "${{ steps.create_pr_1_11.outputs.pull-request-number }}"
         if: "steps.create_pr_1_11.outputs.pull-request-number"
@@ -127,6 +129,7 @@ jobs:
           base: "1.12"
           delete-branch: true
       - name: "Experiment: Mark PR automerge"
+        working-directory: "pulp_file"
         run: |
           gh pr merge --rebase --auto "${{ steps.create_pr_1_12.outputs.pull-request-number }}"
         if: "steps.create_pr_1_12.outputs.pull-request-number"
@@ -157,6 +160,7 @@ jobs:
           base: "1.15"
           delete-branch: true
       - name: "Experiment: Mark PR automerge"
+        working-directory: "pulp_file"
         run: |
           gh pr merge --rebase --auto "${{ steps.create_pr_1_15.outputs.pull-request-number }}"
         if: "steps.create_pr_1_15.outputs.pull-request-number"
