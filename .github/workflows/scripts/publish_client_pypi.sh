@@ -14,7 +14,11 @@ cd "$(dirname "$(realpath -e "$0")")/../../.."
 
 VERSION="$1"
 
-if [[ -z "$VERSION" ]]; then
+if [[ -z "${VERSION}" ]]
+then
   echo "No version specified."
   exit 1
 fi
+
+twine upload -u __token__ -p "${PYPI_API_TOKEN}" \
+;
