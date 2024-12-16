@@ -66,7 +66,7 @@ jobs:
           branch: "update-ci/main"
           base: "main"
           delete-branch: true
-      - name: "Experiment: Mark PR automerge"
+      - name: "Mark PR automerge"
         working-directory: "pulp_file"
         run: |
           gh pr merge --rebase --auto "${{ steps.create_pr_main.outputs.pull-request-number }}"
