@@ -64,6 +64,9 @@ jobs:
       - "build"
       - "publish-package"
 
+    permissions:
+      contents: write
+
     steps:
       - name: "Create release on GitHub"
         uses: "actions/github-script@v7"
