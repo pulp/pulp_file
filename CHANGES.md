@@ -95,7 +95,9 @@ No significant changes.
 
 ---
 
-## 1.13.0 (2023-03-14) {: #1.13.0 }
+## YANKED 1.13.0 (2023-03-14) {: #1.13.0 }
+
+Yank reason: incorrect peer dependencies
 
 ### Features
 
@@ -146,7 +148,9 @@ No significant changes.
 
 ---
 
-## 1.11.0 (2022-07-28) {: #1.11.0 }
+## YANKED 1.11.0 (2022-07-28) {: #1.11.0 }
+
+Yank reason: Declared package compatibility is incorrect
 
 ### Features
 
@@ -213,7 +217,9 @@ No significant changes.
 
 ---
 
-## 1.10.0 (2021-10-06) {: #1.10.0 }
+## YANKED 1.10.0 (2021-10-06) {: #1.10.0 }
+
+Yank reason: incompatible with dependencies, use 1.10.1 instead
 
 ### Features
 
